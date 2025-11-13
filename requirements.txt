@@ -1,0 +1,29 @@
+# Core Framework
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+pydantic==2.5.0
+pydantic-settings==2.1.0
+
+# AI/ML
+langchain==0.1.0
+langchain-core>=0.1.7,<0.2.0
+torch>=2.0.0
+transformers>=4.35.0
+diffusers>=0.25.0
+pillow>=10.0.0
+
+# Storage & HTTP
+httpx==0.25.2
+python-multipart==0.0.6
+google-cloud-storage>=2.10.0
+
+# Utilities
+python-dotenv==1.0.0
+aiofiles==23.2.1
+
+# Development
+pytest==7.4.3
+pytest-asyncio==0.21.1
+black==23.12.0
+ruff==0.1.7
+
