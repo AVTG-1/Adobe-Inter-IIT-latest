@@ -1,4 +1,31 @@
-# AI Photo Editor Backend
+# AI Photo Editor - Full Stack Application
+
+A complete AI-powered photo editing application with React Native frontend and FastAPI backend.
+
+## 📱 Frontend (React Native + Expo)
+
+Mobile application with AI-powered photo editing capabilities.
+
+**Status:** Phase 1 Complete ✅
+- Animated splash screens
+- Home screen with gallery/camera integration
+- Navigation structure
+- API client ready for backend integration
+
+📂 **Location:** `frontend/`
+📖 **Documentation:** [frontend/README.md](frontend/README.md)
+📊 **Phase 1 Summary:** [frontend/PHASE1_SUMMARY.md](frontend/PHASE1_SUMMARY.md)
+
+**Quick Start:**
+```bash
+cd frontend
+npm install
+npm start
+```
+
+---
+
+## ⚙️ Backend (FastAPI + AI Agents)
 
 FastAPI-based backend implementing agentic AI workflows for photo editing using layered architecture.
 
