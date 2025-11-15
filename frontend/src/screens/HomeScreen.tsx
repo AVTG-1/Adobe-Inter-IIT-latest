@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -8,11 +8,16 @@ import {
   Dimensions,
   Animated,
   Image,
+  Alert,
+  ActivityIndicator,
+  Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/AppNavigator';
+import * as ImagePicker from 'expo-image-picker';
+import { uploadImageToGCS, validateImage, UploadProgress } from '../services';
 
 type HomeScreenNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
@@ -38,6 +43,13 @@ const MOCK_RECENT_PROJECTS = [
 const HomeScreen: React.FC<Props> = ({ navigation }) => {
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(30)).current;
+  const galleryScaleAnim = useRef(new Animated.Value(1)).current;
+  const cameraScaleAnim = useRef(new Animated.Value(1)).current;
+
+  // Upload state
+  const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadMessage, setUploadMessage] = useState('');
 
   useEffect(() => {
     // Fade in animation on mount
@@ -56,14 +68,159 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
     ]).start();
   }, []);
 
-  const handleImportGallery = () => {
-    console.log('Import from gallery pressed');
-    // TODO: Implement gallery picker in future phases
+  /**
+   * Handle image selection and upload
+   */
+  const handleImageSelected = async (result: ImagePicker.ImagePickerResult) => {
+    if (result.canceled) {
+      return;
+    }
+
+    const asset = result.assets[0];
+    const { uri, fileSize, mimeType } = asset;
+
+    console.log('Image selected:', { uri, fileSize, mimeType });
+
+    // Validate image
+    const validation = validateImage(uri, fileSize, mimeType);
+    if (!validation.valid) {
+      Alert.alert('Invalid Image', validation.error || 'Please select a valid image');
+      return;
+    }
+
+    // Show loading and start upload
+    setUploading(true);
+    setUploadProgress(0);
+    setUploadMessage('Uploading image to cloud storage...');
+
+    try {
+      // Upload to GCS
+      const uploadResult = await uploadImageToGCS(
+        uri,
+        'uploads',
+        (progress: UploadProgress) => {
+          setUploadProgress(progress.progress);
+          console.log('Upload progress:', progress.progress.toFixed(1) + '%');
+        }
+      );
+
+      if (uploadResult.success && uploadResult.url) {
+        console.log('Upload successful! GCS URL:', uploadResult.url);
+        setUploadMessage('Upload complete! Opening editor...');
+
+        // Wait a bit to show success message
+        setTimeout(() => {
+          setUploading(false);
+          // Navigate to Editor with GCS URL
+          navigation.navigate('Editor', { imageUrl: uploadResult.url! });
+        }, 500);
+      } else {
+        throw new Error(uploadResult.error || 'Upload failed');
+      }
+    } catch (error: any) {
+      console.error('Upload error:', error);
+      setUploading(false);
+      Alert.alert(
+        'Upload Failed',
+        error.message || 'Failed to upload image. Please try again.',
+        [{ text: 'OK' }]
+      );
+    }
   };
 
-  const handleOpenCamera = () => {
+  /**
+   * Import image from gallery
+   */
+  const handleImportGallery = async () => {
+    console.log('Import from gallery pressed');
+
+    // Animate button press
+    Animated.sequence([
+      Animated.timing(galleryScaleAnim, {
+        toValue: 0.95,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+      Animated.timing(galleryScaleAnim, {
+        toValue: 1,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+    ]).start();
+
+    try {
+      // Request permissions
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+      if (status !== 'granted') {
+        Alert.alert(
+          'Permission Required',
+          'Please grant permission to access your photo library to import images.',
+          [{ text: 'OK' }]
+        );
+        return;
+      }
+
+      // Launch image picker
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: false,
+        quality: 1,
+        exif: false,
+      });
+
+      await handleImageSelected(result);
+    } catch (error: any) {
+      console.error('Gallery picker error:', error);
+      Alert.alert('Error', 'Failed to open gallery. Please try again.');
+    }
+  };
+
+  /**
+   * Capture image from camera
+   */
+  const handleOpenCamera = async () => {
     console.log('Open camera pressed');
-    // TODO: Implement camera in future phases
+
+    // Animate button press
+    Animated.sequence([
+      Animated.timing(cameraScaleAnim, {
+        toValue: 0.95,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+      Animated.timing(cameraScaleAnim, {
+        toValue: 1,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+    ]).start();
+
+    try {
+      // Request permissions
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+
+      if (status !== 'granted') {
+        Alert.alert(
+          'Permission Required',
+          'Please grant permission to access your camera to take photos.',
+          [{ text: 'OK' }]
+        );
+        return;
+      }
+
+      // Launch camera
+      const result = await ImagePicker.launchCameraAsync({
+        allowsEditing: false,
+        quality: 1,
+        exif: false,
+      });
+
+      await handleImageSelected(result);
+    } catch (error: any) {
+      console.error('Camera error:', error);
+      Alert.alert('Error', 'Failed to open camera. Please try again.');
+    }
   };
 
   const handleMenuPress = () => {
@@ -111,39 +268,45 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
         >
           <Text style={styles.sectionTitle}>Start Creating</Text>
 
-          <TouchableOpacity
-            style={[styles.actionCard, styles.primaryCard]}
-            onPress={handleImportGallery}
-            activeOpacity={0.8}
-          >
-            <View style={styles.cardIconContainer}>
-              <Ionicons name="images" size={40} color="#ffffff" />
-            </View>
-            <View style={styles.cardContent}>
-              <Text style={styles.cardTitle}>Import from Gallery</Text>
-              <Text style={styles.cardSubtitle}>
-                Select a photo to start editing
-              </Text>
-            </View>
-            <Ionicons name="chevron-forward" size={24} color="#ffffff" />
-          </TouchableOpacity>
+          <Animated.View style={{ transform: [{ scale: galleryScaleAnim }] }}>
+            <TouchableOpacity
+              style={[styles.actionCard, styles.primaryCard]}
+              onPress={handleImportGallery}
+              activeOpacity={0.8}
+              disabled={uploading}
+            >
+              <View style={styles.cardIconContainer}>
+                <Ionicons name="images" size={40} color="#ffffff" />
+              </View>
+              <View style={styles.cardContent}>
+                <Text style={styles.cardTitle}>Import from Gallery</Text>
+                <Text style={styles.cardSubtitle}>
+                  Select a photo to start editing
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={24} color="#ffffff" />
+            </TouchableOpacity>
+          </Animated.View>
 
-          <TouchableOpacity
-            style={[styles.actionCard, styles.secondaryCard]}
-            onPress={handleOpenCamera}
-            activeOpacity={0.8}
-          >
-            <View style={styles.cardIconContainer}>
-              <Ionicons name="camera" size={40} color="#ffffff" />
-            </View>
-            <View style={styles.cardContent}>
-              <Text style={styles.cardTitle}>Open Camera</Text>
-              <Text style={styles.cardSubtitle}>
-                Take a new photo to edit
-              </Text>
-            </View>
-            <Ionicons name="chevron-forward" size={24} color="#ffffff" />
-          </TouchableOpacity>
+          <Animated.View style={{ transform: [{ scale: cameraScaleAnim }] }}>
+            <TouchableOpacity
+              style={[styles.actionCard, styles.secondaryCard]}
+              onPress={handleOpenCamera}
+              activeOpacity={0.8}
+              disabled={uploading}
+            >
+              <View style={styles.cardIconContainer}>
+                <Ionicons name="camera" size={40} color="#ffffff" />
+              </View>
+              <View style={styles.cardContent}>
+                <Text style={styles.cardTitle}>Open Camera</Text>
+                <Text style={styles.cardSubtitle}>
+                  Take a new photo to edit
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={24} color="#ffffff" />
+            </TouchableOpacity>
+          </Animated.View>
         </Animated.View>
 
         {/* Recent Projects Grid */}
@@ -181,6 +344,24 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
           </View>
         </Animated.View>
       </ScrollView>
+
+      {/* Upload Progress Modal */}
+      <Modal visible={uploading} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <ActivityIndicator size="large" color="#667eea" />
+            <Text style={styles.uploadMessage}>{uploadMessage}</Text>
+            <View style={styles.progressBarContainer}>
+              <View
+                style={[styles.progressBar, { width: `${uploadProgress}%` }]}
+              />
+            </View>
+            <Text style={styles.progressText}>
+              {uploadProgress.toFixed(0)}%
+            </Text>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -314,6 +495,46 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: '#333',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    padding: 32,
+    alignItems: 'center',
+    width: width * 0.8,
+    maxWidth: 320,
+  },
+  uploadMessage: {
+    marginTop: 16,
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    textAlign: 'center',
+  },
+  progressBarContainer: {
+    width: '100%',
+    height: 8,
+    backgroundColor: '#e0e0e0',
+    borderRadius: 4,
+    marginTop: 20,
+    overflow: 'hidden',
+  },
+  progressBar: {
+    height: '100%',
+    backgroundColor: '#667eea',
+    borderRadius: 4,
+  },
+  progressText: {
+    marginTop: 12,
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#667eea',
   },
 });
 
