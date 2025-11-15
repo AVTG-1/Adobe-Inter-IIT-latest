@@ -25,6 +25,7 @@ import BottomSheet from '@gorhom/bottom-sheet';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import ToolOptionsDrawer from '../components/ToolOptionsDrawer';
 import EditExpandedPanel from '../components/EditExpandedPanel';
+import LayersModal from '../components/LayersModal';
 import ExportSheet, { ExportFormat } from '../components/ExportSheet';
 import { saveProject } from '../services/projects';
 import * as FileSystem from 'expo-file-system';
@@ -51,6 +52,7 @@ export default function EditorScreen({ route, navigation }: Props) {
   // Refs for bottom sheets
   const toolOptionsRef = useRef<BottomSheet>(null);
   const editPanelRef = useRef<BottomSheet>(null);
+  const layersModalRef = useRef<BottomSheet>(null);
   const exportSheetRef = useRef<BottomSheet>(null);
 
   // State
@@ -166,7 +168,9 @@ export default function EditorScreen({ route, navigation }: Props) {
   const handleToolPress = (toolId: string) => {
     // Handle special navigation tools
     if (toolId === 'layers') {
-      navigation.navigate('Layers');
+      console.log('Layers tool pressed - opening layers modal');
+      setSelectedTool(toolId);
+      layersModalRef.current?.expand();
       return;
     }
 
@@ -235,6 +239,10 @@ export default function EditorScreen({ route, navigation }: Props) {
   };
 
   const handleCloseEditPanel = () => {
+    setSelectedTool(null);
+  };
+
+  const handleCloseLayersModal = () => {
     setSelectedTool(null);
   };
 
@@ -431,6 +439,12 @@ export default function EditorScreen({ route, navigation }: Props) {
           bottomSheetRef={editPanelRef}
           onToolSelect={handleEditToolSelect}
           onClose={handleCloseEditPanel}
+        />
+
+        {/* Layers Modal */}
+        <LayersModal
+          bottomSheetRef={layersModalRef}
+          onClose={handleCloseLayersModal}
         />
 
         {/* Export Sheet */}
