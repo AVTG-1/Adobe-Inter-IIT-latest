@@ -24,6 +24,7 @@ import { RootStackParamList } from '../navigation/AppNavigator';
 import BottomSheet from '@gorhom/bottom-sheet';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import ToolOptionsDrawer from '../components/ToolOptionsDrawer';
+import EditExpandedPanel from '../components/EditExpandedPanel';
 import ExportSheet, { ExportFormat } from '../components/ExportSheet';
 import { saveProject } from '../services/projects';
 import * as FileSystem from 'expo-file-system';
@@ -49,6 +50,7 @@ export default function EditorScreen({ route, navigation }: Props) {
 
   // Refs for bottom sheets
   const toolOptionsRef = useRef<BottomSheet>(null);
+  const editPanelRef = useRef<BottomSheet>(null);
   const exportSheetRef = useRef<BottomSheet>(null);
 
   // State
@@ -170,10 +172,9 @@ export default function EditorScreen({ route, navigation }: Props) {
 
     // Handle other tools (will implement drawers/screens later)
     if (toolId === 'edit') {
-      // TODO: Open Edit Expanded panel with 9 editing tools
-      console.log('Edit tool pressed - will open expanded panel');
+      console.log('Edit tool pressed - opening expanded panel');
       setSelectedTool(toolId);
-      toolOptionsRef.current?.expand();
+      editPanelRef.current?.expand();
       return;
     }
 
@@ -218,6 +219,22 @@ export default function EditorScreen({ route, navigation }: Props) {
   };
 
   const handleCloseToolDrawer = () => {
+    setSelectedTool(null);
+  };
+
+  const handleEditToolSelect = (toolId: string) => {
+    console.log('Edit tool selected:', toolId);
+    // Close the edit panel
+    editPanelRef.current?.close();
+    // TODO: Open specific adjustment screen or apply tool
+    Toast.show({
+      type: 'info',
+      text1: `${toolId} tool`,
+      text2: 'This feature will be implemented soon',
+    });
+  };
+
+  const handleCloseEditPanel = () => {
     setSelectedTool(null);
   };
 
@@ -407,6 +424,13 @@ export default function EditorScreen({ route, navigation }: Props) {
           bottomSheetRef={toolOptionsRef}
           selectedTool={selectedTool}
           onClose={handleCloseToolDrawer}
+        />
+
+        {/* Edit Expanded Panel */}
+        <EditExpandedPanel
+          bottomSheetRef={editPanelRef}
+          onToolSelect={handleEditToolSelect}
+          onClose={handleCloseEditPanel}
         />
 
         {/* Export Sheet */}
