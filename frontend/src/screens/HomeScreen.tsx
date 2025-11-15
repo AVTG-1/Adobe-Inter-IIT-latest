@@ -19,6 +19,7 @@ import { useIsFocused } from '@react-navigation/native';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import * as ImagePicker from 'expo-image-picker';
 import { uploadImageToGCS, validateImage, UploadProgress, getRecentProjects, Project } from '../services';
+import { COLORS, SPACING, BORDER_RADIUS, FONT_SIZES } from '../config/theme';
 
 type HomeScreenNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
@@ -292,11 +293,11 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={handleMenuPress} style={styles.iconButton}>
-          <Ionicons name="menu" size={28} color="#333" />
+          <Ionicons name="menu" size={28} color={COLORS.textPrimary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>AI Photo Editor</Text>
         <TouchableOpacity onPress={handleProfilePress} style={styles.iconButton}>
-          <Ionicons name="person-circle" size={28} color="#667eea" />
+          <Ionicons name="person-circle" size={28} color={COLORS.textPrimary} />
         </TouchableOpacity>
       </View>
 
@@ -319,13 +320,13 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
 
           <Animated.View style={{ transform: [{ scale: galleryScaleAnim }] }}>
             <TouchableOpacity
-              style={[styles.actionCard, styles.primaryCard]}
+              style={styles.actionCard}
               onPress={handleImportGallery}
               activeOpacity={0.8}
               disabled={uploading}
             >
               <View style={styles.cardIconContainer}>
-                <Ionicons name="images" size={40} color="#ffffff" />
+                <Ionicons name="images" size={40} color={COLORS.primary} />
               </View>
               <View style={styles.cardContent}>
                 <Text style={styles.cardTitle}>Import from Gallery</Text>
@@ -333,19 +334,19 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
                   Select a photo to start editing
                 </Text>
               </View>
-              <Ionicons name="chevron-forward" size={24} color="#ffffff" />
+              <Ionicons name="chevron-forward" size={24} color={COLORS.textSecondary} />
             </TouchableOpacity>
           </Animated.View>
 
           <Animated.View style={{ transform: [{ scale: cameraScaleAnim }] }}>
             <TouchableOpacity
-              style={[styles.actionCard, styles.secondaryCard]}
+              style={styles.actionCard}
               onPress={handleOpenCamera}
               activeOpacity={0.8}
               disabled={uploading}
             >
               <View style={styles.cardIconContainer}>
-                <Ionicons name="camera" size={40} color="#ffffff" />
+                <Ionicons name="camera" size={40} color={COLORS.primary} />
               </View>
               <View style={styles.cardContent}>
                 <Text style={styles.cardTitle}>Open Camera</Text>
@@ -353,19 +354,19 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
                   Take a new photo to edit
                 </Text>
               </View>
-              <Ionicons name="chevron-forward" size={24} color="#ffffff" />
+              <Ionicons name="chevron-forward" size={24} color={COLORS.textSecondary} />
             </TouchableOpacity>
           </Animated.View>
 
           <Animated.View style={{ transform: [{ scale: blankCanvasScaleAnim }] }}>
             <TouchableOpacity
-              style={[styles.actionCard, styles.tertiaryCard]}
+              style={styles.actionCard}
               onPress={handleBlankCanvas}
               activeOpacity={0.8}
               disabled={uploading}
             >
               <View style={styles.cardIconContainer}>
-                <Ionicons name="create" size={40} color="#ffffff" />
+                <Ionicons name="create" size={40} color={COLORS.primary} />
               </View>
               <View style={styles.cardContent}>
                 <Text style={styles.cardTitle}>Blank Canvas</Text>
@@ -373,7 +374,7 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
                   Start creating from scratch
                 </Text>
               </View>
-              <Ionicons name="chevron-forward" size={24} color="#ffffff" />
+              <Ionicons name="chevron-forward" size={24} color={COLORS.textSecondary} />
             </TouchableOpacity>
           </Animated.View>
         </Animated.View>
@@ -396,7 +397,7 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
 
           {loadingProjects ? (
             <View style={styles.projectsLoading}>
-              <ActivityIndicator size="small" color="#667eea" />
+              <ActivityIndicator size="small" color={COLORS.primary} />
               <Text style={styles.loadingProjectsText}>Loading projects...</Text>
             </View>
           ) : recentProjects.length > 0 ? (
@@ -416,7 +417,7 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
                         resizeMode="cover"
                       />
                     ) : (
-                      <Ionicons name="image" size={40} color="#ccc" />
+                      <Ionicons name="image" size={40} color={COLORS.textTertiary} />
                     )}
                   </View>
                   <Text style={styles.projectTitle} numberOfLines={1}>
@@ -427,7 +428,7 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
             </View>
           ) : (
             <View style={styles.emptyProjects}>
-              <Ionicons name="images-outline" size={48} color="#ccc" />
+              <Ionicons name="images-outline" size={48} color={COLORS.textTertiary} />
               <Text style={styles.emptyProjectsText}>No recent projects</Text>
               <Text style={styles.emptyProjectsSubtext}>
                 Start creating to see your work here
@@ -441,7 +442,7 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
       <Modal visible={uploading} transparent animationType="fade">
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <ActivityIndicator size="large" color="#667eea" />
+            <ActivityIndicator size="large" color={COLORS.primary} />
             <Text style={styles.uploadMessage}>{uploadMessage}</Text>
             <View style={styles.progressBarContainer}>
               <View
@@ -461,22 +462,22 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: COLORS.background,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 15,
-    backgroundColor: '#ffffff',
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.md,
+    backgroundColor: COLORS.surface,
     borderBottomWidth: 1,
-    borderBottomColor: '#e9ecef',
+    borderBottomColor: COLORS.borderLight,
   },
   headerTitle: {
-    fontSize: 20,
+    fontSize: FONT_SIZES.xl,
     fontWeight: 'bold',
-    color: '#333',
+    color: COLORS.textPrimary,
   },
   iconButton: {
     padding: 5,
@@ -488,74 +489,65 @@ const styles = StyleSheet.create({
     paddingBottom: 30,
   },
   actionsContainer: {
-    padding: 20,
+    padding: SPACING.lg,
   },
   sectionTitle: {
-    fontSize: 24,
+    fontSize: FONT_SIZES.xl,
     fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 20,
+    color: COLORS.textPrimary,
+    marginBottom: SPACING.lg,
   },
   actionCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 20,
-    borderRadius: 16,
-    marginBottom: 16,
+    padding: SPACING.lg,
+    borderRadius: BORDER_RADIUS.lg,
+    marginBottom: SPACING.md,
+    backgroundColor: COLORS.card,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
       height: 2,
     },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 3,
-  },
-  primaryCard: {
-    backgroundColor: '#667eea',
-  },
-  secondaryCard: {
-    backgroundColor: '#f5576c',
-  },
-  tertiaryCard: {
-    backgroundColor: '#4facfe',
   },
   cardIconContainer: {
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    backgroundColor: COLORS.surface,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 16,
+    marginRight: SPACING.md,
   },
   cardContent: {
     flex: 1,
   },
   cardTitle: {
-    fontSize: 18,
+    fontSize: FONT_SIZES.lg,
     fontWeight: 'bold',
-    color: '#ffffff',
+    color: COLORS.textPrimary,
     marginBottom: 4,
   },
   cardSubtitle: {
-    fontSize: 14,
-    color: '#ffffff',
-    opacity: 0.9,
+    fontSize: FONT_SIZES.sm,
+    color: COLORS.textSecondary,
   },
   recentSection: {
-    paddingHorizontal: 20,
+    paddingHorizontal: SPACING.lg,
     paddingTop: 10,
   },
   recentHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: SPACING.md,
   },
   seeAllText: {
-    fontSize: 14,
-    color: '#667eea',
+    fontSize: FONT_SIZES.sm,
+    color: COLORS.primary,
     fontWeight: '600',
   },
   projectsGrid: {
@@ -565,31 +557,31 @@ const styles = StyleSheet.create({
   },
   projectCard: {
     width: (width - 60) / 2,
-    marginBottom: 16,
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
+    marginBottom: SPACING.md,
+    backgroundColor: COLORS.card,
+    borderRadius: BORDER_RADIUS.md,
     overflow: 'hidden',
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
       height: 1,
     },
-    shadowOpacity: 0.05,
+    shadowOpacity: 0.3,
     shadowRadius: 4,
     elevation: 2,
   },
   projectThumbnail: {
     width: '100%',
     aspectRatio: 1,
-    backgroundColor: '#f1f3f5',
+    backgroundColor: COLORS.surface,
     justifyContent: 'center',
     alignItems: 'center',
   },
   projectTitle: {
     padding: 12,
-    fontSize: 14,
+    fontSize: FONT_SIZES.sm,
     fontWeight: '600',
-    color: '#333',
+    color: COLORS.textPrimary,
   },
   projectThumbnailImage: {
     width: '100%',
@@ -601,8 +593,8 @@ const styles = StyleSheet.create({
   },
   loadingProjectsText: {
     marginTop: 12,
-    fontSize: 14,
-    color: '#999',
+    fontSize: FONT_SIZES.sm,
+    color: COLORS.textSecondary,
   },
   emptyProjects: {
     paddingVertical: 40,
@@ -610,54 +602,54 @@ const styles = StyleSheet.create({
   },
   emptyProjectsText: {
     marginTop: 12,
-    fontSize: 16,
+    fontSize: FONT_SIZES.md,
     fontWeight: '600',
-    color: '#999',
+    color: COLORS.textSecondary,
   },
   emptyProjectsSubtext: {
     marginTop: 4,
-    fontSize: 14,
-    color: '#ccc',
+    fontSize: FONT_SIZES.sm,
+    color: COLORS.textTertiary,
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    backgroundColor: COLORS.overlay,
     justifyContent: 'center',
     alignItems: 'center',
   },
   modalContent: {
-    backgroundColor: '#fff',
-    borderRadius: 20,
-    padding: 32,
+    backgroundColor: COLORS.card,
+    borderRadius: BORDER_RADIUS.xl,
+    padding: SPACING.xl,
     alignItems: 'center',
     width: width * 0.8,
     maxWidth: 320,
   },
   uploadMessage: {
-    marginTop: 16,
-    fontSize: 16,
+    marginTop: SPACING.md,
+    fontSize: FONT_SIZES.md,
     fontWeight: '600',
-    color: '#333',
+    color: COLORS.textPrimary,
     textAlign: 'center',
   },
   progressBarContainer: {
     width: '100%',
     height: 8,
-    backgroundColor: '#e0e0e0',
+    backgroundColor: COLORS.surface,
     borderRadius: 4,
-    marginTop: 20,
+    marginTop: SPACING.lg,
     overflow: 'hidden',
   },
   progressBar: {
     height: '100%',
-    backgroundColor: '#667eea',
+    backgroundColor: COLORS.primary,
     borderRadius: 4,
   },
   progressText: {
     marginTop: 12,
-    fontSize: 18,
+    fontSize: FONT_SIZES.lg,
     fontWeight: 'bold',
-    color: '#667eea',
+    color: COLORS.primary,
   },
 });
 
