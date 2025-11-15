@@ -15,9 +15,10 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useIsFocused } from '@react-navigation/native';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import * as ImagePicker from 'expo-image-picker';
-import { uploadImageToGCS, validateImage, UploadProgress } from '../services';
+import { uploadImageToGCS, validateImage, UploadProgress, getRecentProjects, Project } from '../services';
 
 type HomeScreenNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
@@ -30,17 +31,8 @@ interface Props {
 
 const { width } = Dimensions.get('window');
 
-// Mock recent projects data
-const MOCK_RECENT_PROJECTS = [
-  { id: '1', thumbnail: 'https://via.placeholder.com/150', title: 'Project 1' },
-  { id: '2', thumbnail: 'https://via.placeholder.com/150', title: 'Project 2' },
-  { id: '3', thumbnail: 'https://via.placeholder.com/150', title: 'Project 3' },
-  { id: '4', thumbnail: 'https://via.placeholder.com/150', title: 'Project 4' },
-  { id: '5', thumbnail: 'https://via.placeholder.com/150', title: 'Project 5' },
-  { id: '6', thumbnail: 'https://via.placeholder.com/150', title: 'Project 6' },
-];
-
 const HomeScreen: React.FC<Props> = ({ navigation }) => {
+  const isFocused = useIsFocused();
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(30)).current;
   const galleryScaleAnim = useRef(new Animated.Value(1)).current;
@@ -51,6 +43,10 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadMessage, setUploadMessage] = useState('');
+
+  // Recent projects state
+  const [recentProjects, setRecentProjects] = useState<Project[]>([]);
+  const [loadingProjects, setLoadingProjects] = useState(true);
 
   useEffect(() => {
     // Fade in animation on mount
@@ -68,6 +64,25 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
       }),
     ]).start();
   }, []);
+
+  // Load recent projects when screen comes into focus
+  useEffect(() => {
+    if (isFocused) {
+      loadRecentProjects();
+    }
+  }, [isFocused]);
+
+  const loadRecentProjects = async () => {
+    try {
+      setLoadingProjects(true);
+      const projects = await getRecentProjects(6);
+      setRecentProjects(projects);
+    } catch (error) {
+      console.error('Error loading projects:', error);
+    } finally {
+      setLoadingProjects(false);
+    }
+  };
 
   /**
    * Handle image selection and upload
@@ -263,9 +278,13 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
     // TODO: Implement profile screen in future phases
   };
 
-  const handleProjectPress = (projectId: string) => {
-    console.log('Project pressed:', projectId);
-    // TODO: Navigate to editor screen in future phases
+  const handleProjectPress = (project: Project) => {
+    console.log('Project pressed:', project.id);
+    // Navigate to editor with the project's image
+    navigation.navigate('Editor', {
+      imageUrl: project.imageUrl,
+      isBlankCanvas: project.isBlankCanvas,
+    });
   };
 
   return (
@@ -375,23 +394,46 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
             </TouchableOpacity>
           </View>
 
-          <View style={styles.projectsGrid}>
-            {MOCK_RECENT_PROJECTS.map((project) => (
-              <TouchableOpacity
-                key={project.id}
-                style={styles.projectCard}
-                onPress={() => handleProjectPress(project.id)}
-                activeOpacity={0.7}
-              >
-                <View style={styles.projectThumbnail}>
-                  <Ionicons name="image" size={40} color="#ccc" />
-                </View>
-                <Text style={styles.projectTitle} numberOfLines={1}>
-                  {project.title}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
+          {loadingProjects ? (
+            <View style={styles.projectsLoading}>
+              <ActivityIndicator size="small" color="#667eea" />
+              <Text style={styles.loadingProjectsText}>Loading projects...</Text>
+            </View>
+          ) : recentProjects.length > 0 ? (
+            <View style={styles.projectsGrid}>
+              {recentProjects.map((project) => (
+                <TouchableOpacity
+                  key={project.id}
+                  style={styles.projectCard}
+                  onPress={() => handleProjectPress(project)}
+                  activeOpacity={0.7}
+                >
+                  <View style={styles.projectThumbnail}>
+                    {project.thumbnail && project.thumbnail !== 'placeholder' ? (
+                      <Image
+                        source={{ uri: project.thumbnail }}
+                        style={styles.projectThumbnailImage}
+                        resizeMode="cover"
+                      />
+                    ) : (
+                      <Ionicons name="image" size={40} color="#ccc" />
+                    )}
+                  </View>
+                  <Text style={styles.projectTitle} numberOfLines={1}>
+                    {project.name}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          ) : (
+            <View style={styles.emptyProjects}>
+              <Ionicons name="images-outline" size={48} color="#ccc" />
+              <Text style={styles.emptyProjectsText}>No recent projects</Text>
+              <Text style={styles.emptyProjectsSubtext}>
+                Start creating to see your work here
+              </Text>
+            </View>
+          )}
         </Animated.View>
       </ScrollView>
 
@@ -548,6 +590,34 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: '#333',
+  },
+  projectThumbnailImage: {
+    width: '100%',
+    height: '100%',
+  },
+  projectsLoading: {
+    paddingVertical: 40,
+    alignItems: 'center',
+  },
+  loadingProjectsText: {
+    marginTop: 12,
+    fontSize: 14,
+    color: '#999',
+  },
+  emptyProjects: {
+    paddingVertical: 40,
+    alignItems: 'center',
+  },
+  emptyProjectsText: {
+    marginTop: 12,
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#999',
+  },
+  emptyProjectsSubtext: {
+    marginTop: 4,
+    fontSize: 14,
+    color: '#ccc',
   },
   modalOverlay: {
     flex: 1,

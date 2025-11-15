@@ -6,3 +6,12 @@ export {
   type UploadProgress,
   type UploadResult,
 } from './storage';
+export {
+  getProjects,
+  saveProject,
+  updateProject,
+  deleteProject,
+  getRecentProjects,
+  clearAllProjects,
+  type Project,
+} from './projects';

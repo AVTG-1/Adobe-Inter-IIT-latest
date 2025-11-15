@@ -1,8 +1,10 @@
 import React, { useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { LogBox } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import AppNavigator from './src/navigation/AppNavigator';
 import { isFirebaseConfigured } from './src/config/firebase';
+import Toast from 'react-native-toast-message';
 
 // Ignore specific warnings in development
 LogBox.ignoreLogs([
@@ -23,9 +25,10 @@ export default function App() {
   }, []);
 
   return (
-    <>
+    <GestureHandlerRootView style={{ flex: 1 }}>
       <AppNavigator />
+      <Toast />
       <StatusBar style="auto" />
-    </>
+    </GestureHandlerRootView>
   );
 }
