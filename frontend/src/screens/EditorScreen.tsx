@@ -1,7 +1,7 @@
 /**
- * Editor Screen - Phase 3 & 4
+ * Editor Screen - Phase 3 & 4 (Dark Mode Redesign)
  *
- * Main image editing interface with toolbar, tool drawers, layers, and export
+ * Main image editing interface with 5-tool toolbar and dark theme
  */
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -29,21 +29,19 @@ import { saveProject } from '../services/projects';
 import * as FileSystem from 'expo-file-system';
 import * as MediaLibrary from 'expo-media-library';
 import Toast from 'react-native-toast-message';
+import { COLORS, SPACING, BORDER_RADIUS, FONT_SIZES } from '../config/theme';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Editor'>;
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
-// Tool icons for bottom toolbar
+// 5 Main Tools for bottom toolbar
 const TOOLS = [
-  { id: 'crop', icon: 'crop', label: 'Crop' },
-  { id: 'filter', icon: 'color-filter', label: 'Filter' },
-  { id: 'adjust', icon: 'contrast', label: 'Adjust' },
-  { id: 'text', icon: 'text', label: 'Text' },
-  { id: 'draw', icon: 'brush', label: 'Draw' },
-  { id: 'sticker', icon: 'happy', label: 'Sticker' },
+  { id: 'edit', icon: 'create-outline', label: 'Edit' },
+  { id: 'ai', icon: 'sparkles', label: 'AI' },
   { id: 'layers', icon: 'layers', label: 'Layers' },
-  { id: 'effects', icon: 'sparkles', label: 'Effects' },
+  { id: 'templates', icon: 'grid', label: 'Templates' },
+  { id: 'add', icon: 'add-circle-outline', label: 'Add' },
 ] as const;
 
 export default function EditorScreen({ route, navigation }: Props) {
@@ -170,8 +168,31 @@ export default function EditorScreen({ route, navigation }: Props) {
       return;
     }
 
-    if (toolId === 'effects') {
-      navigation.navigate('Effects');
+    // Handle other tools (will implement drawers/screens later)
+    if (toolId === 'edit') {
+      // TODO: Open Edit Expanded panel with 9 editing tools
+      console.log('Edit tool pressed - will open expanded panel');
+      setSelectedTool(toolId);
+      toolOptionsRef.current?.expand();
+      return;
+    }
+
+    if (toolId === 'ai') {
+      // TODO: Navigate to AI Features screen
+      console.log('AI tool pressed - will open AI features');
+      navigation.navigate('Effects'); // Temporary: use Effects screen as placeholder
+      return;
+    }
+
+    if (toolId === 'templates') {
+      // TODO: Navigate to Templates screen
+      console.log('Templates tool pressed - will open templates');
+      return;
+    }
+
+    if (toolId === 'add') {
+      // TODO: Open Add menu (text, shapes, stickers, etc.)
+      console.log('Add tool pressed - will open add menu');
       return;
     }
 
@@ -214,7 +235,7 @@ export default function EditorScreen({ route, navigation }: Props) {
             style={styles.navButton}
             activeOpacity={0.7}
           >
-            <Ionicons name="arrow-back" size={24} color="#333" />
+            <Ionicons name="arrow-back" size={24} color={COLORS.textPrimary} />
           </TouchableOpacity>
 
           <Text style={styles.navTitle}>
@@ -231,7 +252,7 @@ export default function EditorScreen({ route, navigation }: Props) {
               <Ionicons
                 name="arrow-undo"
                 size={22}
-                color={canUndo ? '#333' : '#ccc'}
+                color={canUndo ? COLORS.textPrimary : COLORS.textTertiary}
               />
             </TouchableOpacity>
 
@@ -248,7 +269,7 @@ export default function EditorScreen({ route, navigation }: Props) {
               <Ionicons
                 name="arrow-redo"
                 size={22}
-                color={canRedo ? '#333' : '#ccc'}
+                color={canRedo ? COLORS.textPrimary : COLORS.textTertiary}
               />
             </TouchableOpacity>
 
@@ -259,10 +280,10 @@ export default function EditorScreen({ route, navigation }: Props) {
               disabled={exporting}
             >
               {exporting ? (
-                <ActivityIndicator size="small" color="#fff" />
+                <ActivityIndicator size="small" color={COLORS.buttonPrimaryText} />
               ) : (
                 <>
-                  <Ionicons name="download" size={20} color="#fff" />
+                  <Ionicons name="download" size={20} color={COLORS.buttonPrimaryText} />
                   <Text style={styles.exportText}>Export</Text>
                 </>
               )}
@@ -281,7 +302,7 @@ export default function EditorScreen({ route, navigation }: Props) {
         >
           {!imageLoaded && !isBlankCanvas && (
             <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color="#667eea" />
+              <ActivityIndicator size="large" color={COLORS.primary} />
               <Text style={styles.loadingText}>Loading image...</Text>
             </View>
           )}
@@ -297,7 +318,7 @@ export default function EditorScreen({ route, navigation }: Props) {
               ]}
             >
               <View style={styles.canvasPlaceholder}>
-                <Ionicons name="create-outline" size={60} color="#e0e0e0" />
+                <Ionicons name="create-outline" size={60} color={COLORS.textTertiary} />
                 <Text style={styles.canvasPlaceholderText}>
                   Start creating on your blank canvas
                 </Text>
@@ -364,8 +385,8 @@ export default function EditorScreen({ route, navigation }: Props) {
                 >
                   <Ionicons
                     name={tool.icon as any}
-                    size={24}
-                    color={selectedTool === tool.id ? '#667eea' : '#666'}
+                    size={28}
+                    color={selectedTool === tool.id ? COLORS.toolActive : COLORS.toolDefault}
                   />
                 </View>
                 <Text
@@ -402,17 +423,17 @@ export default function EditorScreen({ route, navigation }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.background,
   },
   navbar: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
+    paddingHorizontal: SPACING.md,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
-    backgroundColor: '#fff',
+    borderBottomColor: COLORS.borderLight,
+    backgroundColor: COLORS.surface,
   },
   navButton: {
     padding: 8,
@@ -421,9 +442,9 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   navTitle: {
-    fontSize: 18,
+    fontSize: FONT_SIZES.lg,
     fontWeight: '600',
-    color: '#333',
+    color: COLORS.textPrimary,
   },
   navActions: {
     flexDirection: 'row',
@@ -432,17 +453,17 @@ const styles = StyleSheet.create({
   exportButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#667eea',
-    paddingHorizontal: 16,
+    backgroundColor: COLORS.buttonPrimary,
+    paddingHorizontal: SPACING.md,
     paddingVertical: 8,
-    borderRadius: 20,
+    borderRadius: BORDER_RADIUS.round,
     marginLeft: 12,
     minWidth: 90,
     justifyContent: 'center',
   },
   exportText: {
-    color: '#fff',
-    fontSize: 14,
+    color: COLORS.buttonPrimaryText,
+    fontSize: FONT_SIZES.sm,
     fontWeight: '600',
     marginLeft: 6,
   },
@@ -450,7 +471,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f5f5f5',
+    backgroundColor: COLORS.background,
   },
   loadingContainer: {
     position: 'absolute',
@@ -460,22 +481,23 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     marginTop: 12,
-    fontSize: 14,
-    color: '#666',
+    fontSize: FONT_SIZES.sm,
+    color: COLORS.textSecondary,
   },
   image: {
     width: SCREEN_WIDTH,
     height: '100%',
   },
   toolbar: {
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.surface,
     borderTopWidth: 1,
-    borderTopColor: '#e0e0e0',
-    paddingVertical: 12,
+    borderTopColor: COLORS.borderLight,
+    paddingVertical: SPACING.md,
   },
   toolbarContent: {
-    paddingHorizontal: 8,
-    gap: 4,
+    paddingHorizontal: SPACING.md,
+    gap: SPACING.lg,
+    justifyContent: 'center',
   },
   toolButton: {
     alignItems: 'center',
@@ -486,31 +508,31 @@ const styles = StyleSheet.create({
     // Active state styling handled by child components
   },
   toolIconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: '#f5f5f5',
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: COLORS.toolBackground,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 6,
   },
   toolIconContainerActive: {
-    backgroundColor: '#e8ebfc',
+    backgroundColor: COLORS.toolBackgroundActive,
   },
   toolLabel: {
-    fontSize: 12,
-    color: '#666',
+    fontSize: FONT_SIZES.xs,
+    color: COLORS.textSecondary,
     fontWeight: '500',
   },
   toolLabelActive: {
-    color: '#667eea',
+    color: COLORS.toolActive,
     fontWeight: '600',
   },
   blankCanvas: {
     backgroundColor: '#ffffff',
-    borderRadius: 8,
+    borderRadius: BORDER_RADIUS.md,
     borderWidth: 2,
-    borderColor: '#e0e0e0',
+    borderColor: COLORS.border,
     borderStyle: 'dashed',
     justifyContent: 'center',
     alignItems: 'center',
@@ -519,25 +541,25 @@ const styles = StyleSheet.create({
       width: 0,
       height: 2,
     },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.3,
     shadowRadius: 4,
     elevation: 2,
   },
   canvasPlaceholder: {
     alignItems: 'center',
-    padding: 20,
+    padding: SPACING.lg,
   },
   canvasPlaceholderText: {
-    marginTop: 16,
-    fontSize: 16,
-    color: '#999',
+    marginTop: SPACING.md,
+    fontSize: FONT_SIZES.md,
+    color: COLORS.textTertiary,
     textAlign: 'center',
     fontWeight: '500',
   },
   canvasSize: {
-    marginTop: 8,
-    fontSize: 14,
-    color: '#bbb',
+    marginTop: SPACING.sm,
+    fontSize: FONT_SIZES.sm,
+    color: COLORS.textTertiary,
     fontWeight: '400',
   },
 });
