@@ -1,7 +1,8 @@
 /**
- * Splash Screen 1 - Onboarding
+ * Splash Screen - Dark with Logo Animation
  *
- * Cinematic intro with artistic background and skip button
+ * Logo animation: fade-in (0.5s) → stay (1s) → fade-out (0.5s) → Home
+ * Total duration: 2 seconds
  */
 
 import React, { useEffect, useRef } from 'react';
@@ -10,8 +11,6 @@ import {
   Text,
   StyleSheet,
   Animated,
-  TouchableOpacity,
-  ImageBackground,
   Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -31,136 +30,69 @@ interface Props {
 const { width, height } = Dimensions.get('window');
 
 const Splash1Screen: React.FC<Props> = ({ navigation }) => {
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const skipAnim = useRef(new Animated.Value(0)).current;
+  const logoAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    // Fade in animation
+    // Logo animation: fade-in (0.5s) → stay (1s) → fade-out (0.5s)
     Animated.sequence([
-      Animated.timing(fadeAnim, {
+      // Fade in over 500ms
+      Animated.timing(logoAnim, {
         toValue: 1,
-        duration: 800,
+        duration: 500,
         useNativeDriver: true,
       }),
-      Animated.timing(skipAnim, {
-        toValue: 1,
-        duration: 400,
-        delay: 400,
+      // Stay visible for 1000ms (delay)
+      Animated.delay(1000),
+      // Fade out over 500ms
+      Animated.timing(logoAnim, {
+        toValue: 0,
+        duration: 500,
         useNativeDriver: true,
       }),
-    ]).start();
-
-    // Auto advance after 2 seconds
-    const timer = setTimeout(() => {
-      navigation.replace('Splash2');
-    }, 2000);
-
-    return () => clearTimeout(timer);
+    ]).start(() => {
+      // Navigate to Home after animation completes
+      navigation.replace('Home');
+    });
   }, [navigation]);
 
-  const handleSkip = () => {
-    navigation.replace('Home');
-  };
-
   return (
-    <ImageBackground
-      source={{ uri: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800' }}
-      style={styles.background}
-      resizeMode="cover"
-    >
-      <View style={styles.overlay} />
-
-      <SafeAreaView style={styles.container} edges={['bottom']}>
-        <Animated.View style={[styles.content, { opacity: fadeAnim }]}>
-          <View style={styles.textContainer}>
-            <Text style={styles.title}>AI Photo Editor</Text>
-            <Text style={styles.subtitle}>Professional editing powered by AI</Text>
-          </View>
-        </Animated.View>
-
-        <Animated.View style={[styles.skipContainer, { opacity: skipAnim }]}>
-          <TouchableOpacity
-            style={styles.skipButton}
-            onPress={handleSkip}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.skipText}>Skip</Text>
-            <Ionicons name="arrow-forward" size={18} color="#000" />
-          </TouchableOpacity>
+    <View style={styles.container}>
+      <SafeAreaView style={styles.content}>
+        <Animated.View style={[styles.logoContainer, { opacity: logoAnim }]}>
+          <Ionicons name="images" size={80} color="#00D9FF" />
+          <Text style={styles.title}>AI Photo Editor</Text>
+          <Text style={styles.subtitle}>Powered by Adobe</Text>
         </Animated.View>
       </SafeAreaView>
-    </ImageBackground>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  background: {
-    flex: 1,
-    width: width,
-    height: height,
-  },
-  overlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.4)',
-  },
   container: {
     flex: 1,
-    justifyContent: 'space-between',
+    backgroundColor: '#000000',
   },
   content: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 40,
   },
-  textContainer: {
+  logoContainer: {
     alignItems: 'center',
   },
   title: {
-    fontSize: 36,
+    fontSize: 32,
     fontWeight: 'bold',
-    color: '#fff',
-    marginBottom: 12,
-    textAlign: 'center',
-    textShadowColor: 'rgba(0, 0, 0, 0.75)',
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 10,
+    color: '#FFFFFF',
+    marginTop: 24,
+    letterSpacing: 0.5,
   },
   subtitle: {
-    fontSize: 16,
-    color: '#fff',
-    textAlign: 'center',
-    opacity: 0.9,
-    textShadowColor: 'rgba(0, 0, 0, 0.75)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 8,
-  },
-  skipContainer: {
-    paddingHorizontal: 24,
-    paddingBottom: 40,
-    alignItems: 'flex-end',
-  },
-  skipButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#fff',
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 25,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
-  },
-  skipText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#000',
-    marginRight: 8,
+    fontSize: 14,
+    color: '#B0B0B0',
+    marginTop: 8,
+    letterSpacing: 1,
   },
 });
 

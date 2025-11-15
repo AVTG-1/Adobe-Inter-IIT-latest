@@ -1,7 +1,7 @@
 /**
- * Layers Modal - Bottom Sheet
+ * Layers Modal - 20% Height Bottom Sheet
  *
- * Bottom modal popup for layer management with dark theme
+ * Minimal layers list with icons: Eye (visibility), Pen (rename), Drag handle (reorder)
  */
 
 import React, { useState, useMemo } from 'react';
@@ -35,7 +35,7 @@ const LayersModal: React.FC<LayersModalProps> = ({
   bottomSheetRef,
   onClose,
 }) => {
-  const snapPoints = useMemo(() => ['60%', '85%'], []);
+  const snapPoints = useMemo(() => ['20%'], []);
 
   const [layers, setLayers] = useState<Layer[]>([
     { id: '1', name: 'Background', visible: true, locked: false, opacity: 100 },
@@ -115,7 +115,7 @@ const LayersModal: React.FC<LayersModalProps> = ({
       <View style={styles.layerLeft}>
         {/* Drag Handle */}
         <View style={styles.dragHandle}>
-          <Ionicons name="menu" size={20} color={COLORS.textSecondary} />
+          <Ionicons name="menu" size={16} color={COLORS.textSecondary} />
         </View>
 
         {/* Layer Name */}
@@ -143,7 +143,7 @@ const LayersModal: React.FC<LayersModalProps> = ({
           onPress={() => handleStartRename(item)}
           style={styles.iconButton}
         >
-          <Ionicons name="create-outline" size={20} color={COLORS.textSecondary} />
+          <Ionicons name="create-outline" size={18} color={COLORS.textSecondary} />
         </TouchableOpacity>
 
         {/* Eye Toggle */}
@@ -153,7 +153,7 @@ const LayersModal: React.FC<LayersModalProps> = ({
         >
           <Ionicons
             name={item.visible ? 'eye' : 'eye-off'}
-            size={20}
+            size={18}
             color={item.visible ? COLORS.primary : COLORS.textTertiary}
           />
         </TouchableOpacity>
@@ -221,20 +221,20 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: SPACING.lg,
-    paddingBottom: SPACING.md,
+    paddingHorizontal: SPACING.md,
+    paddingBottom: SPACING.sm,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.borderLight,
   },
   title: {
-    fontSize: FONT_SIZES.xl,
+    fontSize: FONT_SIZES.lg,
     fontWeight: 'bold',
     color: COLORS.textPrimary,
   },
   headerActions: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: SPACING.sm,
+    gap: SPACING.xs,
   },
   addButton: {
     padding: SPACING.xs,
@@ -243,26 +243,18 @@ const styles = StyleSheet.create({
     padding: SPACING.xs,
   },
   listContainer: {
-    paddingHorizontal: SPACING.lg,
-    paddingTop: SPACING.md,
-    paddingBottom: SPACING.xl,
+    paddingHorizontal: SPACING.md,
+    paddingTop: SPACING.sm,
+    paddingBottom: SPACING.sm,
   },
   layerCard: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     backgroundColor: COLORS.cardLight,
-    padding: SPACING.md,
-    borderRadius: BORDER_RADIUS.md,
-    marginBottom: SPACING.md,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 3,
+    padding: SPACING.sm,
+    borderRadius: BORDER_RADIUS.sm,
+    marginBottom: SPACING.xs,
   },
   layerLeft: {
     flexDirection: 'row',
@@ -281,18 +273,18 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   layerName: {
-    fontSize: FONT_SIZES.md,
+    fontSize: FONT_SIZES.sm,
     fontWeight: '600',
     color: COLORS.textPrimary,
   },
   layerNameInput: {
-    fontSize: FONT_SIZES.md,
+    fontSize: FONT_SIZES.sm,
     fontWeight: '600',
     color: COLORS.textPrimary,
     borderBottomWidth: 2,
     borderBottomColor: COLORS.primary,
-    paddingVertical: 4,
-    minWidth: 120,
+    paddingVertical: 2,
+    minWidth: 100,
   },
   iconButton: {
     padding: SPACING.xs,

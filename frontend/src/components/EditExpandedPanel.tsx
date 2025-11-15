@@ -1,7 +1,7 @@
 /**
- * Edit Expanded Panel - Bottom Sheet
+ * Edit Expanded Panel - 35% Height Bottom Sheet
  *
- * Displays 9 editing tools when Edit is pressed
+ * Displays 9 editing tools in 2×5 grid layout
  */
 
 import React, { useMemo } from 'react';
@@ -11,8 +11,9 @@ import {
   StyleSheet,
   TouchableOpacity,
   Dimensions,
+  ScrollView,
 } from 'react-native';
-import BottomSheet, { BottomSheetBackdrop } from '@gorhom/bottom-sheet';
+import BottomSheet, { BottomSheetBackdrop, BottomSheetView } from '@gorhom/bottom-sheet';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SPACING, BORDER_RADIUS, FONT_SIZES } from '../config/theme';
 
@@ -24,7 +25,7 @@ interface EditExpandedPanelProps {
 
 const { width } = Dimensions.get('window');
 
-// 9 Editing Tools with colorful icons
+// 9 Editing Tools - exactly these tools in this order
 const EDIT_TOOLS = [
   { id: 'crop', icon: 'crop', label: 'Crop', color: '#FF6B6B' },
   { id: 'resize', icon: 'resize', label: 'Resize', color: '#4ECDC4' },
@@ -33,8 +34,8 @@ const EDIT_TOOLS = [
   { id: 'contrast', icon: 'contrast', label: 'Contrast', color: '#A55EEA' },
   { id: 'hue', icon: 'color-palette', label: 'Hue', color: '#FF6348' },
   { id: 'saturation', icon: 'water', label: 'Saturation', color: '#26DE81' },
-  { id: 'tint', icon: 'color-filter', label: 'Tint', color: '#FC5C65' },
   { id: 'sharpness', icon: 'diamond', label: 'Sharpness', color: '#FD79A8' },
+  { id: 'temperature', icon: 'thermometer', label: 'Temperature', color: '#74B9FF' },
 ];
 
 const EditExpandedPanel: React.FC<EditExpandedPanelProps> = ({
@@ -42,7 +43,7 @@ const EditExpandedPanel: React.FC<EditExpandedPanelProps> = ({
   onToolSelect,
   onClose,
 }) => {
-  const snapPoints = useMemo(() => ['50%', '70%'], []);
+  const snapPoints = useMemo(() => ['35%'], []);
 
   const renderBackdrop = (props: any) => (
     <BottomSheetBackdrop
@@ -68,7 +69,7 @@ const EditExpandedPanel: React.FC<EditExpandedPanelProps> = ({
       backgroundStyle={styles.sheetBackground}
       handleIndicatorStyle={styles.handleIndicator}
     >
-      <View style={styles.container}>
+      <BottomSheetView style={styles.container}>
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.title}>Edit Tools</Text>
@@ -77,8 +78,11 @@ const EditExpandedPanel: React.FC<EditExpandedPanelProps> = ({
           </TouchableOpacity>
         </View>
 
-        {/* Tools Grid */}
-        <View style={styles.toolsGrid}>
+        {/* Tools Grid - 2 rows × 5 columns layout */}
+        <ScrollView
+          contentContainerStyle={styles.toolsGrid}
+          showsVerticalScrollIndicator={false}
+        >
           {EDIT_TOOLS.map((tool) => (
             <TouchableOpacity
               key={tool.id}
@@ -87,13 +91,13 @@ const EditExpandedPanel: React.FC<EditExpandedPanelProps> = ({
               activeOpacity={0.7}
             >
               <View style={[styles.toolIconContainer, { backgroundColor: tool.color }]}>
-                <Ionicons name={tool.icon as any} size={32} color="#fff" />
+                <Ionicons name={tool.icon as any} size={28} color="#fff" />
               </View>
               <Text style={styles.toolLabel}>{tool.label}</Text>
             </TouchableOpacity>
           ))}
-        </View>
-      </View>
+        </ScrollView>
+      </BottomSheetView>
     </BottomSheet>
   );
 };
@@ -110,20 +114,20 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-    paddingHorizontal: SPACING.lg,
-    paddingBottom: SPACING.xl,
+    paddingHorizontal: SPACING.md,
+    paddingBottom: SPACING.md,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: SPACING.lg,
-    paddingBottom: SPACING.md,
+    marginBottom: SPACING.md,
+    paddingBottom: SPACING.sm,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.borderLight,
   },
   title: {
-    fontSize: FONT_SIZES.xl,
+    fontSize: FONT_SIZES.lg,
     fontWeight: 'bold',
     color: COLORS.textPrimary,
   },
@@ -133,31 +137,32 @@ const styles = StyleSheet.create({
   toolsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    justifyContent: 'space-between',
+    justifyContent: 'space-around',
+    paddingBottom: SPACING.md,
   },
   toolItem: {
-    width: (width - SPACING.lg * 2 - SPACING.md * 2) / 3,
+    width: (width - SPACING.md * 2) / 5 - SPACING.xs,
     alignItems: 'center',
-    marginBottom: SPACING.xl,
+    marginBottom: SPACING.md,
   },
   toolIconContainer: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: SPACING.sm,
+    marginBottom: 6,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
-      height: 4,
+      height: 2,
     },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 6,
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 4,
   },
   toolLabel: {
-    fontSize: FONT_SIZES.sm,
+    fontSize: 11,
     fontWeight: '600',
     color: COLORS.textPrimary,
     textAlign: 'center',

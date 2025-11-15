@@ -27,6 +27,9 @@ import ToolOptionsDrawer from '../components/ToolOptionsDrawer';
 import EditExpandedPanel from '../components/EditExpandedPanel';
 import LayersModal from '../components/LayersModal';
 import ExportSheet, { ExportFormat } from '../components/ExportSheet';
+import AddMenuSheet from '../components/AddMenuSheet';
+import AIFeaturesSheet from '../components/AIFeaturesSheet';
+import GlobalAIModal from '../components/GlobalAIModal';
 import { saveProject } from '../services/projects';
 import * as FileSystem from 'expo-file-system';
 import * as MediaLibrary from 'expo-media-library';
@@ -37,13 +40,13 @@ type Props = NativeStackScreenProps<RootStackParamList, 'Editor'>;
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
-// 5 Main Tools for bottom toolbar
+// 5 Main Tools - Always Visible
 const TOOLS = [
   { id: 'edit', icon: 'create-outline', label: 'Edit' },
   { id: 'ai', icon: 'sparkles', label: 'AI' },
+  { id: 'add', icon: 'add-circle-outline', label: '+Add' },
   { id: 'layers', icon: 'layers', label: 'Layers' },
-  { id: 'templates', icon: 'grid', label: 'Templates' },
-  { id: 'add', icon: 'add-circle-outline', label: 'Add' },
+  { id: 'magic', icon: 'color-wand', label: 'Magic AI' },
 ] as const;
 
 export default function EditorScreen({ route, navigation }: Props) {
@@ -54,6 +57,8 @@ export default function EditorScreen({ route, navigation }: Props) {
   const editPanelRef = useRef<BottomSheet>(null);
   const layersModalRef = useRef<BottomSheet>(null);
   const exportSheetRef = useRef<BottomSheet>(null);
+  const addMenuRef = useRef<BottomSheet>(null);
+  const aiFeaturesRef = useRef<BottomSheet>(null);
 
   // State
   const [selectedTool, setSelectedTool] = useState<string | null>(null);
@@ -61,6 +66,7 @@ export default function EditorScreen({ route, navigation }: Props) {
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [globalAIModalVisible, setGlobalAIModalVisible] = useState(false);
 
   // Animations
   const [fadeAnim] = useState(new Animated.Value(0));
@@ -166,60 +172,42 @@ export default function EditorScreen({ route, navigation }: Props) {
   };
 
   const handleToolPress = (toolId: string) => {
-    // Handle special navigation tools
-    if (toolId === 'layers') {
-      console.log('Layers tool pressed - opening layers modal');
-      setSelectedTool(toolId);
-      layersModalRef.current?.expand();
-      return;
-    }
+    setSelectedTool(toolId);
 
-    // Handle other tools (will implement drawers/screens later)
+    // Handle Edit - Opens 9 tools panel (35% height)
     if (toolId === 'edit') {
-      console.log('Edit tool pressed - opening expanded panel');
-      setSelectedTool(toolId);
+      console.log('Edit tool pressed - opening 9 tools panel');
       editPanelRef.current?.expand();
       return;
     }
 
+    // Handle AI - Opens AI features sheet (35% height)
     if (toolId === 'ai') {
-      // TODO: Navigate to AI Features screen
-      console.log('AI tool pressed - will open AI features');
-      navigation.navigate('Effects'); // Temporary: use Effects screen as placeholder
+      console.log('AI tool pressed - opening AI features');
+      aiFeaturesRef.current?.expand();
       return;
     }
 
-    if (toolId === 'templates') {
-      // TODO: Navigate to Templates screen
-      console.log('Templates tool pressed - will open templates');
-      return;
-    }
-
+    // Handle +Add - Opens add menu (20% height)
     if (toolId === 'add') {
-      // TODO: Open Add menu (text, shapes, stickers, etc.)
-      console.log('Add tool pressed - will open add menu');
+      console.log('Add tool pressed - opening add menu');
+      addMenuRef.current?.expand();
       return;
     }
 
-    // Animate tool selection
-    Animated.sequence([
-      Animated.timing(toolbarAnim, {
-        toValue: 0.9,
-        duration: 100,
-        useNativeDriver: true,
-      }),
-      Animated.timing(toolbarAnim, {
-        toValue: 1,
-        duration: 100,
-        useNativeDriver: true,
-      }),
-    ]).start();
+    // Handle Layers - Opens layers modal (20% height)
+    if (toolId === 'layers') {
+      console.log('Layers tool pressed - opening layers modal');
+      layersModalRef.current?.expand();
+      return;
+    }
 
-    setSelectedTool(toolId);
-    console.log('Tool selected:', toolId);
-
-    // Open tool options drawer
-    toolOptionsRef.current?.expand();
+    // Handle Magic AI - Same as global AI modal (full screen)
+    if (toolId === 'magic') {
+      console.log('Magic AI tool pressed - opening global AI modal');
+      setGlobalAIModalVisible(true);
+      return;
+    }
   };
 
   const handleCloseToolDrawer = () => {
@@ -248,6 +236,46 @@ export default function EditorScreen({ route, navigation }: Props) {
 
   const handleCloseExportSheet = () => {
     // Sheet closed
+  };
+
+  const handleAddOptionSelect = (option: string) => {
+    console.log('Add option selected:', option);
+    Toast.show({
+      type: 'info',
+      text1: `${option} feature`,
+      text2: 'This feature will be implemented soon',
+    });
+  };
+
+  const handleCloseAddMenu = () => {
+    setSelectedTool(null);
+  };
+
+  const handleAIFeatureSelect = (feature: string) => {
+    console.log('AI feature selected:', feature);
+    Toast.show({
+      type: 'info',
+      text1: `${feature} AI`,
+      text2: 'Processing with AI...',
+    });
+  };
+
+  const handleCloseAIFeatures = () => {
+    setSelectedTool(null);
+  };
+
+  const handleGlobalAIFeatureSelect = (feature: string) => {
+    console.log('Global AI feature selected:', feature);
+    Toast.show({
+      type: 'info',
+      text1: `${feature}`,
+      text2: 'AI is processing your request...',
+    });
+  };
+
+  const handleOpenGlobalAI = () => {
+    console.log('Global AI button pressed');
+    setGlobalAIModalVisible(true);
   };
 
   return (
@@ -296,6 +324,15 @@ export default function EditorScreen({ route, navigation }: Props) {
                 size={22}
                 color={canRedo ? COLORS.textPrimary : COLORS.textTertiary}
               />
+            </TouchableOpacity>
+
+            {/* Global AI Button */}
+            <TouchableOpacity
+              onPress={handleOpenGlobalAI}
+              style={[styles.navButton, styles.globalAIButton]}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="sparkles" size={20} color={COLORS.primary} />
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -453,6 +490,27 @@ export default function EditorScreen({ route, navigation }: Props) {
           onExport={handleExportFormat}
           onClose={handleCloseExportSheet}
         />
+
+        {/* Add Menu Sheet - 20% height */}
+        <AddMenuSheet
+          bottomSheetRef={addMenuRef}
+          onOptionSelect={handleAddOptionSelect}
+          onClose={handleCloseAddMenu}
+        />
+
+        {/* AI Features Sheet - 35% height */}
+        <AIFeaturesSheet
+          bottomSheetRef={aiFeaturesRef}
+          onFeatureSelect={handleAIFeatureSelect}
+          onClose={handleCloseAIFeatures}
+        />
+
+        {/* Global AI Modal - Full screen */}
+        <GlobalAIModal
+          visible={globalAIModalVisible}
+          onClose={() => setGlobalAIModalVisible(false)}
+          onFeatureSelect={handleGlobalAIFeatureSelect}
+        />
       </SafeAreaView>
     </GestureHandlerRootView>
   );
@@ -488,6 +546,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
+  globalAIButton: {
+    backgroundColor: COLORS.surface,
+    borderRadius: BORDER_RADIUS.round,
+    padding: 10,
+    marginLeft: 8,
+    borderWidth: 1,
+    borderColor: COLORS.primary,
+  },
   exportButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -495,7 +561,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.md,
     paddingVertical: 8,
     borderRadius: BORDER_RADIUS.round,
-    marginLeft: 12,
+    marginLeft: 8,
     minWidth: 90,
     justifyContent: 'center',
   },
