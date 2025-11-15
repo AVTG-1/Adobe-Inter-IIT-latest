@@ -1,3 +1,9 @@
+/**
+ * Splash Screen 1 - Onboarding
+ *
+ * Cinematic intro with artistic background and skip button
+ */
+
 import React, { useEffect, useRef } from 'react';
 import {
   View,
@@ -5,12 +11,13 @@ import {
   StyleSheet,
   Animated,
   TouchableOpacity,
+  ImageBackground,
   Dimensions,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/AppNavigator';
-import { Ionicons } from '@expo/vector-icons';
 
 type Splash1ScreenNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
@@ -25,32 +32,25 @@ const { width, height } = Dimensions.get('window');
 
 const Splash1Screen: React.FC<Props> = ({ navigation }) => {
   const fadeAnim = useRef(new Animated.Value(0)).current;
-  const scaleAnim = useRef(new Animated.Value(0.8)).current;
-  const skipOpacity = useRef(new Animated.Value(0)).current;
+  const skipAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    // Start animations
-    Animated.parallel([
+    // Fade in animation
+    Animated.sequence([
       Animated.timing(fadeAnim, {
         toValue: 1,
         duration: 800,
         useNativeDriver: true,
       }),
-      Animated.spring(scaleAnim, {
+      Animated.timing(skipAnim, {
         toValue: 1,
-        friction: 8,
-        tension: 40,
-        useNativeDriver: true,
-      }),
-      Animated.timing(skipOpacity, {
-        toValue: 1,
-        duration: 600,
+        duration: 400,
         delay: 400,
         useNativeDriver: true,
       }),
     ]).start();
 
-    // Auto-navigate to Splash2 after 2 seconds
+    // Auto advance after 2 seconds
     const timer = setTimeout(() => {
       navigation.replace('Splash2');
     }, 2000);
@@ -63,107 +63,104 @@ const Splash1Screen: React.FC<Props> = ({ navigation }) => {
   };
 
   return (
-    <LinearGradient
-      colors={['#667eea', '#764ba2', '#f093fb']}
-      style={styles.container}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
+    <ImageBackground
+      source={{ uri: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800' }}
+      style={styles.background}
+      resizeMode="cover"
     >
-      <Animated.View
-        style={[
-          styles.skipButton,
-          { opacity: skipOpacity },
-        ]}
-      >
-        <TouchableOpacity onPress={handleSkip} style={styles.skipTouchable}>
-          <Text style={styles.skipText}>Skip</Text>
-        </TouchableOpacity>
-      </Animated.View>
+      <View style={styles.overlay} />
 
-      <Animated.View
-        style={[
-          styles.content,
-          {
-            opacity: fadeAnim,
-            transform: [{ scale: scaleAnim }],
-          },
-        ]}
-      >
-        <View style={styles.iconContainer}>
-          <Ionicons name="images" size={80} color="#ffffff" />
-        </View>
-        <Text style={styles.title}>AI Photo Editor</Text>
-        <Text style={styles.subtitle}>Transform your photos with AI</Text>
-      </Animated.View>
+      <SafeAreaView style={styles.container} edges={['bottom']}>
+        <Animated.View style={[styles.content, { opacity: fadeAnim }]}>
+          <View style={styles.textContainer}>
+            <Text style={styles.title}>AI Photo Editor</Text>
+            <Text style={styles.subtitle}>Professional editing powered by AI</Text>
+          </View>
+        </Animated.View>
 
-      <Animated.View style={[styles.dotContainer, { opacity: skipOpacity }]}>
-        <View style={[styles.dot, styles.dotActive]} />
-        <View style={styles.dot} />
-      </Animated.View>
-    </LinearGradient>
+        <Animated.View style={[styles.skipContainer, { opacity: skipAnim }]}>
+          <TouchableOpacity
+            style={styles.skipButton}
+            onPress={handleSkip}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.skipText}>Skip</Text>
+            <Ionicons name="arrow-forward" size={18} color="#000" />
+          </TouchableOpacity>
+        </Animated.View>
+      </SafeAreaView>
+    </ImageBackground>
   );
 };
 
 const styles = StyleSheet.create({
+  background: {
+    flex: 1,
+    width: width,
+    height: height,
+  },
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+  },
   container: {
+    flex: 1,
+    justifyContent: 'space-between',
+  },
+  content: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    paddingHorizontal: 40,
   },
-  skipButton: {
-    position: 'absolute',
-    top: 50,
-    right: 20,
-    zIndex: 10,
-  },
-  skipTouchable: {
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-  },
-  skipText: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  content: {
+  textContainer: {
     alignItems: 'center',
-    justifyContent: 'center',
-  },
-  iconContainer: {
-    marginBottom: 30,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    borderRadius: 60,
-    padding: 30,
   },
   title: {
-    fontSize: 32,
+    fontSize: 36,
     fontWeight: 'bold',
-    color: '#ffffff',
-    marginBottom: 10,
+    color: '#fff',
+    marginBottom: 12,
     textAlign: 'center',
+    textShadowColor: 'rgba(0, 0, 0, 0.75)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 10,
   },
   subtitle: {
     fontSize: 16,
-    color: '#ffffff',
-    opacity: 0.9,
+    color: '#fff',
     textAlign: 'center',
-    paddingHorizontal: 40,
+    opacity: 0.9,
+    textShadowColor: 'rgba(0, 0, 0, 0.75)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 8,
   },
-  dotContainer: {
-    position: 'absolute',
-    bottom: 60,
+  skipContainer: {
+    paddingHorizontal: 24,
+    paddingBottom: 40,
+    alignItems: 'flex-end',
+  },
+  skipButton: {
     flexDirection: 'row',
-    gap: 8,
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 25,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
   },
-  dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: 'rgba(255, 255, 255, 0.4)',
-  },
-  dotActive: {
-    backgroundColor: '#ffffff',
-    width: 24,
+  skipText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#000',
+    marginRight: 8,
   },
 });
 
