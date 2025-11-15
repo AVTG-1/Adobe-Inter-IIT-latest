@@ -39,11 +39,11 @@ const TOOLS = [
 ] as const;
 
 export default function EditorScreen({ route, navigation }: Props) {
-  const { imageUrl } = route.params;
+  const { imageUrl, isBlankCanvas, canvasWidth, canvasHeight } = route.params;
 
   // State
   const [selectedTool, setSelectedTool] = useState<string | null>(null);
-  const [imageLoaded, setImageLoaded] = useState(false);
+  const [imageLoaded, setImageLoaded] = useState(isBlankCanvas || false);
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
 
@@ -131,7 +131,9 @@ export default function EditorScreen({ route, navigation }: Props) {
           <Ionicons name="arrow-back" size={24} color="#333" />
         </TouchableOpacity>
 
-        <Text style={styles.navTitle}>Edit Photo</Text>
+        <Text style={styles.navTitle}>
+          {isBlankCanvas ? 'Blank Canvas' : 'Edit Photo'}
+        </Text>
 
         <View style={styles.navActions}>
           <TouchableOpacity
@@ -184,27 +186,49 @@ export default function EditorScreen({ route, navigation }: Props) {
           },
         ]}
       >
-        {!imageLoaded && (
+        {!imageLoaded && !isBlankCanvas && (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color="#667eea" />
             <Text style={styles.loadingText}>Loading image...</Text>
           </View>
         )}
 
-        <Image
-          source={{ uri: imageUrl }}
-          style={styles.image}
-          resizeMode="contain"
-          onLoad={() => setImageLoaded(true)}
-          onError={(error) => {
-            console.error('Image load error:', error);
-            Alert.alert(
-              'Error',
-              'Failed to load image. Please try again.',
-              [{ text: 'Go Back', onPress: () => navigation.goBack() }]
-            );
-          }}
-        />
+        {isBlankCanvas ? (
+          <View
+            style={[
+              styles.blankCanvas,
+              {
+                width: canvasWidth || SCREEN_WIDTH,
+                height: canvasHeight || SCREEN_WIDTH,
+              },
+            ]}
+          >
+            <View style={styles.canvasPlaceholder}>
+              <Ionicons name="create-outline" size={60} color="#e0e0e0" />
+              <Text style={styles.canvasPlaceholderText}>
+                Start creating on your blank canvas
+              </Text>
+              <Text style={styles.canvasSize}>
+                {canvasWidth || SCREEN_WIDTH} × {canvasHeight || SCREEN_WIDTH} px
+              </Text>
+            </View>
+          </View>
+        ) : (
+          <Image
+            source={{ uri: imageUrl }}
+            style={styles.image}
+            resizeMode="contain"
+            onLoad={() => setImageLoaded(true)}
+            onError={(error) => {
+              console.error('Image load error:', error);
+              Alert.alert(
+                'Error',
+                'Failed to load image. Please try again.',
+                [{ text: 'Go Back', onPress: () => navigation.goBack() }]
+              );
+            }}
+          />
+        )}
       </Animated.View>
 
       {/* Bottom Toolbar */}
@@ -371,5 +395,39 @@ const styles = StyleSheet.create({
   toolLabelActive: {
     color: '#667eea',
     fontWeight: '600',
+  },
+  blankCanvas: {
+    backgroundColor: '#ffffff',
+    borderRadius: 8,
+    borderWidth: 2,
+    borderColor: '#e0e0e0',
+    borderStyle: 'dashed',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  canvasPlaceholder: {
+    alignItems: 'center',
+    padding: 20,
+  },
+  canvasPlaceholderText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: '#999',
+    textAlign: 'center',
+    fontWeight: '500',
+  },
+  canvasSize: {
+    marginTop: 8,
+    fontSize: 14,
+    color: '#bbb',
+    fontWeight: '400',
   },
 });

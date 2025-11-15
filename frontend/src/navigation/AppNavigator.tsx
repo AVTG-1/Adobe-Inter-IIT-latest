@@ -11,7 +11,10 @@ export type RootStackParamList = {
   Splash2: undefined;
   Home: undefined;
   Editor: {
-    imageUrl: string;
+    imageUrl?: string;
+    isBlankCanvas?: boolean;
+    canvasWidth?: number;
+    canvasHeight?: number;
   };
 };
 

@@ -45,6 +45,7 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
   const slideAnim = useRef(new Animated.Value(30)).current;
   const galleryScaleAnim = useRef(new Animated.Value(1)).current;
   const cameraScaleAnim = useRef(new Animated.Value(1)).current;
+  const blankCanvasScaleAnim = useRef(new Animated.Value(1)).current;
 
   // Upload state
   const [uploading, setUploading] = useState(false);
@@ -223,6 +224,35 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
     }
   };
 
+  /**
+   * Start editing with a blank canvas
+   */
+  const handleBlankCanvas = () => {
+    console.log('Blank canvas pressed');
+
+    // Animate button press
+    Animated.sequence([
+      Animated.timing(blankCanvasScaleAnim, {
+        toValue: 0.95,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+      Animated.timing(blankCanvasScaleAnim, {
+        toValue: 1,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+    ]).start();
+
+    // Navigate to Editor with blank canvas
+    const canvasSize = Math.min(width, 800); // Use device width or 800px, whichever is smaller
+    navigation.navigate('Editor', {
+      isBlankCanvas: true,
+      canvasWidth: canvasSize,
+      canvasHeight: canvasSize,
+    });
+  };
+
   const handleMenuPress = () => {
     console.log('Menu pressed');
     // TODO: Implement menu drawer in future phases
@@ -302,6 +332,26 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
                 <Text style={styles.cardTitle}>Open Camera</Text>
                 <Text style={styles.cardSubtitle}>
                   Take a new photo to edit
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={24} color="#ffffff" />
+            </TouchableOpacity>
+          </Animated.View>
+
+          <Animated.View style={{ transform: [{ scale: blankCanvasScaleAnim }] }}>
+            <TouchableOpacity
+              style={[styles.actionCard, styles.tertiaryCard]}
+              onPress={handleBlankCanvas}
+              activeOpacity={0.8}
+              disabled={uploading}
+            >
+              <View style={styles.cardIconContainer}>
+                <Ionicons name="create" size={40} color="#ffffff" />
+              </View>
+              <View style={styles.cardContent}>
+                <Text style={styles.cardTitle}>Blank Canvas</Text>
+                <Text style={styles.cardSubtitle}>
+                  Start creating from scratch
                 </Text>
               </View>
               <Ionicons name="chevron-forward" size={24} color="#ffffff" />
@@ -424,6 +474,9 @@ const styles = StyleSheet.create({
   },
   secondaryCard: {
     backgroundColor: '#f5576c',
+  },
+  tertiaryCard: {
+    backgroundColor: '#4facfe',
   },
   cardIconContainer: {
     width: 60,
