@@ -110,6 +110,10 @@ const LayersModal: React.FC<LayersModalProps> = ({
     setEditingName('');
   };
 
+  const handleClose = () => {
+    bottomSheetRef.current?.close();
+  };
+
   const renderLayer = ({ item }: { item: Layer }) => (
     <View style={styles.layerCard}>
       <View style={styles.layerLeft}>
@@ -180,7 +184,7 @@ const LayersModal: React.FC<LayersModalProps> = ({
             <TouchableOpacity onPress={handleAddLayer} style={styles.addButton}>
               <Ionicons name="add-circle" size={28} color={COLORS.primary} />
             </TouchableOpacity>
-            <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+            <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
               <Ionicons name="close" size={24} color={COLORS.textPrimary} />
             </TouchableOpacity>
           </View>

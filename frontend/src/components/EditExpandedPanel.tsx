@@ -58,6 +58,10 @@ const EditExpandedPanel: React.FC<EditExpandedPanelProps> = ({
     onToolSelect(toolId);
   };
 
+  const handleClose = () => {
+    bottomSheetRef.current?.close();
+  };
+
   return (
     <BottomSheet
       ref={bottomSheetRef}
@@ -73,7 +77,7 @@ const EditExpandedPanel: React.FC<EditExpandedPanelProps> = ({
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.title}>Edit Tools</Text>
-          <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+          <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
             <Ionicons name="close" size={24} color={COLORS.textPrimary} />
           </TouchableOpacity>
         </View>
