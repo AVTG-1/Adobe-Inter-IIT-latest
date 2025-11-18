@@ -500,17 +500,18 @@ export default function EditorScreen({ route, navigation }: Props) {
         />
 
         {/* Bottom Toolbar with Edit Panel */}
-        <Animated.View
-          style={[
-            styles.toolbarContainer,
-            {
-              height: editPanelHeight.interpolate({
-                inputRange: [0, 280],
-                outputRange: [100, 220],
-              }),
-            },
-          ]}
-        >
+        {!adjustmentOpen && !layersOpen && (
+          <Animated.View
+            style={[
+              styles.toolbarContainer,
+              {
+                height: editPanelHeight.interpolate({
+                  inputRange: [0, 280],
+                  outputRange: [100, 220],
+                }),
+              },
+            ]}
+          >
           {/* Expandable Toolbar - 1 row normal, 2×5 grid when Edit pressed */}
           <Animated.View
             style={[
@@ -628,6 +629,7 @@ export default function EditorScreen({ route, navigation }: Props) {
             </View>
           </Animated.View>
         </Animated.View>
+        )}
 
         {/* Layers Modal */}
         <LayersModal
