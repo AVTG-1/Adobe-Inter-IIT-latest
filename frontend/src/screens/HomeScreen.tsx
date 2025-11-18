@@ -326,33 +326,33 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
 
           <Animated.View style={{ transform: [{ scale: galleryScaleAnim }] }}>
             <TouchableOpacity
-              style={styles.actionCard}
+              style={styles.actionCardLarge}
               onPress={handleImportGallery}
               activeOpacity={0.8}
               disabled={uploading}
             >
-              <View style={styles.cardIconContainer}>
-                <Ionicons name="images" size={40} color={COLORS.primary} />
+              <View style={styles.cardIconContainerLarge}>
+                <Ionicons name="images" size={80} color={COLORS.primary} />
               </View>
               <View style={styles.cardContent}>
-                <Text style={styles.cardTitle}>Import from Gallery</Text>
-                <Text style={styles.cardSubtitle}>
+                <Text style={styles.cardTitleLarge}>Import from Gallery</Text>
+                <Text style={styles.cardSubtitleLarge}>
                   Select a photo to start editing
                 </Text>
               </View>
-              <Ionicons name="chevron-forward" size={24} color={COLORS.textSecondary} />
+              <Ionicons name="chevron-forward" size={40} color={COLORS.textSecondary} />
             </TouchableOpacity>
           </Animated.View>
 
           <Animated.View style={{ transform: [{ scale: cameraScaleAnim }] }}>
             <TouchableOpacity
-              style={styles.actionCard}
+              style={styles.actionCardStandard}
               onPress={handleOpenCamera}
               activeOpacity={0.8}
               disabled={uploading}
             >
-              <View style={styles.cardIconContainer}>
-                <Ionicons name="camera" size={40} color={COLORS.primary} />
+              <View style={styles.cardIconContainerStandard}>
+                <Ionicons name="camera" size={32} color={COLORS.primary} />
               </View>
               <View style={styles.cardContent}>
                 <Text style={styles.cardTitle}>Open Camera</Text>
@@ -360,19 +360,19 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
                   Take a new photo to edit
                 </Text>
               </View>
-              <Ionicons name="chevron-forward" size={24} color={COLORS.textSecondary} />
+              <Ionicons name="chevron-forward" size={20} color={COLORS.textSecondary} />
             </TouchableOpacity>
           </Animated.View>
 
           <Animated.View style={{ transform: [{ scale: blankCanvasScaleAnim }] }}>
             <TouchableOpacity
-              style={styles.actionCard}
+              style={styles.actionCardStandard}
               onPress={handleBlankCanvas}
               activeOpacity={0.8}
               disabled={uploading}
             >
-              <View style={styles.cardIconContainer}>
-                <Ionicons name="create" size={40} color={COLORS.primary} />
+              <View style={styles.cardIconContainerStandard}>
+                <Ionicons name="create" size={32} color={COLORS.primary} />
               </View>
               <View style={styles.cardContent}>
                 <Text style={styles.cardTitle}>Blank Canvas</Text>
@@ -380,7 +380,7 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
                   Start creating from scratch
                 </Text>
               </View>
-              <Ionicons name="chevron-forward" size={24} color={COLORS.textSecondary} />
+              <Ionicons name="chevron-forward" size={20} color={COLORS.textSecondary} />
             </TouchableOpacity>
           </Animated.View>
         </Animated.View>
@@ -525,6 +525,42 @@ const styles = StyleSheet.create({
     color: COLORS.textPrimary,
     marginBottom: SPACING.lg,
   },
+  actionCardLarge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: SPACING.xl * 1.5,
+    paddingVertical: 40,
+    minHeight: 180,
+    borderRadius: 30,
+    marginBottom: SPACING.lg,
+    backgroundColor: '#323232',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.4,
+    shadowRadius: 12,
+    elevation: 5,
+  },
+  actionCardStandard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: SPACING.md,
+    paddingVertical: 16,
+    minHeight: 80,
+    borderRadius: 20,
+    marginBottom: SPACING.md,
+    backgroundColor: '#323232',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 3,
+  },
   actionCard: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -543,6 +579,24 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 3,
   },
+  cardIconContainerLarge: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: COLORS.surface,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: SPACING.xl,
+  },
+  cardIconContainerStandard: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: COLORS.surface,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: SPACING.md,
+  },
   cardIconContainer: {
     width: 70,
     height: 70,
@@ -554,6 +608,17 @@ const styles = StyleSheet.create({
   },
   cardContent: {
     flex: 1,
+  },
+  cardTitleLarge: {
+    fontSize: FONT_SIZES.xl,
+    fontWeight: 'bold',
+    color: COLORS.textPrimary,
+    marginBottom: 8,
+  },
+  cardSubtitleLarge: {
+    fontSize: FONT_SIZES.md,
+    color: COLORS.textSecondary,
+    lineHeight: 20,
   },
   cardTitle: {
     fontSize: FONT_SIZES.lg,

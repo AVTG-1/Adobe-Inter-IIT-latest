@@ -28,15 +28,15 @@ const { width } = Dimensions.get('window');
 
 // 9 Editing Tools - exactly these tools in this order
 const EDIT_TOOLS = [
-  { id: 'rotate', icon: 'reload-outline', label: 'Rotate', color: '#FF6B6B' },
-  { id: 'flip', icon: 'swap-horizontal-outline', label: 'Flip', color: '#4ECDC4' },
-  { id: 'resize', icon: 'resize-outline', label: 'Resize', color: '#45B7D1' },
-  { id: 'perspective', icon: 'cube-outline', label: 'Perspective', color: '#FFA502' },
-  { id: 'draw', icon: 'pencil-outline', label: 'Draw', color: '#A55EEA' },
-  { id: 'brush', icon: 'brush-outline', label: 'Brush', color: '#FF6348' },
-  { id: 'eraser', icon: 'trash-outline', label: 'Eraser', color: '#26DE81' },
-  { id: 'shape', icon: 'shapes-outline', label: 'Shape', color: '#FD79A8' },
-  { id: 'text', icon: 'text-outline', label: 'Text', color: '#74B9FF' },
+  { id: 'rotate', icon: 'reload-outline', label: 'Rotate' },
+  { id: 'flip', icon: 'swap-horizontal-outline', label: 'Flip' },
+  { id: 'resize', icon: 'resize-outline', label: 'Resize' },
+  { id: 'perspective', icon: 'cube-outline', label: 'Perspective' },
+  { id: 'draw', icon: 'pencil-outline', label: 'Draw' },
+  { id: 'brush', icon: 'brush-outline', label: 'Brush' },
+  { id: 'eraser', icon: 'trash-outline', label: 'Eraser' },
+  { id: 'shape', icon: 'shapes-outline', label: 'Shape' },
+  { id: 'text', icon: 'text-outline', label: 'Text' },
 ];
 
 const EditExpandedPanel: React.FC<EditExpandedPanelProps> = ({
@@ -128,8 +128,8 @@ const EditExpandedPanel: React.FC<EditExpandedPanelProps> = ({
                 onPress={() => handleToolPress(tool.id)}
                 activeOpacity={0.7}
               >
-                <View style={[styles.toolIconContainer, { backgroundColor: tool.color }]}>
-                  <Ionicons name={tool.icon as any} size={28} color="#fff" />
+                <View style={styles.toolIconContainer}>
+                  <Ionicons name={tool.icon as any} size={28} color="#FFFFFF" />
                 </View>
                 <Text style={styles.toolLabel}>{tool.label}</Text>
               </TouchableOpacity>
@@ -188,6 +188,7 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
+    backgroundColor: '#3A3A3A',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 6,
