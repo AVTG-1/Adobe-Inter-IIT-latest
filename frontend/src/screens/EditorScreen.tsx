@@ -285,26 +285,22 @@ export default function EditorScreen({ route, navigation }: Props) {
         <View style={styles.navbar}>
           <TouchableOpacity
             onPress={handleBack}
-            style={styles.navButton}
+            style={styles.circularNavButton}
             activeOpacity={0.7}
           >
-            <Ionicons name="arrow-back" size={24} color={COLORS.textPrimary} />
+            <Ionicons name="arrow-back" size={20} color={COLORS.textPrimary} />
           </TouchableOpacity>
-
-          <Text style={styles.navTitle}>
-            {isBlankCanvas ? 'Blank Canvas' : 'Edit Photo'}
-          </Text>
 
           <View style={styles.navActions}>
             <TouchableOpacity
               onPress={handleUndo}
-              style={[styles.navButton, !canUndo && styles.navButtonDisabled]}
+              style={[styles.circularNavButton, !canUndo && styles.navButtonDisabled]}
               disabled={!canUndo}
               activeOpacity={0.7}
             >
               <Ionicons
                 name="arrow-undo"
-                size={22}
+                size={20}
                 color={canUndo ? COLORS.textPrimary : COLORS.textTertiary}
               />
             </TouchableOpacity>
@@ -312,7 +308,7 @@ export default function EditorScreen({ route, navigation }: Props) {
             <TouchableOpacity
               onPress={handleRedo}
               style={[
-                styles.navButton,
+                styles.circularNavButton,
                 !canRedo && styles.navButtonDisabled,
                 { marginLeft: 8 },
               ]}
@@ -321,7 +317,7 @@ export default function EditorScreen({ route, navigation }: Props) {
             >
               <Ionicons
                 name="arrow-redo"
-                size={22}
+                size={20}
                 color={canRedo ? COLORS.textPrimary : COLORS.textTertiary}
               />
             </TouchableOpacity>
@@ -533,6 +529,22 @@ const styles = StyleSheet.create({
   },
   navButton: {
     padding: 8,
+  },
+  circularNavButton: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: '#323232',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 0,
+    },
+    shadowOpacity: 0.5,
+    shadowRadius: 4,
+    elevation: 4,
   },
   navButtonDisabled: {
     opacity: 0.5,
