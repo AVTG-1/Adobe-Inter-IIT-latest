@@ -171,6 +171,7 @@ const LayersModal: React.FC<LayersModalProps> = ({
       index={-1}
       snapPoints={snapPoints}
       enablePanDownToClose
+      enableContentPanningGesture={false}
       backdropComponent={renderBackdrop}
       onClose={onClose}
       backgroundStyle={styles.sheetBackground}
