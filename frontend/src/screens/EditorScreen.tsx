@@ -552,6 +552,26 @@ export default function EditorScreen({ route, navigation }: Props) {
               ) : (
                 // Expanded view: 2×5 grid with Edit in original position
                 <View style={styles.expandedGrid}>
+                  {/* Close Button */}
+                  <View style={styles.editHeaderRow}>
+                    <Text style={styles.editHeaderTitle}>Edit Tools</Text>
+                    <TouchableOpacity
+                      style={styles.editCloseButton}
+                      onPress={() => {
+                        setShowEditPanel(false);
+                        setSelectedTool(null);
+                        Animated.timing(editPanelHeight, {
+                          toValue: 0,
+                          duration: 300,
+                          useNativeDriver: false,
+                        }).start();
+                      }}
+                      activeOpacity={0.7}
+                    >
+                      <Ionicons name="close" size={24} color={COLORS.textPrimary} />
+                    </TouchableOpacity>
+                  </View>
+
                   {/* Row 1: First 5 edit tools */}
                   <View style={styles.toolRow}>
                     {EDIT_TOOLS.slice(0, 5).map((tool) => (
@@ -886,6 +906,24 @@ const styles = StyleSheet.create({
   // Expandable grid layout
   expandedGrid: {
     gap: SPACING.sm,
+  },
+  editHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: SPACING.md,
+    paddingBottom: SPACING.xs,
+    marginBottom: SPACING.xs,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.borderLight,
+  },
+  editHeaderTitle: {
+    fontSize: FONT_SIZES.md,
+    fontWeight: '600',
+    color: COLORS.textPrimary,
+  },
+  editCloseButton: {
+    padding: SPACING.xs,
   },
   toolRow: {
     flexDirection: 'row',

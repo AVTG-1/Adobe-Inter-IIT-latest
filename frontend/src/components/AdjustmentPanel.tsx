@@ -49,7 +49,7 @@ const AdjustmentPanel: React.FC<AdjustmentPanelProps> = ({
         {...props}
         disappearsOnIndex={-1}
         appearsOnIndex={0}
-        opacity={0.2}
+        opacity={0}
       />
     ),
     []
