@@ -67,6 +67,7 @@ export default function EditorScreen({ route, navigation }: Props) {
   const exportSheetRef = useRef<BottomSheet>(null);
   const addMenuRef = useRef<BottomSheet>(null);
   const aiFeaturesRef = useRef<BottomSheet>(null);
+  const adjustmentPanelRef = useRef<BottomSheet>(null);
 
   // State
   const [selectedTool, setSelectedTool] = useState<string | null>(null);
@@ -82,6 +83,7 @@ export default function EditorScreen({ route, navigation }: Props) {
   const [exportOpen, setExportOpen] = useState(false);
   const [addMenuOpen, setAddMenuOpen] = useState(false);
   const [aiFeaturesOpen, setAiFeaturesOpen] = useState(false);
+  const [adjustmentOpen, setAdjustmentOpen] = useState(false);
 
   // Animations
   const [fadeAnim] = useState(new Animated.Value(0));
@@ -110,7 +112,7 @@ export default function EditorScreen({ route, navigation }: Props) {
   useEffect(() => {
     const shouldHide =
       showEditPanel ||
-      showAdjustment ||
+      adjustmentOpen ||
       aiChatVisible ||
       layersOpen ||
       exportOpen ||
@@ -125,7 +127,7 @@ export default function EditorScreen({ route, navigation }: Props) {
     }).start();
   }, [
     showEditPanel,
-    showAdjustment,
+    adjustmentOpen,
     aiChatVisible,
     layersOpen,
     exportOpen,
@@ -233,10 +235,12 @@ export default function EditorScreen({ route, navigation }: Props) {
     setAddMenuOpen(false);
     setAiFeaturesOpen(false);
     setExportOpen(false);
+    setAdjustmentOpen(false);
     layersModalRef.current?.close();
     addMenuRef.current?.close();
     aiFeaturesRef.current?.close();
     exportSheetRef.current?.close();
+    adjustmentPanelRef.current?.close();
 
     Animated.timing(editPanelHeight, {
       toValue: 0,
@@ -265,7 +269,8 @@ export default function EditorScreen({ route, navigation }: Props) {
 
     // Handle Adjust - Shows adjustment panel
     if (toolId === 'adjust') {
-      setShowAdjustment(true);
+      setAdjustmentOpen(true);
+      adjustmentPanelRef.current?.expand();
       return;
     }
 
@@ -471,13 +476,11 @@ export default function EditorScreen({ route, navigation }: Props) {
         )}
 
         {/* Adjustment Panel */}
-        {showAdjustment && (
-          <AdjustmentPanel
-            visible={showAdjustment}
-            onClose={() => setShowAdjustment(false)}
-            onValueChange={handleAdjustmentChange}
-          />
-        )}
+        <AdjustmentPanel
+          bottomSheetRef={adjustmentPanelRef}
+          onClose={() => setAdjustmentOpen(false)}
+          onValueChange={handleAdjustmentChange}
+        />
 
         {/* Bottom Toolbar with Edit Panel */}
         <Animated.View

@@ -1,7 +1,8 @@
 /**
- * Adjustment Panel - With Functional Sliders
+ * Adjustment Panel - With Functional Sliders and ScrollView
  *
  * Provides sliders for Hue, Saturation, and Brightness adjustments
+ * Height: 30% of screen, with scrolling support
  */
 
 import React, { useState } from 'react';
@@ -10,14 +11,15 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  Animated,
+  ScrollView,
 } from 'react-native';
+import BottomSheet, { BottomSheetBackdrop, BottomSheetView, BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { Ionicons } from '@expo/vector-icons';
 import Slider from '@react-native-community/slider';
 import { COLORS, SPACING, BORDER_RADIUS, FONT_SIZES } from '../config/theme';
 
 interface AdjustmentPanelProps {
-  visible: boolean;
+  bottomSheetRef: React.RefObject<BottomSheet>;
   onClose: () => void;
   onValueChange?: (type: string, value: number) => void;
 }
@@ -29,7 +31,7 @@ const ADJUSTMENT_TOOLS = [
 ];
 
 const AdjustmentPanel: React.FC<AdjustmentPanelProps> = ({
-  visible,
+  bottomSheetRef,
   onClose,
   onValueChange,
 }) => {
@@ -38,6 +40,20 @@ const AdjustmentPanel: React.FC<AdjustmentPanelProps> = ({
     saturation: 0,
     brightness: 0,
   });
+
+  const snapPoints = React.useMemo(() => ['30%'], []);
+
+  const renderBackdrop = React.useCallback(
+    (props: any) => (
+      <BottomSheetBackdrop
+        {...props}
+        disappearsOnIndex={-1}
+        appearsOnIndex={0}
+        opacity={0.5}
+      />
+    ),
+    []
+  );
 
   const handleSliderChange = (type: string, value: number) => {
     setValues(prev => ({ ...prev, [type]: value }));
@@ -51,94 +67,117 @@ const AdjustmentPanel: React.FC<AdjustmentPanelProps> = ({
     }
   };
 
-  if (!visible) return null;
+  const handleClose = () => {
+    onClose();
+    bottomSheetRef.current?.close();
+  };
 
   return (
-    <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.title}>Adjustments</Text>
-        <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-          <Ionicons name="close" size={24} color={COLORS.textPrimary} />
-        </TouchableOpacity>
-      </View>
+    <BottomSheet
+      ref={bottomSheetRef}
+      index={-1}
+      snapPoints={snapPoints}
+      enablePanDownToClose
+      backdropComponent={renderBackdrop}
+      onClose={onClose}
+      backgroundStyle={styles.bottomSheetBackground}
+      handleIndicatorStyle={styles.handleIndicator}
+    >
+      <BottomSheetView style={styles.container}>
+        {/* Header */}
+        <View style={styles.header}>
+          <Text style={styles.title}>Adjustments</Text>
+          <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
+            <Ionicons name="close" size={24} color="#FFFFFF" />
+          </TouchableOpacity>
+        </View>
 
-      {/* Adjustment Controls */}
-      <View style={styles.adjustmentsContainer}>
-        {ADJUSTMENT_TOOLS.map((tool) => (
-          <View key={tool.id} style={styles.adjustmentItem}>
-            <View style={styles.adjustmentHeader}>
-              <View style={styles.labelContainer}>
-                <View style={[styles.iconCircle, { backgroundColor: tool.color }]}>
-                  <Ionicons name={tool.icon as any} size={20} color="#fff" />
+        {/* Scrollable Adjustment Controls */}
+        <BottomSheetScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+          <View style={styles.adjustmentsContainer}>
+            {ADJUSTMENT_TOOLS.map((tool) => (
+              <View key={tool.id} style={styles.adjustmentItem}>
+                <View style={styles.adjustmentHeader}>
+                  <View style={styles.labelContainer}>
+                    <View style={[styles.iconCircle, { backgroundColor: tool.color }]}>
+                      <Ionicons name={tool.icon as any} size={20} color="#FFFFFF" />
+                    </View>
+                    <Text style={styles.adjustmentLabel}>{tool.label}</Text>
+                  </View>
+                  <View style={styles.valueContainer}>
+                    <Text style={styles.adjustmentValue}>
+                      {Math.round(values[tool.id as keyof typeof values])}
+                    </Text>
+                    <TouchableOpacity
+                      onPress={() => resetValue(tool.id)}
+                      style={styles.resetButton}
+                    >
+                      <Ionicons name="refresh" size={18} color="#FFFFFF" />
+                    </TouchableOpacity>
+                  </View>
                 </View>
-                <Text style={styles.adjustmentLabel}>{tool.label}</Text>
-              </View>
-              <View style={styles.valueContainer}>
-                <Text style={styles.adjustmentValue}>
-                  {Math.round(values[tool.id as keyof typeof values])}
-                </Text>
-                <TouchableOpacity
-                  onPress={() => resetValue(tool.id)}
-                  style={styles.resetButton}
-                >
-                  <Ionicons name="refresh" size={18} color={COLORS.textSecondary} />
-                </TouchableOpacity>
-              </View>
-            </View>
 
-            <Slider
-              style={styles.slider}
-              minimumValue={tool.min}
-              maximumValue={tool.max}
-              value={values[tool.id as keyof typeof values]}
-              onValueChange={(value) => handleSliderChange(tool.id, value)}
-              minimumTrackTintColor={tool.color}
-              maximumTrackTintColor={COLORS.border}
-              thumbTintColor={tool.color}
-            />
+                <Slider
+                  style={styles.slider}
+                  minimumValue={tool.min}
+                  maximumValue={tool.max}
+                  value={values[tool.id as keyof typeof values]}
+                  onValueChange={(value) => handleSliderChange(tool.id, value)}
+                  minimumTrackTintColor={tool.color}
+                  maximumTrackTintColor={COLORS.border}
+                  thumbTintColor={tool.color}
+                />
+              </View>
+            ))}
+
+            {/* Apply Button */}
+            <TouchableOpacity style={styles.applyButton} onPress={handleClose}>
+              <Text style={styles.applyButtonText}>Apply Changes</Text>
+            </TouchableOpacity>
           </View>
-        ))}
-      </View>
-
-      {/* Apply Button */}
-      <TouchableOpacity style={styles.applyButton} onPress={onClose}>
-        <Text style={styles.applyButtonText}>Apply Changes</Text>
-      </TouchableOpacity>
-    </View>
+        </BottomSheetScrollView>
+      </BottomSheetView>
+    </BottomSheet>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
+  bottomSheetBackground: {
     backgroundColor: COLORS.surface,
-    borderTopLeftRadius: BORDER_RADIUS.xl,
-    borderTopRightRadius: BORDER_RADIUS.xl,
-    paddingBottom: SPACING.xl,
-    maxHeight: '50%',
-    borderTopWidth: 1,
-    borderTopColor: COLORS.borderLight,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+  },
+  handleIndicator: {
+    backgroundColor: COLORS.border,
+    width: 40,
+  },
+  container: {
+    flex: 1,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: SPACING.md,
+    paddingHorizontal: SPACING.lg,
     paddingVertical: SPACING.md,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.borderLight,
   },
   title: {
     fontSize: FONT_SIZES.lg,
-    fontWeight: 'bold',
+    fontWeight: '700',
     color: COLORS.textPrimary,
   },
   closeButton: {
     padding: SPACING.xs,
   },
+  scrollView: {
+    flex: 1,
+  },
   adjustmentsContainer: {
-    paddingHorizontal: SPACING.md,
+    paddingHorizontal: SPACING.lg,
     paddingTop: SPACING.md,
+    paddingBottom: SPACING.xl,
   },
   adjustmentItem: {
     marginBottom: SPACING.lg,
@@ -172,7 +211,7 @@ const styles = StyleSheet.create({
   },
   adjustmentValue: {
     fontSize: FONT_SIZES.md,
-    fontWeight: 'bold',
+    fontWeight: '700',
     color: COLORS.primary,
     minWidth: 40,
     textAlign: 'right',
@@ -187,16 +226,15 @@ const styles = StyleSheet.create({
   },
   applyButton: {
     backgroundColor: COLORS.primary,
-    marginHorizontal: SPACING.md,
-    marginTop: SPACING.md,
+    marginTop: SPACING.lg,
     paddingVertical: SPACING.md,
-    borderRadius: BORDER_RADIUS.md,
+    borderRadius: BORDER_RADIUS.lg,
     alignItems: 'center',
   },
   applyButtonText: {
-    color: '#000',
+    color: '#000000',
     fontSize: FONT_SIZES.md,
-    fontWeight: 'bold',
+    fontWeight: '700',
   },
 });
 

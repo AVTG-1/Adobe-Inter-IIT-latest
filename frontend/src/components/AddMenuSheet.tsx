@@ -1,7 +1,7 @@
 /**
- * Add Menu Sheet - 20% Height Compact Popup
+ * Add Menu Sheet - Clean 3-Option Import Menu
  *
- * Shows 5 options: Text, Shape, Sticker, Brush, Import New Image
+ * Shows 3 options: Import, Replace, Add Object
  */
 
 import React from 'react';
@@ -22,12 +22,9 @@ interface AddMenuSheetProps {
 }
 
 const ADD_OPTIONS = [
-  { id: 'add_photo', icon: 'add-circle-outline', label: 'Add photo' },
-  { id: 'replace_photo', icon: 'swap-horizontal-outline', label: 'Replace photo' },
-  { id: 'gallery', icon: 'images-outline', label: 'Import from gallery' },
-  { id: 'camera', icon: 'camera-outline', label: 'Import from camera' },
-  { id: 'png_overlay', icon: 'layers-outline', label: 'Add PNG overlay' },
-  { id: 'draw', icon: 'brush-outline', label: 'Paint / Draw mode' },
+  { id: 'import', icon: 'cloud-download-outline', label: 'Import' },
+  { id: 'replace', icon: 'swap-horizontal-outline', label: 'Replace' },
+  { id: 'add_object', icon: 'add-circle-outline', label: 'Add Object' },
 ];
 
 const AddMenuSheet: React.FC<AddMenuSheetProps> = ({
@@ -35,7 +32,7 @@ const AddMenuSheet: React.FC<AddMenuSheetProps> = ({
   onOptionSelect,
   onClose,
 }) => {
-  const snapPoints = React.useMemo(() => ['20%'], []);
+  const snapPoints = React.useMemo(() => ['25%'], []);
 
   const renderBackdrop = React.useCallback(
     (props: any) => (
@@ -43,7 +40,7 @@ const AddMenuSheet: React.FC<AddMenuSheetProps> = ({
         {...props}
         disappearsOnIndex={-1}
         appearsOnIndex={0}
-        opacity={0.2}
+        opacity={0.5}
       />
     ),
     []
@@ -67,7 +64,7 @@ const AddMenuSheet: React.FC<AddMenuSheetProps> = ({
     >
       <BottomSheetView style={styles.container}>
         <View style={styles.header}>
-          <Text style={styles.title}>Add Element</Text>
+          <Text style={styles.title}>Import Options</Text>
         </View>
 
         <View style={styles.optionsList}>
@@ -78,11 +75,13 @@ const AddMenuSheet: React.FC<AddMenuSheetProps> = ({
               onPress={() => handleOptionPress(option.id)}
               activeOpacity={0.7}
             >
-              <Ionicons
-                name={option.icon as any}
-                size={24}
-                color={COLORS.textPrimary}
-              />
+              <View style={styles.iconContainer}>
+                <Ionicons
+                  name={option.icon as any}
+                  size={28}
+                  color="#FFFFFF"
+                />
+              </View>
               <Text style={styles.optionLabel}>{option.label}</Text>
             </TouchableOpacity>
           ))}
@@ -95,41 +94,52 @@ const AddMenuSheet: React.FC<AddMenuSheetProps> = ({
 const styles = StyleSheet.create({
   bottomSheetBackground: {
     backgroundColor: COLORS.surface,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
   },
   handleIndicator: {
     backgroundColor: COLORS.border,
+    width: 40,
   },
   container: {
     flex: 1,
-    paddingHorizontal: SPACING.md,
+    paddingHorizontal: SPACING.lg,
   },
   header: {
-    marginBottom: SPACING.sm,
+    marginBottom: SPACING.md,
   },
   title: {
     fontSize: FONT_SIZES.lg,
-    fontWeight: '600',
+    fontWeight: '700',
     color: COLORS.textPrimary,
+    textAlign: 'center',
   },
   optionsList: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: SPACING.sm,
+    justifyContent: 'space-around',
+    gap: SPACING.md,
   },
   optionButton: {
+    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: SPACING.sm,
-    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.lg,
     backgroundColor: COLORS.card,
-    borderRadius: BORDER_RADIUS.md,
-    minWidth: 70,
+    borderRadius: BORDER_RADIUS.lg,
+  },
+  iconContainer: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: COLORS.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: SPACING.sm,
   },
   optionLabel: {
-    fontSize: FONT_SIZES.xs,
-    color: COLORS.textSecondary,
-    marginTop: 4,
-    fontWeight: '500',
+    fontSize: FONT_SIZES.sm,
+    color: COLORS.textPrimary,
+    fontWeight: '600',
   },
 });
 
