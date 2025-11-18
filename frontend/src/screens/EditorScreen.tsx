@@ -30,6 +30,7 @@ import ExportSheet, { ExportFormat } from '../components/ExportSheet';
 import AddMenuSheet from '../components/AddMenuSheet';
 import AIFeaturesSheet from '../components/AIFeaturesSheet';
 import GlobalAIModal from '../components/GlobalAIModal';
+import AdjustPanel from '../components/AdjustPanel';
 import { saveProject } from '../services/projects';
 import * as FileSystem from 'expo-file-system';
 import * as MediaLibrary from 'expo-media-library';
@@ -43,10 +44,10 @@ const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 // 5 Main Tools - Always Visible
 const TOOLS = [
   { id: 'edit', icon: 'create-outline', label: 'Edit' },
-  { id: 'ai', icon: 'sparkles', label: 'AI' },
-  { id: 'add', icon: 'add-circle-outline', label: '+Add' },
-  { id: 'layers', icon: 'layers', label: 'Layers' },
-  { id: 'magic', icon: 'color-wand', label: 'Magic AI' },
+  { id: 'adjust', icon: 'options-outline', label: 'Adjust' },
+  { id: 'import', icon: 'add', label: 'Import', isCenter: true },
+  { id: 'layer', icon: 'layers', label: 'Layer' },
+  { id: 'ai', icon: 'sparkles', label: 'AI Features' },
 ] as const;
 
 export default function EditorScreen({ route, navigation }: Props) {
@@ -59,6 +60,7 @@ export default function EditorScreen({ route, navigation }: Props) {
   const exportSheetRef = useRef<BottomSheet>(null);
   const addMenuRef = useRef<BottomSheet>(null);
   const aiFeaturesRef = useRef<BottomSheet>(null);
+  const adjustPanelRef = useRef<BottomSheet>(null);
 
   // State
   const [selectedTool, setSelectedTool] = useState<string | null>(null);
@@ -174,38 +176,38 @@ export default function EditorScreen({ route, navigation }: Props) {
   const handleToolPress = (toolId: string) => {
     setSelectedTool(toolId);
 
-    // Handle Edit - Opens 9 tools panel (35% height)
+    // Handle Edit - Opens 9 tools panel (20-25% height)
     if (toolId === 'edit') {
       console.log('Edit tool pressed - opening 9 tools panel');
       editPanelRef.current?.expand();
       return;
     }
 
-    // Handle AI - Opens AI features sheet (35% height)
-    if (toolId === 'ai') {
-      console.log('AI tool pressed - opening AI features');
-      aiFeaturesRef.current?.expand();
+    // Handle Adjust - Opens adjust panel (horizontal strip)
+    if (toolId === 'adjust') {
+      console.log('Adjust tool pressed - opening adjust panel');
+      adjustPanelRef.current?.expand();
       return;
     }
 
-    // Handle +Add - Opens add menu (20% height)
-    if (toolId === 'add') {
-      console.log('Add tool pressed - opening add menu');
+    // Handle Import - Opens import menu (20% height)
+    if (toolId === 'import') {
+      console.log('Import tool pressed - opening import menu');
       addMenuRef.current?.expand();
       return;
     }
 
-    // Handle Layers - Opens layers modal (20% height)
-    if (toolId === 'layers') {
-      console.log('Layers tool pressed - opening layers modal');
+    // Handle Layer - Opens layers modal (20% height)
+    if (toolId === 'layer') {
+      console.log('Layer tool pressed - opening layers modal');
       layersModalRef.current?.expand();
       return;
     }
 
-    // Handle Magic AI - Same as global AI modal (full screen)
-    if (toolId === 'magic') {
-      console.log('Magic AI tool pressed - opening global AI modal');
-      setGlobalAIModalVisible(true);
+    // Handle AI Features - Opens AI features sheet (35% height)
+    if (toolId === 'ai') {
+      console.log('AI Features tool pressed - opening AI features');
+      aiFeaturesRef.current?.expand();
       return;
     }
   };
@@ -261,6 +263,19 @@ export default function EditorScreen({ route, navigation }: Props) {
   };
 
   const handleCloseAIFeatures = () => {
+    setSelectedTool(null);
+  };
+
+  const handleAdjustSelect = (adjust: string) => {
+    console.log('Adjust selected:', adjust);
+    Toast.show({
+      type: 'info',
+      text1: `${adjust} adjustment`,
+      text2: 'This feature will be implemented soon',
+    });
+  };
+
+  const handleCloseAdjust = () => {
     setSelectedTool(null);
   };
 
@@ -430,6 +445,7 @@ export default function EditorScreen({ route, navigation }: Props) {
                 key={tool.id}
                 style={[
                   styles.toolButton,
+                  tool.isCenter && styles.toolButtonCenter,
                   selectedTool === tool.id && styles.toolButtonActive,
                 ]}
                 onPress={() => handleToolPress(tool.id)}
@@ -438,18 +454,26 @@ export default function EditorScreen({ route, navigation }: Props) {
                 <View
                   style={[
                     styles.toolIconContainer,
+                    tool.isCenter && styles.toolIconContainerCenter,
                     selectedTool === tool.id && styles.toolIconContainerActive,
                   ]}
                 >
                   <Ionicons
                     name={tool.icon as any}
                     size={28}
-                    color={selectedTool === tool.id ? COLORS.toolActive : COLORS.toolDefault}
+                    color={
+                      tool.isCenter
+                        ? '#000000'
+                        : selectedTool === tool.id
+                        ? COLORS.toolActive
+                        : COLORS.toolDefault
+                    }
                   />
                 </View>
                 <Text
                   style={[
                     styles.toolLabel,
+                    tool.isCenter && styles.toolLabelCenter,
                     selectedTool === tool.id && styles.toolLabelActive,
                   ]}
                 >
@@ -459,6 +483,15 @@ export default function EditorScreen({ route, navigation }: Props) {
             ))}
           </ScrollView>
         </Animated.View>
+
+        {/* Floating AI Chat Button - Bottom Right */}
+        <TouchableOpacity
+          style={styles.floatingAIButton}
+          onPress={handleOpenGlobalAI}
+          activeOpacity={0.8}
+        >
+          <Ionicons name="chatbubble-ellipses" size={28} color="#FFFFFF" />
+        </TouchableOpacity>
 
         {/* Tool Options Drawer */}
         <ToolOptionsDrawer
@@ -499,6 +532,13 @@ export default function EditorScreen({ route, navigation }: Props) {
           bottomSheetRef={aiFeaturesRef}
           onFeatureSelect={handleAIFeatureSelect}
           onClose={handleCloseAIFeatures}
+        />
+
+        {/* Adjust Panel - Horizontal scrollable strip */}
+        <AdjustPanel
+          bottomSheetRef={adjustPanelRef}
+          onAdjustSelect={handleAdjustSelect}
+          onClose={handleCloseAdjust}
         />
 
         {/* Global AI Modal - Full screen */}
@@ -620,6 +660,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
   },
+  toolButtonCenter: {
+    marginTop: -30, // Elevate the center button
+  },
   toolButtonActive: {
     // Active state styling handled by child components
   },
@@ -632,6 +675,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 6,
   },
+  toolIconContainerCenter: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: '#FFFFFF',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
   toolIconContainerActive: {
     backgroundColor: COLORS.toolBackgroundActive,
   },
@@ -640,9 +697,33 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     fontWeight: '500',
   },
+  toolLabelCenter: {
+    color: COLORS.textPrimary,
+    fontWeight: '600',
+  },
   toolLabelActive: {
     color: COLORS.toolActive,
     fontWeight: '600',
+  },
+  floatingAIButton: {
+    position: 'absolute',
+    bottom: 120, // Above toolbar
+    right: SPACING.md,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: COLORS.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+    zIndex: 10,
   },
   blankCanvas: {
     backgroundColor: '#ffffff',

@@ -4,7 +4,7 @@
  * Displays 9 editing tools in 2×5 grid layout
  */
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -12,6 +12,7 @@ import {
   TouchableOpacity,
   Dimensions,
   ScrollView,
+  Animated,
 } from 'react-native';
 import BottomSheet, { BottomSheetBackdrop, BottomSheetView } from '@gorhom/bottom-sheet';
 import { Ionicons } from '@expo/vector-icons';
@@ -27,15 +28,15 @@ const { width } = Dimensions.get('window');
 
 // 9 Editing Tools - exactly these tools in this order
 const EDIT_TOOLS = [
-  { id: 'crop', icon: 'crop', label: 'Crop', color: '#FF6B6B' },
-  { id: 'resize', icon: 'resize', label: 'Resize', color: '#4ECDC4' },
-  { id: 'rotate', icon: 'reload', label: 'Rotate', color: '#45B7D1' },
-  { id: 'brightness', icon: 'sunny', label: 'Brightness', color: '#FFA502' },
-  { id: 'contrast', icon: 'contrast', label: 'Contrast', color: '#A55EEA' },
-  { id: 'hue', icon: 'color-palette', label: 'Hue', color: '#FF6348' },
-  { id: 'saturation', icon: 'water', label: 'Saturation', color: '#26DE81' },
-  { id: 'sharpness', icon: 'diamond', label: 'Sharpness', color: '#FD79A8' },
-  { id: 'temperature', icon: 'thermometer', label: 'Temperature', color: '#74B9FF' },
+  { id: 'rotate', icon: 'reload-outline', label: 'Rotate', color: '#FF6B6B' },
+  { id: 'flip', icon: 'swap-horizontal-outline', label: 'Flip', color: '#4ECDC4' },
+  { id: 'resize', icon: 'resize-outline', label: 'Resize', color: '#45B7D1' },
+  { id: 'perspective', icon: 'cube-outline', label: 'Perspective', color: '#FFA502' },
+  { id: 'draw', icon: 'pencil-outline', label: 'Draw', color: '#A55EEA' },
+  { id: 'brush', icon: 'brush-outline', label: 'Brush', color: '#FF6348' },
+  { id: 'eraser', icon: 'trash-outline', label: 'Eraser', color: '#26DE81' },
+  { id: 'shape', icon: 'shapes-outline', label: 'Shape', color: '#FD79A8' },
+  { id: 'text', icon: 'text-outline', label: 'Text', color: '#74B9FF' },
 ];
 
 const EditExpandedPanel: React.FC<EditExpandedPanelProps> = ({
@@ -43,14 +44,32 @@ const EditExpandedPanel: React.FC<EditExpandedPanelProps> = ({
   onToolSelect,
   onClose,
 }) => {
-  const snapPoints = useMemo(() => ['35%'], []);
+  const snapPoints = useMemo(() => ['25%'], []);
+
+  // Animation values for stagger effect
+  const fadeAnims = useRef(
+    EDIT_TOOLS.map(() => new Animated.Value(0))
+  ).current;
+
+  useEffect(() => {
+    // Stagger animation with 50ms delay between each tool
+    const animations = fadeAnims.map((anim, index) =>
+      Animated.timing(anim, {
+        toValue: 1,
+        duration: 300,
+        delay: index * 50,
+        useNativeDriver: true,
+      })
+    );
+    Animated.parallel(animations).start();
+  }, []);
 
   const renderBackdrop = (props: any) => (
     <BottomSheetBackdrop
       {...props}
       disappearsOnIndex={-1}
       appearsOnIndex={0}
-      opacity={0.5}
+      opacity={0.2}
     />
   );
 
@@ -87,18 +106,34 @@ const EditExpandedPanel: React.FC<EditExpandedPanelProps> = ({
           contentContainerStyle={styles.toolsGrid}
           showsVerticalScrollIndicator={false}
         >
-          {EDIT_TOOLS.map((tool) => (
-            <TouchableOpacity
+          {EDIT_TOOLS.map((tool, index) => (
+            <Animated.View
               key={tool.id}
-              style={styles.toolItem}
-              onPress={() => handleToolPress(tool.id)}
-              activeOpacity={0.7}
+              style={[
+                styles.toolItem,
+                {
+                  opacity: fadeAnims[index],
+                  transform: [
+                    {
+                      translateY: fadeAnims[index].interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [20, 0],
+                      }),
+                    },
+                  ],
+                },
+              ]}
             >
-              <View style={[styles.toolIconContainer, { backgroundColor: tool.color }]}>
-                <Ionicons name={tool.icon as any} size={28} color="#fff" />
-              </View>
-              <Text style={styles.toolLabel}>{tool.label}</Text>
-            </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => handleToolPress(tool.id)}
+                activeOpacity={0.7}
+              >
+                <View style={[styles.toolIconContainer, { backgroundColor: tool.color }]}>
+                  <Ionicons name={tool.icon as any} size={28} color="#fff" />
+                </View>
+                <Text style={styles.toolLabel}>{tool.label}</Text>
+              </TouchableOpacity>
+            </Animated.View>
           ))}
         </ScrollView>
       </BottomSheetView>

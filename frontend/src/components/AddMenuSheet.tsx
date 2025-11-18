@@ -22,11 +22,12 @@ interface AddMenuSheetProps {
 }
 
 const ADD_OPTIONS = [
-  { id: 'text', icon: 'text', label: 'Text' },
-  { id: 'shape', icon: 'shapes', label: 'Shape' },
-  { id: 'sticker', icon: 'happy', label: 'Sticker' },
-  { id: 'brush', icon: 'brush', label: 'Brush' },
-  { id: 'import', icon: 'image', label: 'Import New Image' },
+  { id: 'add_photo', icon: 'add-circle-outline', label: 'Add photo' },
+  { id: 'replace_photo', icon: 'swap-horizontal-outline', label: 'Replace photo' },
+  { id: 'gallery', icon: 'images-outline', label: 'Import from gallery' },
+  { id: 'camera', icon: 'camera-outline', label: 'Import from camera' },
+  { id: 'png_overlay', icon: 'layers-outline', label: 'Add PNG overlay' },
+  { id: 'draw', icon: 'brush-outline', label: 'Paint / Draw mode' },
 ];
 
 const AddMenuSheet: React.FC<AddMenuSheetProps> = ({
@@ -42,7 +43,7 @@ const AddMenuSheet: React.FC<AddMenuSheetProps> = ({
         {...props}
         disappearsOnIndex={-1}
         appearsOnIndex={0}
-        opacity={0.5}
+        opacity={0.2}
       />
     ),
     []

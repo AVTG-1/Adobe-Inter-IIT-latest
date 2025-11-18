@@ -49,7 +49,7 @@ const LayersModal: React.FC<LayersModalProps> = ({
       {...props}
       disappearsOnIndex={-1}
       appearsOnIndex={0}
-      opacity={0.5}
+      opacity={0.2}
     />
   );
 
