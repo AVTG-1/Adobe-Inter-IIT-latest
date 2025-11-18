@@ -402,58 +402,74 @@ export default function EditorScreen({ route, navigation }: Props) {
         </View>
 
         {/* Image Display Area */}
-        <Animated.View
-          style={[
-            styles.imageContainer,
-            {
-              opacity: fadeAnim,
-            },
-          ]}
+        <TouchableOpacity
+          activeOpacity={1}
+          onPress={() => {
+            if (showEditPanel) {
+              setShowEditPanel(false);
+              setSelectedTool(null);
+              Animated.timing(editPanelHeight, {
+                toValue: 0,
+                duration: 300,
+                useNativeDriver: false,
+              }).start();
+            }
+          }}
+          disabled={!showEditPanel}
         >
-          {!imageLoaded && !isBlankCanvas && (
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color={COLORS.primary} />
-              <Text style={styles.loadingText}>Loading image...</Text>
-            </View>
-          )}
-
-          {isBlankCanvas ? (
-            <View
-              style={[
-                styles.blankCanvas,
-                {
-                  width: canvasWidth || SCREEN_WIDTH,
-                  height: canvasHeight || SCREEN_WIDTH,
-                },
-              ]}
-            >
-              <View style={styles.canvasPlaceholder}>
-                <Ionicons name="create-outline" size={60} color={COLORS.textTertiary} />
-                <Text style={styles.canvasPlaceholderText}>
-                  Start creating on your blank canvas
-                </Text>
-                <Text style={styles.canvasSize}>
-                  {canvasWidth || SCREEN_WIDTH} × {canvasHeight || SCREEN_WIDTH} px
-                </Text>
+          <Animated.View
+            style={[
+              styles.imageContainer,
+              {
+                opacity: fadeAnim,
+              },
+            ]}
+          >
+            {!imageLoaded && !isBlankCanvas && (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color={COLORS.primary} />
+                <Text style={styles.loadingText}>Loading image...</Text>
               </View>
-            </View>
-          ) : (
-            <Image
-              source={{ uri: imageUrl }}
-              style={styles.image}
-              resizeMode="contain"
-              onLoad={() => setImageLoaded(true)}
-              onError={(error) => {
-                console.error('Image load error:', error);
-                Alert.alert(
-                  'Error',
-                  'Failed to load image. Please try again.',
-                  [{ text: 'Go Back', onPress: () => navigation.goBack() }]
-                );
-              }}
-            />
-          )}
-        </Animated.View>
+            )}
+
+            {isBlankCanvas ? (
+              <View
+                style={[
+                  styles.blankCanvas,
+                  {
+                    width: canvasWidth || SCREEN_WIDTH,
+                    height: canvasHeight || SCREEN_WIDTH,
+                  },
+                ]}
+              >
+                <View style={styles.canvasPlaceholder}>
+                  <Ionicons name="create-outline" size={60} color={COLORS.textTertiary} />
+                  <Text style={styles.canvasPlaceholderText}>
+                    Start creating on your blank canvas
+                  </Text>
+                  <Text style={styles.canvasSize}>
+                    {canvasWidth || SCREEN_WIDTH} × {canvasHeight || SCREEN_WIDTH} px
+                  </Text>
+                </View>
+              </View>
+            ) : (
+              <Image
+                source={{ uri: imageUrl }}
+                style={styles.image}
+                resizeMode="contain"
+                onLoad={() => setImageLoaded(true)}
+                onError={(error) => {
+                  console.error('Image load error:', error);
+                  Alert.alert(
+                    'Error',
+                    'Failed to load image. Please try again.',
+                    [{ text: 'Go Back', onPress: () => navigation.goBack() }]
+                  );
+                }}
+              />
+            )}
+          </Animated.View>
+        </TouchableOpacity>
 
         {/* Floating AI Chat Button */}
         {showAIButton && (
@@ -552,26 +568,6 @@ export default function EditorScreen({ route, navigation }: Props) {
               ) : (
                 // Expanded view: 2×5 grid with Edit in original position
                 <View style={styles.expandedGrid}>
-                  {/* Close Button */}
-                  <View style={styles.editHeaderRow}>
-                    <Text style={styles.editHeaderTitle}>Edit Tools</Text>
-                    <TouchableOpacity
-                      style={styles.editCloseButton}
-                      onPress={() => {
-                        setShowEditPanel(false);
-                        setSelectedTool(null);
-                        Animated.timing(editPanelHeight, {
-                          toValue: 0,
-                          duration: 300,
-                          useNativeDriver: false,
-                        }).start();
-                      }}
-                      activeOpacity={0.7}
-                    >
-                      <Ionicons name="close" size={24} color={COLORS.textPrimary} />
-                    </TouchableOpacity>
-                  </View>
-
                   {/* Row 1: First 5 edit tools */}
                   <View style={styles.toolRow}>
                     {EDIT_TOOLS.slice(0, 5).map((tool) => (
@@ -906,24 +902,6 @@ const styles = StyleSheet.create({
   // Expandable grid layout
   expandedGrid: {
     gap: SPACING.sm,
-  },
-  editHeaderRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: SPACING.md,
-    paddingBottom: SPACING.xs,
-    marginBottom: SPACING.xs,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.borderLight,
-  },
-  editHeaderTitle: {
-    fontSize: FONT_SIZES.md,
-    fontWeight: '600',
-    color: COLORS.textPrimary,
-  },
-  editCloseButton: {
-    padding: SPACING.xs,
   },
   toolRow: {
     flexDirection: 'row',
