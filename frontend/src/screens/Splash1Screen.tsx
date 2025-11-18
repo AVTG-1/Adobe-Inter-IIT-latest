@@ -12,6 +12,7 @@ import {
   StyleSheet,
   Animated,
   Dimensions,
+  TouchableOpacity,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -55,6 +56,10 @@ const Splash1Screen: React.FC<Props> = ({ navigation }) => {
     });
   }, [navigation]);
 
+  const handleSkip = () => {
+    navigation.replace('Home');
+  };
+
   return (
     <View style={styles.container}>
       <SafeAreaView style={styles.content}>
@@ -63,6 +68,20 @@ const Splash1Screen: React.FC<Props> = ({ navigation }) => {
           <Text style={styles.title}>AI Photo Editor</Text>
           <Text style={styles.subtitle}>Powered by Adobe</Text>
         </Animated.View>
+
+        {/* Skip Button */}
+        <View style={styles.skipContainer}>
+          <TouchableOpacity
+            style={styles.skipButton}
+            onPress={handleSkip}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.skipText}>Skip</Text>
+            <View style={styles.skipIconContainer}>
+              <Ionicons name="chevron-forward" size={20} color="#000000" />
+            </View>
+          </TouchableOpacity>
+        </View>
       </SafeAreaView>
     </View>
   );
@@ -75,11 +94,14 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    justifyContent: 'center',
+    justifyContent: 'space-between',
     alignItems: 'center',
+    paddingBottom: 40,
   },
   logoContainer: {
     alignItems: 'center',
+    flex: 1,
+    justifyContent: 'center',
   },
   title: {
     fontSize: 32,
@@ -93,6 +115,48 @@ const styles = StyleSheet.create({
     color: '#B0B0B0',
     marginTop: 8,
     letterSpacing: 1,
+  },
+  skipContainer: {
+    width: '100%',
+    paddingHorizontal: 10,
+  },
+  skipButton: {
+    backgroundColor: '#FFFFFF',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    borderRadius: 24,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  skipText: {
+    fontSize: 24,
+    fontWeight: '600',
+    color: '#000000',
+  },
+  skipIconContainer: {
+    width: 34,
+    height: 34,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 17,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 0,
+    },
+    shadowOpacity: 0.5,
+    shadowRadius: 4,
+    elevation: 4,
   },
 });
 
