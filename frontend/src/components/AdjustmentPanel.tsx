@@ -148,7 +148,7 @@ const styles = StyleSheet.create({
     width: 40,
   },
   container: {
-    flex: 1,
+    height: '100%',
   },
   header: {
     flexDirection: 'row',
