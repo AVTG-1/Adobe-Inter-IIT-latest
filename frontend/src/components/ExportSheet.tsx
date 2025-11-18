@@ -6,7 +6,7 @@
 
 import React, { useCallback, useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
+import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { Ionicons } from '@expo/vector-icons';
 
 export type ExportFormat = 'jpg' | 'png' | 'psd';
@@ -72,37 +72,38 @@ export default function ExportSheet({
       backgroundStyle={styles.sheetBackground}
       handleIndicatorStyle={styles.handleIndicator}
     >
-      <BottomSheetView style={styles.contentContainer}>
-        <View style={styles.header}>
-          <View>
-            <Text style={styles.title}>Export Image</Text>
-            <Text style={styles.subtitle}>Choose a format to save your work</Text>
-          </View>
-          <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-            <Ionicons name="close" size={24} color="#333" />
-          </TouchableOpacity>
+      <View style={styles.header}>
+        <View>
+          <Text style={styles.title}>Export Image</Text>
+          <Text style={styles.subtitle}>Choose a format to save your work</Text>
         </View>
+        <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+          <Ionicons name="close" size={24} color="#333" />
+        </TouchableOpacity>
+      </View>
 
-        <View style={styles.optionsContainer}>
-          {EXPORT_OPTIONS.map((option) => (
-            <TouchableOpacity
-              key={option.format}
-              style={styles.optionItem}
-              onPress={() => handleExportOption(option.format)}
-              activeOpacity={0.7}
-            >
-              <View style={styles.optionIconContainer}>
-                <Ionicons name={option.icon as any} size={28} color="#667eea" />
-              </View>
-              <View style={styles.optionTextContainer}>
-                <Text style={styles.optionTitle}>{option.title}</Text>
-                <Text style={styles.optionDescription}>{option.description}</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={20} color="#ccc" />
-            </TouchableOpacity>
-          ))}
-        </View>
-      </BottomSheetView>
+      <BottomSheetScrollView
+        style={styles.contentContainer}
+        showsVerticalScrollIndicator={false}
+      >
+        {EXPORT_OPTIONS.map((option) => (
+          <TouchableOpacity
+            key={option.format}
+            style={styles.optionItem}
+            onPress={() => handleExportOption(option.format)}
+            activeOpacity={0.7}
+          >
+            <View style={styles.optionIconContainer}>
+              <Ionicons name={option.icon as any} size={28} color="#667eea" />
+            </View>
+            <View style={styles.optionTextContainer}>
+              <Text style={styles.optionTitle}>{option.title}</Text>
+              <Text style={styles.optionDescription}>{option.description}</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color="#ccc" />
+          </TouchableOpacity>
+        ))}
+      </BottomSheetScrollView>
     </BottomSheet>
   );
 }
@@ -127,7 +128,6 @@ const styles = StyleSheet.create({
     height: 4,
   },
   contentContainer: {
-    flex: 1,
     paddingHorizontal: 20,
     paddingBottom: 20,
   },
@@ -135,7 +135,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 24,
+    paddingHorizontal: 20,
+    paddingTop: 8,
+    marginBottom: 16,
   },
   closeButton: {
     padding: 4,

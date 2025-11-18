@@ -11,7 +11,7 @@ import {
   StyleSheet,
   TouchableOpacity,
 } from 'react-native';
-import BottomSheet, { BottomSheetBackdrop, BottomSheetView } from '@gorhom/bottom-sheet';
+import BottomSheet, { BottomSheetBackdrop, BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SPACING, BORDER_RADIUS, FONT_SIZES } from '../config/theme';
 
@@ -62,11 +62,15 @@ const AddMenuSheet: React.FC<AddMenuSheetProps> = ({
       backgroundStyle={styles.bottomSheetBackground}
       handleIndicatorStyle={styles.handleIndicator}
     >
-      <BottomSheetView style={styles.container}>
-        <View style={styles.header}>
-          <Text style={styles.title}>Import Options</Text>
-        </View>
+      <View style={styles.header}>
+        <Text style={styles.title}>Import Options</Text>
+      </View>
 
+      <BottomSheetScrollView
+        style={styles.container}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+      >
         <View style={styles.optionsList}>
           {ADD_OPTIONS.map((option) => (
             <TouchableOpacity
@@ -86,7 +90,7 @@ const AddMenuSheet: React.FC<AddMenuSheetProps> = ({
             </TouchableOpacity>
           ))}
         </View>
-      </BottomSheetView>
+      </BottomSheetScrollView>
     </BottomSheet>
   );
 };
@@ -102,10 +106,14 @@ const styles = StyleSheet.create({
     width: 40,
   },
   container: {
-    flex: 1,
     paddingHorizontal: SPACING.lg,
   },
+  scrollContent: {
+    paddingBottom: SPACING.md,
+  },
   header: {
+    paddingHorizontal: SPACING.lg,
+    paddingTop: SPACING.xs,
     marginBottom: SPACING.md,
   },
   title: {

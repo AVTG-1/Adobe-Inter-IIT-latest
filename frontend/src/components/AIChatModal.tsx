@@ -271,6 +271,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     marginBottom: SPACING.md,
     maxWidth: '85%',
+    flexShrink: 1,
   },
   userBubble: {
     alignSelf: 'flex-end',
@@ -291,6 +292,7 @@ const styles = StyleSheet.create({
   messageContent: {
     borderRadius: BORDER_RADIUS.md,
     padding: SPACING.md,
+    flexShrink: 1,
   },
   userMessageContent: {
     backgroundColor: COLORS.primary,
@@ -300,7 +302,9 @@ const styles = StyleSheet.create({
   },
   messageText: {
     fontSize: FONT_SIZES.md,
-    lineHeight: 20,
+    lineHeight: 22,
+    flexWrap: 'wrap',
+    flexShrink: 1,
   },
   userMessageText: {
     color: '#000',
