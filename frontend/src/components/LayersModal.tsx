@@ -35,7 +35,7 @@ const LayersModal: React.FC<LayersModalProps> = ({
   bottomSheetRef,
   onClose,
 }) => {
-  const snapPoints = useMemo(() => ['20%'], []);
+  const snapPoints = useMemo(() => ['25%'], []);
 
   const [layers, setLayers] = useState<Layer[]>([
     { id: '1', name: 'Background', visible: true, locked: false, opacity: 100 },

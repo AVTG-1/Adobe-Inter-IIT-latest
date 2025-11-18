@@ -41,7 +41,7 @@ const AdjustmentPanel: React.FC<AdjustmentPanelProps> = ({
     brightness: 0,
   });
 
-  const snapPoints = React.useMemo(() => ['30%'], []);
+  const snapPoints = React.useMemo(() => ['25%'], []);
 
   const renderBackdrop = React.useCallback(
     (props: any) => (

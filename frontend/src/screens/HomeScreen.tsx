@@ -528,7 +528,9 @@ const styles = StyleSheet.create({
   actionCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: SPACING.lg,
+    padding: SPACING.xl,
+    paddingVertical: 24,
+    minHeight: 100,
     borderRadius: 30,
     marginBottom: SPACING.md,
     backgroundColor: '#323232',
@@ -542,13 +544,13 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   cardIconContainer: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+    width: 70,
+    height: 70,
+    borderRadius: 35,
     backgroundColor: COLORS.surface,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: SPACING.md,
+    marginRight: SPACING.lg,
   },
   cardContent: {
     flex: 1,

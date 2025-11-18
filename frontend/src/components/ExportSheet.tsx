@@ -73,8 +73,15 @@ export default function ExportSheet({
       handleIndicatorStyle={styles.handleIndicator}
     >
       <BottomSheetView style={styles.contentContainer}>
-        <Text style={styles.title}>Export Image</Text>
-        <Text style={styles.subtitle}>Choose a format to save your work</Text>
+        <View style={styles.header}>
+          <View>
+            <Text style={styles.title}>Export Image</Text>
+            <Text style={styles.subtitle}>Choose a format to save your work</Text>
+          </View>
+          <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+            <Ionicons name="close" size={24} color="#333" />
+          </TouchableOpacity>
+        </View>
 
         <View style={styles.optionsContainer}>
           {EXPORT_OPTIONS.map((option) => (
@@ -124,6 +131,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingBottom: 20,
   },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 24,
+  },
+  closeButton: {
+    padding: 4,
+  },
   title: {
     fontSize: 20,
     fontWeight: 'bold',
@@ -133,7 +149,6 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: 14,
     color: '#999',
-    marginBottom: 24,
   },
   optionsContainer: {
     flex: 1,

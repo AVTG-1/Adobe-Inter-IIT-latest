@@ -32,8 +32,6 @@ const { width, height } = Dimensions.get('window');
 const Splash1Screen: React.FC<Props> = ({ navigation }) => {
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const logoScale = useRef(new Animated.Value(0.8)).current;
-  const skipButtonSlide = useRef(new Animated.Value(100)).current;
-  const skipButtonPulse = useRef(new Animated.Value(1)).current;
 
   // Editing elements animations
   const spark1 = useRef(new Animated.Value(0)).current;
@@ -41,8 +39,6 @@ const Splash1Screen: React.FC<Props> = ({ navigation }) => {
   const spark3 = useRef(new Animated.Value(0)).current;
   const photoFrame = useRef(new Animated.Value(0)).current;
   const brushStroke = useRef(new Animated.Value(0)).current;
-
-  const [skipped, setSkipped] = useState(false);
 
   useEffect(() => {
     // Main animation sequence
@@ -142,50 +138,17 @@ const Splash1Screen: React.FC<Props> = ({ navigation }) => {
           }),
         ])
       ),
-      // Skip button slide up
-      Animated.spring(skipButtonSlide, {
-        toValue: 0,
-        delay: 500,
-        friction: 8,
-        tension: 40,
-        useNativeDriver: true,
-      }),
     ]).start();
 
-    // Skip button pulse animation
-    const pulseAnimation = Animated.loop(
-      Animated.sequence([
-        Animated.timing(skipButtonPulse, {
-          toValue: 1.05,
-          duration: 1500,
-          useNativeDriver: true,
-        }),
-        Animated.timing(skipButtonPulse, {
-          toValue: 1,
-          duration: 1500,
-          useNativeDriver: true,
-        }),
-      ])
-    );
-    pulseAnimation.start();
-
-    // Auto-navigate after 3 seconds if not skipped
+    // Auto-navigate after 3 seconds
     const timer = setTimeout(() => {
-      if (!skipped) {
-        navigation.replace('Home');
-      }
+      navigation.replace('Home');
     }, 3000);
 
     return () => {
       clearTimeout(timer);
-      pulseAnimation.stop();
     };
-  }, [navigation, skipped]);
-
-  const handleSkip = () => {
-    setSkipped(true);
-    navigation.replace('Home');
-  };
+  }, [navigation]);
 
   return (
     <View style={styles.container}>
@@ -340,33 +303,6 @@ const Splash1Screen: React.FC<Props> = ({ navigation }) => {
           <Text style={styles.title}>AI Photo Editor</Text>
           <Text style={styles.subtitle}>Professional Editing Powered by AI</Text>
         </Animated.View>
-
-        {/* Large Animated Skip Button */}
-        <Animated.View
-          style={[
-            styles.skipContainer,
-            {
-              opacity: fadeAnim,
-              transform: [
-                { translateY: skipButtonSlide },
-                { scale: skipButtonPulse },
-              ],
-            },
-          ]}
-        >
-          <TouchableOpacity
-            style={styles.skipButton}
-            onPress={handleSkip}
-            activeOpacity={0.8}
-          >
-            <View style={styles.skipButtonInner}>
-              <Text style={styles.skipText}>Skip</Text>
-              <View style={styles.skipArrow}>
-                <Ionicons name="arrow-forward" size={20} color="#000000" />
-              </View>
-            </View>
-          </TouchableOpacity>
-        </Animated.View>
       </SafeAreaView>
     </View>
   );
@@ -457,47 +393,6 @@ const styles = StyleSheet.create({
     color: '#B0B0B0',
     marginTop: 6,
     textAlign: 'center',
-  },
-  skipContainer: {
-    position: 'absolute',
-    bottom: 50,
-    left: 20,
-    right: 20,
-  },
-  skipButton: {
-    backgroundColor: '#00D9FF',
-    borderRadius: 12,
-    overflow: 'hidden',
-    shadowColor: '#00D9FF',
-    shadowOffset: {
-      width: 0,
-      height: 6,
-    },
-    shadowOpacity: 0.4,
-    shadowRadius: 12,
-    elevation: 8,
-  },
-  skipButtonInner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 18,
-    paddingHorizontal: 32,
-    gap: 12,
-  },
-  skipText: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#000000',
-    letterSpacing: 1,
-  },
-  skipArrow: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
-    justifyContent: 'center',
-    alignItems: 'center',
   },
 });
 
