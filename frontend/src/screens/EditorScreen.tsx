@@ -48,15 +48,15 @@ const TOOLS = [
 
 // 9 Edit Tools - Shown when Edit is tapped
 const EDIT_TOOLS = [
-  { id: 'crop', icon: 'crop', label: 'Crop', color: '#FF6B6B' },
-  { id: 'resize', icon: 'resize', label: 'Resize', color: '#4ECDC4' },
-  { id: 'rotate', icon: 'reload', label: 'Rotate', color: '#45B7D1' },
-  { id: 'flip', icon: 'swap-horizontal', label: 'Flip', color: '#A55EEA' },
-  { id: 'filter', icon: 'color-filter', label: 'Filter', color: '#26DE81' },
-  { id: 'blur', icon: 'radio-button-on', label: 'Blur', color: '#FD79A8' },
-  { id: 'sharpen', icon: 'diamond', label: 'Sharpen', color: '#74B9FF' },
-  { id: 'vignette', icon: 'ellipse-outline', label: 'Vignette', color: '#FF8A65' },
-  { id: 'frame', icon: 'square-outline', label: 'Frame', color: '#9575CD' },
+  { id: 'crop', icon: 'crop', label: 'Crop' },
+  { id: 'resize', icon: 'resize', label: 'Resize' },
+  { id: 'rotate', icon: 'reload', label: 'Rotate' },
+  { id: 'flip', icon: 'swap-horizontal', label: 'Flip' },
+  { id: 'filter', icon: 'color-filter', label: 'Filter' },
+  { id: 'blur', icon: 'radio-button-on', label: 'Blur' },
+  { id: 'sharpen', icon: 'diamond', label: 'Sharpen' },
+  { id: 'vignette', icon: 'ellipse-outline', label: 'Vignette' },
+  { id: 'frame', icon: 'square-outline', label: 'Frame' },
 ];
 
 export default function EditorScreen({ route, navigation }: Props) {
@@ -561,8 +561,8 @@ export default function EditorScreen({ route, navigation }: Props) {
                         onPress={() => handleEditToolSelect(tool.id)}
                         activeOpacity={0.7}
                       >
-                        <View style={[styles.toolIconContainer, { backgroundColor: tool.color }]}>
-                          <Ionicons name={tool.icon as any} size={24} color="#fff" />
+                        <View style={styles.toolIconContainer}>
+                          <Ionicons name={tool.icon as any} size={24} color="#FFFFFF" />
                         </View>
                         <Text style={styles.toolLabel}>{tool.label}</Text>
                       </TouchableOpacity>
@@ -599,8 +599,8 @@ export default function EditorScreen({ route, navigation }: Props) {
                         onPress={() => handleEditToolSelect(tool.id)}
                         activeOpacity={0.7}
                       >
-                        <View style={[styles.toolIconContainer, { backgroundColor: tool.color }]}>
-                          <Ionicons name={tool.icon as any} size={24} color="#fff" />
+                        <View style={styles.toolIconContainer}>
+                          <Ionicons name={tool.icon as any} size={24} color="#FFFFFF" />
                         </View>
                         <Text style={styles.toolLabel}>{tool.label}</Text>
                       </TouchableOpacity>

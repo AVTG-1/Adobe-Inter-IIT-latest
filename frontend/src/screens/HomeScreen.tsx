@@ -332,7 +332,7 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
               disabled={uploading}
             >
               <View style={styles.cardIconContainerLarge}>
-                <Ionicons name="images" size={80} color={COLORS.primary} />
+                <Ionicons name="images" size={56} color={COLORS.primary} />
               </View>
               <View style={styles.cardContent}>
                 <Text style={styles.cardTitleLarge}>Import from Gallery</Text>
@@ -340,7 +340,7 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
                   Select a photo to start editing
                 </Text>
               </View>
-              <Ionicons name="chevron-forward" size={40} color={COLORS.textSecondary} />
+              <Ionicons name="chevron-forward" size={28} color={COLORS.textSecondary} />
             </TouchableOpacity>
           </Animated.View>
 
@@ -528,10 +528,10 @@ const styles = StyleSheet.create({
   actionCardLarge: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: SPACING.xl * 1.5,
-    paddingVertical: 40,
-    minHeight: 180,
-    borderRadius: 30,
+    padding: SPACING.xl,
+    paddingVertical: 28,
+    minHeight: 140,
+    borderRadius: 28,
     marginBottom: SPACING.lg,
     backgroundColor: '#323232',
     shadowColor: '#000',
@@ -580,13 +580,13 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   cardIconContainerLarge: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
+    width: 90,
+    height: 90,
+    borderRadius: 45,
     backgroundColor: COLORS.surface,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: SPACING.xl,
+    marginRight: SPACING.lg,
   },
   cardIconContainerStandard: {
     width: 50,
@@ -610,15 +610,15 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   cardTitleLarge: {
-    fontSize: FONT_SIZES.xl,
+    fontSize: FONT_SIZES.lg,
     fontWeight: 'bold',
     color: COLORS.textPrimary,
-    marginBottom: 8,
+    marginBottom: 6,
   },
   cardSubtitleLarge: {
-    fontSize: FONT_SIZES.md,
+    fontSize: FONT_SIZES.sm,
     color: COLORS.textSecondary,
-    lineHeight: 20,
+    lineHeight: 18,
   },
   cardTitle: {
     fontSize: FONT_SIZES.lg,
