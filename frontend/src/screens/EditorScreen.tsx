@@ -78,6 +78,10 @@ export default function EditorScreen({ route, navigation }: Props) {
   const [showEditPanel, setShowEditPanel] = useState(false);
   const [aiChatVisible, setAiChatVisible] = useState(false);
   const [showAIButton, setShowAIButton] = useState(true);
+  const [layersOpen, setLayersOpen] = useState(false);
+  const [exportOpen, setExportOpen] = useState(false);
+  const [addMenuOpen, setAddMenuOpen] = useState(false);
+  const [aiFeaturesOpen, setAiFeaturesOpen] = useState(false);
 
   // Animations
   const [fadeAnim] = useState(new Animated.Value(0));
@@ -102,9 +106,16 @@ export default function EditorScreen({ route, navigation }: Props) {
     ]).start();
   }, []);
 
-  // Hide/show AI button based on panel visibility
+  // Hide/show AI button based on ANY popup visibility
   useEffect(() => {
-    const shouldHide = showEditPanel || showAdjustment || aiChatVisible;
+    const shouldHide =
+      showEditPanel ||
+      showAdjustment ||
+      aiChatVisible ||
+      layersOpen ||
+      exportOpen ||
+      addMenuOpen ||
+      aiFeaturesOpen;
     setShowAIButton(!shouldHide);
 
     Animated.spring(aiButtonScale, {
@@ -112,7 +123,15 @@ export default function EditorScreen({ route, navigation }: Props) {
       friction: 8,
       useNativeDriver: true,
     }).start();
-  }, [showEditPanel, showAdjustment, aiChatVisible]);
+  }, [
+    showEditPanel,
+    showAdjustment,
+    aiChatVisible,
+    layersOpen,
+    exportOpen,
+    addMenuOpen,
+    aiFeaturesOpen,
+  ]);
 
   const handleHome = () => {
     Alert.alert(
@@ -149,12 +168,14 @@ export default function EditorScreen({ route, navigation }: Props) {
 
   const handleExport = () => {
     console.log('Export pressed');
+    setExportOpen(true);
     exportSheetRef.current?.expand();
   };
 
   const handleExportFormat = async (format: ExportFormat) => {
     try {
       setExporting(true);
+      setExportOpen(false);
       exportSheetRef.current?.close();
 
       // Request media library permissions
@@ -208,9 +229,14 @@ export default function EditorScreen({ route, navigation }: Props) {
     setShowEditPanel(false);
     setShowAdjustment(false);
     setSelectedTool(null);
+    setLayersOpen(false);
+    setAddMenuOpen(false);
+    setAiFeaturesOpen(false);
+    setExportOpen(false);
     layersModalRef.current?.close();
     addMenuRef.current?.close();
     aiFeaturesRef.current?.close();
+    exportSheetRef.current?.close();
 
     Animated.timing(editPanelHeight, {
       toValue: 0,
@@ -245,18 +271,21 @@ export default function EditorScreen({ route, navigation }: Props) {
 
     // Handle +Add - Opens add menu
     if (toolId === 'add') {
+      setAddMenuOpen(true);
       addMenuRef.current?.expand();
       return;
     }
 
     // Handle Layers - Opens layers modal
     if (toolId === 'layers') {
+      setLayersOpen(true);
       layersModalRef.current?.expand();
       return;
     }
 
     // Handle AI - Opens AI features sheet
     if (toolId === 'ai') {
+      setAiFeaturesOpen(true);
       aiFeaturesRef.current?.expand();
       return;
     }
@@ -277,6 +306,7 @@ export default function EditorScreen({ route, navigation }: Props) {
 
   const handleAddOptionSelect = (option: string) => {
     console.log('Add option selected:', option);
+    setAddMenuOpen(false);
     addMenuRef.current?.close();
     Toast.show({
       type: 'info',
@@ -287,6 +317,7 @@ export default function EditorScreen({ route, navigation }: Props) {
 
   const handleAIFeatureSelect = (feature: string) => {
     console.log('AI feature selected:', feature);
+    setAiFeaturesOpen(false);
     aiFeaturesRef.current?.close();
     Toast.show({
       type: 'info',
@@ -455,61 +486,12 @@ export default function EditorScreen({ route, navigation }: Props) {
             {
               height: editPanelHeight.interpolate({
                 inputRange: [0, 280],
-                outputRange: [100, 380],
+                outputRange: [100, 220],
               }),
             },
           ]}
         >
-          {/* Edit Panel - Expanded Above */}
-          {showEditPanel && (
-            <Animated.View
-              style={[
-                styles.editPanelExpanded,
-                {
-                  opacity: editPanelHeight.interpolate({
-                    inputRange: [0, 280],
-                    outputRange: [0, 1],
-                  }),
-                },
-              ]}
-            >
-              <View style={styles.editPanelHeader}>
-                <Text style={styles.editPanelTitle}>Edit Tools</Text>
-                <TouchableOpacity
-                  onPress={() => {
-                    setShowEditPanel(false);
-                    setSelectedTool(null);
-                    Animated.timing(editPanelHeight, {
-                      toValue: 0,
-                      duration: 300,
-                      useNativeDriver: false,
-                    }).start();
-                  }}
-                  style={styles.closeButton}
-                >
-                  <Ionicons name="close" size={24} color={COLORS.textPrimary} />
-                </TouchableOpacity>
-              </View>
-
-              <View style={styles.editToolsGrid}>
-                {EDIT_TOOLS.map((tool) => (
-                  <TouchableOpacity
-                    key={tool.id}
-                    style={styles.editToolItem}
-                    onPress={() => handleEditToolSelect(tool.id)}
-                    activeOpacity={0.7}
-                  >
-                    <View style={[styles.editToolIcon, { backgroundColor: tool.color }]}>
-                      <Ionicons name={tool.icon as any} size={24} color="#fff" />
-                    </View>
-                    <Text style={styles.editToolLabel}>{tool.label}</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </Animated.View>
-          )}
-
-          {/* Main 5 Tools - Fixed Bottom Bar */}
+          {/* Expandable Toolbar - 1 row normal, 2×5 grid when Edit pressed */}
           <Animated.View
             style={[
               styles.toolbar,
@@ -527,39 +509,102 @@ export default function EditorScreen({ route, navigation }: Props) {
             ]}
           >
             <View style={styles.toolbarContent}>
-              {TOOLS.map((tool, index) => (
-                <TouchableOpacity
-                  key={tool.id}
-                  style={[
-                    styles.toolButton,
-                    index === 2 && styles.middleToolButton,
-                  ]}
-                  onPress={() => handleToolPress(tool.id)}
-                  activeOpacity={0.7}
-                >
-                  <View
-                    style={[
-                      styles.toolIconContainer,
-                      selectedTool === tool.id && styles.toolIconContainerActive,
-                      index === 2 && styles.middleToolIcon,
-                    ]}
-                  >
-                    <Ionicons
-                      name={tool.icon as any}
-                      size={index === 2 ? 32 : 28}
-                      color={index === 2 ? '#000' : selectedTool === tool.id ? COLORS.toolActive : COLORS.toolDefault}
-                    />
+              {!showEditPanel ? (
+                // Normal view: Single row with 5 main tools
+                <View style={styles.toolRow}>
+                  {TOOLS.map((tool, index) => (
+                    <TouchableOpacity
+                      key={tool.id}
+                      style={[
+                        styles.toolButton,
+                        index === 2 && styles.middleToolButton,
+                      ]}
+                      onPress={() => handleToolPress(tool.id)}
+                      activeOpacity={0.7}
+                    >
+                      <View
+                        style={[
+                          styles.toolIconContainer,
+                          selectedTool === tool.id && styles.toolIconContainerActive,
+                          index === 2 && styles.middleToolIcon,
+                        ]}
+                      >
+                        <Ionicons
+                          name={tool.icon as any}
+                          size={index === 2 ? 32 : 28}
+                          color={index === 2 ? '#000' : selectedTool === tool.id ? COLORS.toolActive : COLORS.toolDefault}
+                        />
+                      </View>
+                      <Text
+                        style={[
+                          styles.toolLabel,
+                          selectedTool === tool.id && styles.toolLabelActive,
+                        ]}
+                      >
+                        {tool.label}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              ) : (
+                // Expanded view: 2×5 grid with Edit in original position
+                <View style={styles.expandedGrid}>
+                  {/* Row 1: First 5 edit tools */}
+                  <View style={styles.toolRow}>
+                    {EDIT_TOOLS.slice(0, 5).map((tool) => (
+                      <TouchableOpacity
+                        key={tool.id}
+                        style={styles.toolButton}
+                        onPress={() => handleEditToolSelect(tool.id)}
+                        activeOpacity={0.7}
+                      >
+                        <View style={[styles.toolIconContainer, { backgroundColor: tool.color }]}>
+                          <Ionicons name={tool.icon as any} size={24} color="#fff" />
+                        </View>
+                        <Text style={styles.toolLabel}>{tool.label}</Text>
+                      </TouchableOpacity>
+                    ))}
                   </View>
-                  <Text
-                    style={[
-                      styles.toolLabel,
-                      selectedTool === tool.id && styles.toolLabelActive,
-                    ]}
-                  >
-                    {tool.label}
-                  </Text>
-                </TouchableOpacity>
-              ))}
+
+                  {/* Row 2: Edit button (in original position) + 4 more edit tools */}
+                  <View style={styles.toolRow}>
+                    {/* Edit button - stays in original position */}
+                    <TouchableOpacity
+                      style={styles.toolButton}
+                      onPress={() => {
+                        setShowEditPanel(false);
+                        setSelectedTool(null);
+                        Animated.timing(editPanelHeight, {
+                          toValue: 0,
+                          duration: 300,
+                          useNativeDriver: false,
+                        }).start();
+                      }}
+                      activeOpacity={0.7}
+                    >
+                      <View style={[styles.toolIconContainer, styles.toolIconContainerActive]}>
+                        <Ionicons name="create-outline" size={28} color={COLORS.toolActive} />
+                      </View>
+                      <Text style={[styles.toolLabel, styles.toolLabelActive]}>Edit</Text>
+                    </TouchableOpacity>
+
+                    {/* Remaining 4 edit tools */}
+                    {EDIT_TOOLS.slice(5, 9).map((tool) => (
+                      <TouchableOpacity
+                        key={tool.id}
+                        style={styles.toolButton}
+                        onPress={() => handleEditToolSelect(tool.id)}
+                        activeOpacity={0.7}
+                      >
+                        <View style={[styles.toolIconContainer, { backgroundColor: tool.color }]}>
+                          <Ionicons name={tool.icon as any} size={24} color="#fff" />
+                        </View>
+                        <Text style={styles.toolLabel}>{tool.label}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </View>
+              )}
             </View>
           </Animated.View>
         </Animated.View>
@@ -567,28 +612,40 @@ export default function EditorScreen({ route, navigation }: Props) {
         {/* Layers Modal */}
         <LayersModal
           bottomSheetRef={layersModalRef}
-          onClose={() => layersModalRef.current?.close()}
+          onClose={() => {
+            setLayersOpen(false);
+            layersModalRef.current?.close();
+          }}
         />
 
         {/* Export Sheet */}
         <ExportSheet
           bottomSheetRef={exportSheetRef}
           onExport={handleExportFormat}
-          onClose={() => exportSheetRef.current?.close()}
+          onClose={() => {
+            setExportOpen(false);
+            exportSheetRef.current?.close();
+          }}
         />
 
         {/* Add Menu Sheet */}
         <AddMenuSheet
           bottomSheetRef={addMenuRef}
           onOptionSelect={handleAddOptionSelect}
-          onClose={() => addMenuRef.current?.close()}
+          onClose={() => {
+            setAddMenuOpen(false);
+            addMenuRef.current?.close();
+          }}
         />
 
         {/* AI Features Sheet */}
         <AIFeaturesSheet
           bottomSheetRef={aiFeaturesRef}
           onFeatureSelect={handleAIFeatureSelect}
-          onClose={() => aiFeaturesRef.current?.close()}
+          onClose={() => {
+            setAiFeaturesOpen(false);
+            aiFeaturesRef.current?.close();
+          }}
         />
 
         {/* AI Chat Modal */}
@@ -823,61 +880,15 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: COLORS.borderLight,
   },
-  // Edit panel expanded view
-  editPanelExpanded: {
-    flex: 1,
-    paddingTop: SPACING.md,
+  // Expandable grid layout
+  expandedGrid: {
+    gap: SPACING.sm,
   },
-  editPanelHeader: {
+  toolRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: SPACING.md,
-    paddingBottom: SPACING.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.borderLight,
-  },
-  editPanelTitle: {
-    fontSize: FONT_SIZES.lg,
-    fontWeight: 'bold',
-    color: COLORS.textPrimary,
-  },
-  closeButton: {
-    padding: SPACING.xs,
-  },
-  editToolsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
     justifyContent: 'space-around',
-    paddingHorizontal: SPACING.md,
-    paddingTop: SPACING.md,
-  },
-  editToolItem: {
-    width: (SCREEN_WIDTH - SPACING.md * 2) / 5 - SPACING.xs,
     alignItems: 'center',
-    marginBottom: SPACING.md,
-  },
-  editToolIcon: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 6,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 4,
-  },
-  editToolLabel: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: COLORS.textPrimary,
-    textAlign: 'center',
+    paddingHorizontal: SPACING.sm,
   },
   // Middle button styles (aliases for existing styles)
   middleToolButton: {
