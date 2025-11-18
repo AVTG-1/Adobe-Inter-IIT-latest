@@ -1,5 +1,5 @@
 /**
- * Layers Modal - 20% Height Bottom Sheet
+ * Layers Modal - 30% Height Bottom Sheet
  *
  * Minimal layers list with icons: Eye (visibility), Pen (rename), Drag handle (reorder)
  */
@@ -35,7 +35,7 @@ const LayersModal: React.FC<LayersModalProps> = ({
   bottomSheetRef,
   onClose,
 }) => {
-  const snapPoints = useMemo(() => ['25%'], []);
+  const snapPoints = useMemo(() => ['30%'], []);
 
   const [layers, setLayers] = useState<Layer[]>([
     { id: '1', name: 'Background', visible: true, locked: false, opacity: 100 },
@@ -44,14 +44,7 @@ const LayersModal: React.FC<LayersModalProps> = ({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState('');
 
-  const renderBackdrop = (props: any) => (
-    <BottomSheetBackdrop
-      {...props}
-      disappearsOnIndex={-1}
-      appearsOnIndex={0}
-      opacity={0.2}
-    />
-  );
+  const renderBackdrop = (props: any) => null;
 
   const handleAddLayer = () => {
     const newLayer: Layer = {
@@ -171,7 +164,9 @@ const LayersModal: React.FC<LayersModalProps> = ({
       index={-1}
       snapPoints={snapPoints}
       enablePanDownToClose
+      enableDynamicSizing={false}
       enableContentPanningGesture={false}
+      animateOnMount={true}
       backdropComponent={renderBackdrop}
       onClose={onClose}
       backgroundStyle={styles.sheetBackground}

@@ -44,14 +44,7 @@ const AdjustmentPanel: React.FC<AdjustmentPanelProps> = ({
   const snapPoints = React.useMemo(() => ['30%'], []);
 
   const renderBackdrop = React.useCallback(
-    (props: any) => (
-      <BottomSheetBackdrop
-        {...props}
-        disappearsOnIndex={-1}
-        appearsOnIndex={0}
-        opacity={0}
-      />
-    ),
+    (props: any) => null,
     []
   );
 
@@ -78,6 +71,9 @@ const AdjustmentPanel: React.FC<AdjustmentPanelProps> = ({
       index={-1}
       snapPoints={snapPoints}
       enablePanDownToClose
+      enableDynamicSizing={false}
+      enableContentPanningGesture={false}
+      animateOnMount={true}
       backdropComponent={renderBackdrop}
       onClose={onClose}
       backgroundStyle={styles.bottomSheetBackground}
