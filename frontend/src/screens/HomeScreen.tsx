@@ -292,12 +292,18 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={handleMenuPress} style={styles.iconButton}>
-          <Ionicons name="menu" size={28} color={COLORS.textPrimary} />
+        <TouchableOpacity onPress={handleMenuPress} style={styles.menuButton}>
+          <View style={styles.menuLines}>
+            <View style={styles.menuLine} />
+            <View style={styles.menuLine} />
+            <View style={styles.menuLine} />
+          </View>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>AI Photo Editor</Text>
-        <TouchableOpacity onPress={handleProfilePress} style={styles.iconButton}>
-          <Ionicons name="person-circle" size={28} color={COLORS.textPrimary} />
+        <TouchableOpacity onPress={handleProfilePress} style={styles.profileButton}>
+          <View style={styles.profileCircle}>
+            <Ionicons name="person" size={24} color={COLORS.textPrimary} />
+          </View>
         </TouchableOpacity>
       </View>
 
@@ -479,8 +485,30 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: COLORS.textPrimary,
   },
-  iconButton: {
+  menuButton: {
     padding: 5,
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+  },
+  menuLines: {
+    gap: 6,
+  },
+  menuLine: {
+    width: 30,
+    height: 1,
+    backgroundColor: COLORS.textPrimary,
+  },
+  profileButton: {
+    padding: 5,
+  },
+  profileCircle: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: COLORS.card,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   scrollView: {
     flex: 1,
@@ -501,9 +529,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     padding: SPACING.lg,
-    borderRadius: BORDER_RADIUS.lg,
+    borderRadius: 30,
     marginBottom: SPACING.md,
-    backgroundColor: COLORS.card,
+    backgroundColor: '#323232',
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
@@ -557,9 +585,10 @@ const styles = StyleSheet.create({
   },
   projectCard: {
     width: (width - 60) / 2,
+    height: 110,
     marginBottom: SPACING.md,
-    backgroundColor: COLORS.card,
-    borderRadius: BORDER_RADIUS.md,
+    backgroundColor: '#323232',
+    borderRadius: 10,
     overflow: 'hidden',
     shadowColor: '#000',
     shadowOffset: {

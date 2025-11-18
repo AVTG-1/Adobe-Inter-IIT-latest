@@ -4,13 +4,14 @@
  * Grid of AI tools with Transparent Background as first tile
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
   ScrollView,
+  Animated,
 } from 'react-native';
 import BottomSheet, { BottomSheetBackdrop, BottomSheetView } from '@gorhom/bottom-sheet';
 import { Ionicons } from '@expo/vector-icons';
@@ -23,12 +24,12 @@ interface AIFeaturesSheetProps {
 }
 
 const AI_FEATURES = [
-  { id: 'transparent_bg', icon: 'cut', label: 'Transparent\nBackground', color: '#FF6B9D' },
-  { id: 'auto_enhance', icon: 'sparkles', label: 'Auto\nEnhance', color: '#00D9FF' },
-  { id: 'hdr', icon: 'contrast', label: 'HDR', color: '#FFB74D' },
-  { id: 'portrait', icon: 'person', label: 'Portrait', color: '#9C27B0' },
-  { id: 'artistic', icon: 'brush', label: 'Artistic\nLooks', color: '#E91E63' },
-  { id: 'color_pop', icon: 'color-palette', label: 'Color\nPop', color: '#4CAF50' },
+  { id: 'ai_enhance', icon: 'sparkles', label: 'AI Enhance', color: '#00D9FF' },
+  { id: 'remove_object', icon: 'cut', label: 'Remove Object', color: '#FF6B9D' },
+  { id: 'sky_replace', icon: 'cloud', label: 'Sky Replace', color: '#74B9FF' },
+  { id: 'color_grade', icon: 'color-palette', label: 'Color Grade', color: '#FFB74D' },
+  { id: 'background_blur', icon: 'layers', label: 'Background Blur', color: '#9C27B0' },
+  { id: 'portrait_fix', icon: 'person', label: 'Portrait Fix', color: '#E91E63' },
 ];
 
 const AIFeaturesSheet: React.FC<AIFeaturesSheetProps> = ({
@@ -39,13 +40,31 @@ const AIFeaturesSheet: React.FC<AIFeaturesSheetProps> = ({
   const [selectedFeature, setSelectedFeature] = useState<string | null>(null);
   const snapPoints = React.useMemo(() => ['35%'], []);
 
+  // Animation values for stagger effect
+  const fadeAnims = React.useRef(
+    AI_FEATURES.map(() => new Animated.Value(0))
+  ).current;
+
+  useEffect(() => {
+    // Stagger animation with 50ms delay between each card
+    const animations = fadeAnims.map((anim, index) =>
+      Animated.timing(anim, {
+        toValue: 1,
+        duration: 300,
+        delay: index * 50,
+        useNativeDriver: true,
+      })
+    );
+    Animated.parallel(animations).start();
+  }, []);
+
   const renderBackdrop = React.useCallback(
     (props: any) => (
       <BottomSheetBackdrop
         {...props}
         disappearsOnIndex={-1}
         appearsOnIndex={0}
-        opacity={0.5}
+        opacity={0.2}
       />
     ),
     []
@@ -77,27 +96,41 @@ const AIFeaturesSheet: React.FC<AIFeaturesSheetProps> = ({
           contentContainerStyle={styles.gridContainer}
           showsVerticalScrollIndicator={false}
         >
-          {AI_FEATURES.map((feature) => (
-            <TouchableOpacity
+          {AI_FEATURES.map((feature, index) => (
+            <Animated.View
               key={feature.id}
-              style={[
-                styles.featureCard,
-                selectedFeature === feature.id && styles.featureCardSelected,
-              ]}
-              onPress={() => handleFeaturePress(feature.id)}
-              activeOpacity={0.7}
+              style={{
+                opacity: fadeAnims[index],
+                transform: [
+                  {
+                    translateY: fadeAnims[index].interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [20, 0],
+                    }),
+                  },
+                ],
+              }}
             >
-              <View style={[styles.iconContainer, { backgroundColor: feature.color }]}>
-                <Ionicons
-                  name={feature.icon as any}
-                  size={28}
-                  color="#FFFFFF"
-                />
-              </View>
-              <Text style={styles.featureLabel} numberOfLines={2}>
-                {feature.label}
-              </Text>
-            </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.featureCard,
+                  selectedFeature === feature.id && styles.featureCardSelected,
+                ]}
+                onPress={() => handleFeaturePress(feature.id)}
+                activeOpacity={0.7}
+              >
+                <View style={[styles.iconContainer, { backgroundColor: feature.color }]}>
+                  <Ionicons
+                    name={feature.icon as any}
+                    size={28}
+                    color="#FFFFFF"
+                  />
+                </View>
+                <Text style={styles.featureLabel} numberOfLines={2}>
+                  {feature.label}
+                </Text>
+              </TouchableOpacity>
+            </Animated.View>
           ))}
         </ScrollView>
       </BottomSheetView>
