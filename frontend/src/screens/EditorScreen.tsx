@@ -13,6 +13,7 @@ import {
   Text,
   Dimensions,
   Animated,
+  Easing,
   ActivityIndicator,
   Alert,
 } from 'react-native';
@@ -101,7 +102,7 @@ export default function EditorScreen({ route, navigation }: Props) {
       Animated.timing(fadeAnim, {
         toValue: 1,
         duration: 800, // Slower fade in
-        easing: Animated.Easing.bezier(0.25, 0.1, 0.25, 1), // Smooth ease-in-out
+        easing: Easing.bezier(0.25, 0.1, 0.25, 1), // Smooth ease-in-out
         useNativeDriver: true,
       }),
       Animated.spring(toolbarAnim, {
@@ -253,7 +254,7 @@ export default function EditorScreen({ route, navigation }: Props) {
     Animated.timing(editPanelHeight, {
       toValue: 0,
       duration: 400, // Slower collapse
-      easing: Animated.Easing.bezier(0.25, 0.1, 0.25, 1), // Smooth ease-in-out
+      easing: Easing.bezier(0.25, 0.1, 0.25, 1), // Smooth ease-in-out
       useNativeDriver: false,
     }).start();
   };
@@ -637,7 +638,7 @@ export default function EditorScreen({ route, navigation }: Props) {
                 Animated.timing(editPanelHeight, {
                   toValue: 0,
                   duration: 400, // Slower collapse
-                  easing: Animated.Easing.bezier(0.25, 0.1, 0.25, 1), // Smooth ease-in-out
+                  easing: Easing.bezier(0.25, 0.1, 0.25, 1), // Smooth ease-in-out
                   useNativeDriver: false,
                 }).start();
               }}
