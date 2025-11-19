@@ -13,6 +13,7 @@ import {
   ScrollView,
   Animated,
   Dimensions,
+  Easing,
 } from 'react-native';
 import BottomSheet, { BottomSheetBackdrop, BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { BlurView } from 'expo-blur';
@@ -50,6 +51,15 @@ const AIFeaturesSheet: React.FC<AIFeaturesSheetProps> = ({
 }) => {
   const [selectedFeature, setSelectedFeature] = useState<string | null>(null);
   const snapPoints = React.useMemo(() => ['60%'], []);
+
+  // Smooth and slow animation configuration
+  const animationConfigs = React.useMemo(
+    () => ({
+      duration: 500, // Slower animation (500ms)
+      easing: Easing.bezier(0.25, 0.1, 0.25, 1), // Smooth ease-in-out curve
+    }),
+    []
+  );
 
   // Animation values for stagger effect
   const fadeAnims = React.useRef(
@@ -92,6 +102,7 @@ const AIFeaturesSheet: React.FC<AIFeaturesSheetProps> = ({
       index={-1}
       snapPoints={snapPoints}
       enablePanDownToClose
+      animationConfigs={animationConfigs}
       backdropComponent={renderBackdrop}
       onClose={onClose}
       backgroundStyle={styles.bottomSheetBackground}

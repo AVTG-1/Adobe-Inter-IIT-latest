@@ -10,6 +10,7 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
+  Easing,
 } from 'react-native';
 import BottomSheet, { BottomSheetBackdrop, BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { Ionicons } from '@expo/vector-icons';
@@ -34,6 +35,15 @@ const AddMenuSheet: React.FC<AddMenuSheetProps> = ({
 }) => {
   const snapPoints = React.useMemo(() => ['25%'], []);
 
+  // Smooth and slow animation configuration
+  const animationConfigs = React.useMemo(
+    () => ({
+      duration: 500, // Slower animation (500ms)
+      easing: Easing.bezier(0.25, 0.1, 0.25, 1), // Smooth ease-in-out curve
+    }),
+    []
+  );
+
   const renderBackdrop = React.useCallback(
     (props: any) => (
       <BottomSheetBackdrop
@@ -57,6 +67,7 @@ const AddMenuSheet: React.FC<AddMenuSheetProps> = ({
       index={-1}
       snapPoints={snapPoints}
       enablePanDownToClose
+      animationConfigs={animationConfigs}
       backdropComponent={renderBackdrop}
       onClose={onClose}
       backgroundStyle={styles.bottomSheetBackground}

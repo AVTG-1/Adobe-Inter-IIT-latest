@@ -5,7 +5,7 @@
  */
 
 import React, { useCallback, useMemo } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Easing } from 'react-native';
 import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -52,6 +52,15 @@ export default function ExportSheet({
 }: ExportSheetProps) {
   const snapPoints = useMemo(() => ['50%'], []);
 
+  // Smooth and slow animation configuration
+  const animationConfigs = useMemo(
+    () => ({
+      duration: 500, // Slower animation (500ms)
+      easing: Easing.bezier(0.25, 0.1, 0.25, 1), // Smooth ease-in-out curve
+    }),
+    []
+  );
+
   const handleSheetChanges = useCallback((index: number) => {
     if (index === -1) {
       onClose();
@@ -69,6 +78,7 @@ export default function ExportSheet({
       snapPoints={snapPoints}
       onChange={handleSheetChanges}
       enablePanDownToClose
+      animationConfigs={animationConfigs}
       backgroundStyle={styles.sheetBackground}
       handleIndicatorStyle={styles.handleIndicator}
     >

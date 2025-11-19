@@ -13,6 +13,7 @@ import {
   FlatList,
   TextInput,
   Alert,
+  Easing,
 } from 'react-native';
 import BottomSheet, { BottomSheetBackdrop, BottomSheetFlatList } from '@gorhom/bottom-sheet';
 import { Ionicons } from '@expo/vector-icons';
@@ -36,6 +37,15 @@ const LayersModal: React.FC<LayersModalProps> = ({
   onClose,
 }) => {
   const snapPoints = useMemo(() => ['30%'], []);
+
+  // Smooth and slow animation configuration
+  const animationConfigs = useMemo(
+    () => ({
+      duration: 500, // Slower animation (500ms)
+      easing: Easing.bezier(0.25, 0.1, 0.25, 1), // Smooth ease-in-out curve
+    }),
+    []
+  );
 
   const [layers, setLayers] = useState<Layer[]>([
     { id: '1', name: 'Background', visible: true, locked: false, opacity: 100 },
@@ -167,6 +177,7 @@ const LayersModal: React.FC<LayersModalProps> = ({
       enableDynamicSizing={false}
       enableContentPanningGesture={false}
       animateOnMount={true}
+      animationConfigs={animationConfigs}
       backdropComponent={renderBackdrop}
       onClose={onClose}
       backgroundStyle={styles.sheetBackground}

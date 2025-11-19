@@ -96,17 +96,18 @@ export default function EditorScreen({ route, navigation }: Props) {
   const [aiButtonScale] = useState(new Animated.Value(1));
 
   useEffect(() => {
-    // Fade in animation
+    // Fade in animation - slower and smoother
     Animated.parallel([
       Animated.timing(fadeAnim, {
         toValue: 1,
-        duration: 600,
+        duration: 800, // Slower fade in
+        easing: Animated.Easing.bezier(0.25, 0.1, 0.25, 1), // Smooth ease-in-out
         useNativeDriver: true,
       }),
       Animated.spring(toolbarAnim, {
         toValue: 1,
-        friction: 8,
-        tension: 40,
+        friction: 10, // More friction for smoother motion
+        tension: 35, // Less tension for slower spring
         useNativeDriver: true,
       }),
     ]).start();
@@ -124,9 +125,11 @@ export default function EditorScreen({ route, navigation }: Props) {
       aiFeaturesOpen;
     setShowAIButton(!shouldHide);
 
+    // Smoother and slower AI button animation
     Animated.spring(aiButtonScale, {
       toValue: shouldHide ? 0 : 1,
-      friction: 8,
+      friction: 12, // More friction for smoother motion
+      tension: 30, // Less tension for slower spring
       useNativeDriver: true,
     }).start();
   }, [
@@ -246,9 +249,11 @@ export default function EditorScreen({ route, navigation }: Props) {
     exportSheetRef.current?.close();
     adjustmentPanelRef.current?.close();
 
+    // Smoother and slower panel collapse
     Animated.timing(editPanelHeight, {
       toValue: 0,
-      duration: 300,
+      duration: 400, // Slower collapse
+      easing: Animated.Easing.bezier(0.25, 0.1, 0.25, 1), // Smooth ease-in-out
       useNativeDriver: false,
     }).start();
   };
@@ -262,10 +267,11 @@ export default function EditorScreen({ route, navigation }: Props) {
     // Handle Edit - Expands bottom bar upward
     if (toolId === 'edit') {
       setShowEditPanel(true);
+      // Smoother and slower edit panel expansion
       Animated.spring(editPanelHeight, {
         toValue: 280,
-        friction: 8,
-        tension: 40,
+        friction: 12, // More friction for smoother motion
+        tension: 35, // Less tension for slower spring
         useNativeDriver: false,
       }).start();
       return;
@@ -627,9 +633,11 @@ export default function EditorScreen({ route, navigation }: Props) {
               onPress={() => {
                 setShowEditPanel(false);
                 setSelectedTool(null);
+                // Smoother and slower panel collapse
                 Animated.timing(editPanelHeight, {
                   toValue: 0,
-                  duration: 300,
+                  duration: 400, // Slower collapse
+                  easing: Animated.Easing.bezier(0.25, 0.1, 0.25, 1), // Smooth ease-in-out
                   useNativeDriver: false,
                 }).start();
               }}
@@ -769,9 +777,11 @@ export default function EditorScreen({ route, navigation }: Props) {
                       onPress={() => {
                         setShowEditPanel(false);
                         setSelectedTool(null);
+                        // Smoother and slower panel collapse
                         Animated.timing(editPanelHeight, {
                           toValue: 0,
-                          duration: 300,
+                          duration: 400, // Slower collapse
+                          easing: Animated.Easing.bezier(0.25, 0.1, 0.25, 1), // Smooth ease-in-out
                           useNativeDriver: false,
                         }).start();
                       }}
