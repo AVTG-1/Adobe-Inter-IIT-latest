@@ -183,6 +183,11 @@ class ApiClient {
 }
 
 // Export singleton instance
+// NOTE: By default, useMockData is true. This means the API client will return mock data.
+// To connect to the real FastAPI backend:
+//   1. Ensure the backend is running: cd backend && ./run.sh
+//   2. Call apiClient.setUseMockData(false) in your component
+// Or create a new instance: new ApiClient('http://localhost:8000/api/v1', false)
 export const apiClient = new ApiClient();
 
 // Export class for custom instances

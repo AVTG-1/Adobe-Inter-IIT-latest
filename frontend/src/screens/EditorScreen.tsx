@@ -32,6 +32,8 @@ import { saveProject } from '../services/projects';
 import * as MediaLibrary from 'expo-media-library';
 import Toast from 'react-native-toast-message';
 import { COLORS, SPACING, BORDER_RADIUS, FONT_SIZES } from '../config/theme';
+import { apiClient } from '../services/api';
+import { EditOperation } from '../types/api';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Editor'>;
 
@@ -84,6 +86,8 @@ export default function EditorScreen({ route, navigation }: Props) {
   const [addMenuOpen, setAddMenuOpen] = useState(false);
   const [aiFeaturesOpen, setAiFeaturesOpen] = useState(false);
   const [adjustmentOpen, setAdjustmentOpen] = useState(false);
+  const [currentImageUrl, setCurrentImageUrl] = useState<string>(imageUrl || '');
+  const [processing, setProcessing] = useState(false);
 
   // Animations
   const [fadeAnim] = useState(new Animated.Value(0));
@@ -198,8 +202,8 @@ export default function EditorScreen({ route, navigation }: Props) {
       // Save project to recents
       const project = await saveProject({
         name: isBlankCanvas ? 'Blank Canvas' : 'Edited Image',
-        thumbnail: imageUrl || 'placeholder',
-        imageUrl: imageUrl,
+        thumbnail: currentImageUrl || 'placeholder',
+        imageUrl: currentImageUrl,
         isBlankCanvas: isBlankCanvas,
       });
 
@@ -296,17 +300,178 @@ export default function EditorScreen({ route, navigation }: Props) {
     }
   };
 
-  const handleEditToolSelect = (toolId: string) => {
+  const handleEditToolSelect = async (toolId: string) => {
     console.log('Edit tool selected:', toolId);
-    Toast.show({
-      type: 'info',
-      text1: `${toolId} tool`,
-      text2: 'Applied successfully',
-    });
+
+    try {
+      setProcessing(true);
+      let operations: EditOperation[] = [];
+
+      switch (toolId) {
+        case 'rotate':
+          operations = [{
+            type: 'rotate',
+            useService: 'imaginary',
+            params: { rotate: 90 }, // Rotate 90 degrees clockwise
+          }];
+          break;
+
+        case 'flip':
+          operations = [{
+            type: 'flip',
+            useService: 'imaginary',
+            params: { flip: true },
+          }];
+          break;
+
+        case 'resize':
+          // Default resize to 800x600
+          operations = [{
+            type: 'resize',
+            useService: 'imaginary',
+            params: { width: 800, height: 600 },
+          }];
+          break;
+
+        case 'blur':
+          operations = [{
+            type: 'blur',
+            useService: 'opencv',
+            params: { sigma: 2.0 },
+          }];
+          break;
+
+        case 'sharpen':
+          operations = [{
+            type: 'sharpness',
+            useService: 'opencv',
+            params: { value: 1.5 },
+          }];
+          break;
+
+        case 'crop':
+          // Smart crop to square
+          operations = [{
+            type: 'smartcrop',
+            useService: 'imaginary',
+            params: { width: 600, height: 600 },
+          }];
+          break;
+
+        case 'vignette':
+        case 'frame':
+        case 'filter':
+          // Not yet implemented in backend
+          Toast.show({
+            type: 'info',
+            text1: 'Coming Soon',
+            text2: `${toolId} effect will be available soon`,
+          });
+          setProcessing(false);
+          return;
+
+        default:
+          console.log(`Tool ${toolId} not yet implemented`);
+          setProcessing(false);
+          return;
+      }
+
+      const response = await apiClient.submitEditWorkflow({
+        image_url: currentImageUrl,
+        operations,
+      });
+
+      if (response.status === 'completed' && response.result_url) {
+        setCurrentImageUrl(response.result_url);
+        Toast.show({
+          type: 'success',
+          text1: `${toolId} Applied`,
+          text2: 'Image updated successfully',
+        });
+      } else if (response.error) {
+        throw new Error(response.error);
+      }
+
+      setProcessing(false);
+    } catch (error: any) {
+      console.error('Edit tool failed:', error);
+      setProcessing(false);
+      Toast.show({
+        type: 'error',
+        text1: 'Edit Failed',
+        text2: error.message || 'Please try again',
+      });
+    }
   };
 
   const handleAdjustmentChange = (type: string, value: number) => {
     console.log(`${type} adjusted to ${value}`);
+  };
+
+  const handleApplyAdjustments = async (values: { hue: number; saturation: number; brightness: number }) => {
+    try {
+      setProcessing(true);
+
+      const operations: EditOperation[] = [];
+
+      // Normalize values: sliders are -100 to 100, API expects -1.0 to 1.0
+      if (values.brightness !== 0) {
+        operations.push({
+          type: 'brightness',
+          useService: 'opencv',
+          params: { value: values.brightness / 100 },
+        });
+      }
+
+      if (values.saturation !== 0) {
+        operations.push({
+          type: 'saturation',
+          useService: 'opencv',
+          params: { value: values.saturation / 100 },
+        });
+      }
+
+      // Hue is not directly supported yet - skip for now
+      if (values.hue !== 0) {
+        console.warn('Hue adjustment not yet supported by backend');
+      }
+
+      if (operations.length === 0) {
+        Toast.show({
+          type: 'info',
+          text1: 'No Changes',
+          text2: 'No adjustments were made',
+        });
+        setProcessing(false);
+        return;
+      }
+
+      const response = await apiClient.submitEditWorkflow({
+        image_url: currentImageUrl,
+        operations,
+      });
+
+      if (response.status === 'completed' && response.result_url) {
+        setCurrentImageUrl(response.result_url);
+        Toast.show({
+          type: 'success',
+          text1: 'Adjustments Applied',
+          text2: `Processing time: ${response.processing_time_ms}ms`,
+        });
+      } else if (response.error) {
+        throw new Error(response.error);
+      }
+
+      setProcessing(false);
+    } catch (error: any) {
+      console.error('Adjustment failed:', error);
+      setProcessing(false);
+      Toast.show({
+        type: 'error',
+        text1: 'Adjustment Failed',
+        text2: error.message || 'Please try again',
+      });
+    }
   };
 
   const handleAddOptionSelect = (option: string) => {
@@ -439,7 +604,7 @@ export default function EditorScreen({ route, navigation }: Props) {
             </View>
           ) : (
             <Image
-              source={{ uri: imageUrl }}
+              source={{ uri: currentImageUrl }}
               style={styles.image}
               resizeMode="contain"
               onLoad={() => setImageLoaded(true)}
@@ -470,6 +635,14 @@ export default function EditorScreen({ route, navigation }: Props) {
               }}
             />
           )}
+
+          {/* Processing Overlay */}
+          {processing && (
+            <View style={styles.processingOverlay}>
+              <ActivityIndicator size="large" color={COLORS.primary} />
+              <Text style={styles.processingText}>Processing...</Text>
+            </View>
+          )}
         </Animated.View>
 
         {/* Floating AI Chat Button */}
@@ -497,6 +670,7 @@ export default function EditorScreen({ route, navigation }: Props) {
           bottomSheetRef={adjustmentPanelRef}
           onClose={() => setAdjustmentOpen(false)}
           onValueChange={handleAdjustmentChange}
+          onApply={handleApplyAdjustments}
         />
 
         {/* Bottom Toolbar with Edit Panel */}
@@ -764,6 +938,23 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     backgroundColor: 'transparent',
+  },
+  processingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
+  },
+  processingText: {
+    marginTop: 12,
+    fontSize: FONT_SIZES.md,
+    color: '#FFFFFF',
+    fontWeight: '600',
   },
   loadingContainer: {
     position: 'absolute',

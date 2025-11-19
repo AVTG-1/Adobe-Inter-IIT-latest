@@ -22,6 +22,7 @@ interface AdjustmentPanelProps {
   bottomSheetRef: React.RefObject<BottomSheet>;
   onClose: () => void;
   onValueChange?: (type: string, value: number) => void;
+  onApply?: (values: { hue: number; saturation: number; brightness: number }) => void;
 }
 
 const ADJUSTMENT_TOOLS = [
@@ -34,6 +35,7 @@ const AdjustmentPanel: React.FC<AdjustmentPanelProps> = ({
   bottomSheetRef,
   onClose,
   onValueChange,
+  onApply,
 }) => {
   const [values, setValues] = useState({
     hue: 0,
@@ -63,6 +65,11 @@ const AdjustmentPanel: React.FC<AdjustmentPanelProps> = ({
   const handleClose = () => {
     onClose();
     bottomSheetRef.current?.close();
+  };
+
+  const handleApply = () => {
+    onApply?.(values);
+    handleClose();
   };
 
   return (
@@ -127,7 +134,7 @@ const AdjustmentPanel: React.FC<AdjustmentPanelProps> = ({
             ))}
 
             {/* Apply Button */}
-            <TouchableOpacity style={styles.applyButton} onPress={handleClose}>
+            <TouchableOpacity style={styles.applyButton} onPress={handleApply}>
               <Text style={styles.applyButtonText}>Apply Changes</Text>
             </TouchableOpacity>
           </View>

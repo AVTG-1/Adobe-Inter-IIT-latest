@@ -14,10 +14,26 @@ export type EditOperationType =
   | 'rotate'
   | 'blur'
   | 'saturation'
-  | 'exposure';
+  | 'exposure'
+  | 'flip'
+  | 'flop'
+  | 'sharpness'
+  | 'smartcrop'
+  | 'enlarge'
+  | 'extract'
+  | 'zoom'
+  | 'thumbnail'
+  | 'fit'
+  | 'autorotate'
+  | 'convert'
+  | 'watermark'
+  | 'watermarkimage';
 
 export interface EditOperation {
   type: EditOperationType;
+  useService?: 'imaginary' | 'opencv';
+  params?: Record<string, any>;
+  // Legacy fields for backward compatibility
   value?: number;
   x?: number;
   y?: number;
