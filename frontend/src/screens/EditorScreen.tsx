@@ -29,6 +29,9 @@ import AddMenuSheet from '../components/AddMenuSheet';
 import AIFeaturesSheet from '../components/AIFeaturesSheet';
 import AdjustmentPanel from '../components/AdjustmentPanel';
 import AIChatModal from '../components/AIChatModal';
+import FiltersPanel, { Filter } from '../components/FiltersPanel';
+import EnhancedAdjustmentPanel, { AdjustmentValues } from '../components/EnhancedAdjustmentPanel';
+import DrawingToolsPanel, { DrawingTool } from '../components/DrawingToolsPanel';
 import { saveProject } from '../services/projects';
 import * as MediaLibrary from 'expo-media-library';
 import Toast from 'react-native-toast-message';
@@ -49,13 +52,14 @@ const TOOLS = [
   { id: 'ai', icon: 'sparkles', label: 'AI' },
 ] as const;
 
-// 9 Edit Tools - Shown when Edit is tapped
+// 10 Edit Tools - Shown when Edit is tapped
 const EDIT_TOOLS = [
   { id: 'crop', icon: 'crop', label: 'Crop' },
   { id: 'resize', icon: 'resize', label: 'Resize' },
   { id: 'rotate', icon: 'reload', label: 'Rotate' },
   { id: 'flip', icon: 'swap-horizontal', label: 'Flip' },
-  { id: 'filter', icon: 'color-filter', label: 'Filter' },
+  { id: 'filters', icon: 'color-filter', label: 'Filters' },
+  { id: 'drawing', icon: 'brush', label: 'Drawing' },
   { id: 'blur', icon: 'radio-button-on', label: 'Blur' },
   { id: 'sharpen', icon: 'diamond', label: 'Sharpen' },
   { id: 'vignette', icon: 'ellipse-outline', label: 'Vignette' },
@@ -71,6 +75,9 @@ export default function EditorScreen({ route, navigation }: Props) {
   const addMenuRef = useRef<BottomSheet>(null);
   const aiFeaturesRef = useRef<BottomSheet>(null);
   const adjustmentPanelRef = useRef<BottomSheet>(null);
+  const filtersRef = useRef<BottomSheet>(null);
+  const enhancedAdjustmentRef = useRef<BottomSheet>(null);
+  const drawingToolsRef = useRef<BottomSheet>(null);
 
   // State
   const [selectedTool, setSelectedTool] = useState<string | null>(null);
@@ -87,6 +94,9 @@ export default function EditorScreen({ route, navigation }: Props) {
   const [addMenuOpen, setAddMenuOpen] = useState(false);
   const [aiFeaturesOpen, setAiFeaturesOpen] = useState(false);
   const [adjustmentOpen, setAdjustmentOpen] = useState(false);
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [enhancedAdjustmentOpen, setEnhancedAdjustmentOpen] = useState(false);
+  const [drawingToolsOpen, setDrawingToolsOpen] = useState(false);
   const [currentImageUrl, setCurrentImageUrl] = useState<string>(imageUrl || '');
   const [processing, setProcessing] = useState(false);
 
@@ -123,7 +133,10 @@ export default function EditorScreen({ route, navigation }: Props) {
       layersOpen ||
       exportOpen ||
       addMenuOpen ||
-      aiFeaturesOpen;
+      aiFeaturesOpen ||
+      filtersOpen ||
+      enhancedAdjustmentOpen ||
+      drawingToolsOpen;
     setShowAIButton(!shouldHide);
 
     // Smoother and slower AI button animation
@@ -141,6 +154,9 @@ export default function EditorScreen({ route, navigation }: Props) {
     exportOpen,
     addMenuOpen,
     aiFeaturesOpen,
+    filtersOpen,
+    enhancedAdjustmentOpen,
+    drawingToolsOpen,
   ]);
 
   const handleHome = () => {
@@ -244,11 +260,17 @@ export default function EditorScreen({ route, navigation }: Props) {
     setAiFeaturesOpen(false);
     setExportOpen(false);
     setAdjustmentOpen(false);
+    setFiltersOpen(false);
+    setEnhancedAdjustmentOpen(false);
+    setDrawingToolsOpen(false);
     layersModalRef.current?.close();
     addMenuRef.current?.close();
     aiFeaturesRef.current?.close();
     exportSheetRef.current?.close();
     adjustmentPanelRef.current?.close();
+    filtersRef.current?.close();
+    enhancedAdjustmentRef.current?.close();
+    drawingToolsRef.current?.close();
 
     // Smoother and slower panel collapse
     Animated.timing(editPanelHeight, {
@@ -310,6 +332,20 @@ export default function EditorScreen({ route, navigation }: Props) {
   const handleEditToolSelect = async (toolId: string) => {
     console.log('Edit tool selected:', toolId);
 
+    // Handle Filters panel
+    if (toolId === 'filters') {
+      setFiltersOpen(true);
+      filtersRef.current?.expand();
+      return;
+    }
+
+    // Handle Drawing tools panel
+    if (toolId === 'drawing') {
+      setDrawingToolsOpen(true);
+      drawingToolsRef.current?.expand();
+      return;
+    }
+
     try {
       setProcessing(true);
       let operations: EditOperation[] = [];
@@ -367,7 +403,6 @@ export default function EditorScreen({ route, navigation }: Props) {
 
         case 'vignette':
         case 'frame':
-        case 'filter':
           // Not yet implemented in backend
           Toast.show({
             type: 'info',
@@ -506,6 +541,85 @@ export default function EditorScreen({ route, navigation }: Props) {
   const handleOpenAIChat = () => {
     closeAllPanels();
     setAiChatVisible(true);
+  };
+
+  const handleFilterSelect = (filter: Filter) => {
+    console.log('Filter selected:', filter.name);
+    setFiltersOpen(false);
+    filtersRef.current?.close();
+    Toast.show({
+      type: 'info',
+      text1: `${filter.name} Filter`,
+      text2: 'Filter applied to image',
+    });
+    // TODO: Apply filter via backend API
+  };
+
+  const handleEnhancedAdjustmentsApply = async (values: AdjustmentValues) => {
+    console.log('Enhanced adjustments applied:', values);
+    try {
+      setProcessing(true);
+
+      // Build operations array from adjustment values
+      const operations: EditOperation[] = [];
+
+      if (values.brightness !== 0) {
+        operations.push({
+          type: 'brightness',
+          useService: 'opencv',
+          params: { value: values.brightness / 100 },
+        });
+      }
+
+      if (values.saturation !== 0) {
+        operations.push({
+          type: 'saturation',
+          useService: 'opencv',
+          params: { value: values.saturation / 100 },
+        });
+      }
+
+      // Additional adjustments can be added as backend supports them
+      if (values.contrast !== 0) {
+        console.warn('Contrast adjustment not yet fully supported');
+      }
+
+      if (operations.length > 0) {
+        const response = await apiClient.submitEditWorkflow({
+          image_url: currentImageUrl,
+          operations,
+        });
+
+        if (response.status === 'completed' && response.result_url) {
+          setCurrentImageUrl(response.result_url);
+          Toast.show({
+            type: 'success',
+            text1: 'Adjustments Applied',
+            text2: `Processing time: ${response.processing_time_ms}ms`,
+          });
+        }
+      }
+
+      setProcessing(false);
+    } catch (error: any) {
+      console.error('Enhanced adjustment failed:', error);
+      setProcessing(false);
+      Toast.show({
+        type: 'error',
+        text1: 'Adjustment Failed',
+        text2: error.message || 'Please try again',
+      });
+    }
+  };
+
+  const handleDrawingToolSelect = (tool: DrawingTool) => {
+    console.log('Drawing tool selected:', tool.name, 'Settings:', tool.settings);
+    Toast.show({
+      type: 'info',
+      text1: `${tool.name} Tool`,
+      text2: `Color: ${tool.settings.color}, Size: ${tool.settings.size}px`,
+    });
+    // TODO: Enable drawing canvas with selected tool
   };
 
   return (
@@ -683,7 +797,7 @@ export default function EditorScreen({ route, navigation }: Props) {
         />
 
         {/* Bottom Toolbar with Edit Panel */}
-        {!adjustmentOpen && !layersOpen && (
+        {!adjustmentOpen && !layersOpen && !filtersOpen && !enhancedAdjustmentOpen && !drawingToolsOpen && (
           <Animated.View
             style={[
               styles.toolbarContainer,
@@ -859,6 +973,28 @@ export default function EditorScreen({ route, navigation }: Props) {
         <AIChatModal
           visible={aiChatVisible}
           onClose={() => setAiChatVisible(false)}
+        />
+
+        {/* Filters Panel */}
+        <FiltersPanel
+          bottomSheetRef={filtersRef}
+          onClose={() => setFiltersOpen(false)}
+          onFilterSelect={handleFilterSelect}
+          previewImage={currentImageUrl}
+        />
+
+        {/* Enhanced Adjustment Panel */}
+        <EnhancedAdjustmentPanel
+          bottomSheetRef={enhancedAdjustmentRef}
+          onClose={() => setEnhancedAdjustmentOpen(false)}
+          onApply={handleEnhancedAdjustmentsApply}
+        />
+
+        {/* Drawing Tools Panel */}
+        <DrawingToolsPanel
+          bottomSheetRef={drawingToolsRef}
+          onClose={() => setDrawingToolsOpen(false)}
+          onToolSelect={handleDrawingToolSelect}
         />
       </SafeAreaView>
     </GestureHandlerRootView>
