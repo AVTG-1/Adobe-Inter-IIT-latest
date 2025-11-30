@@ -24,7 +24,7 @@ import { Ionicons } from '@expo/vector-icons';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import * as MediaLibrary from 'expo-media-library';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import Toast from 'react-native-toast-message';
 import { HistoryManager } from '../utils/historyManager';
 import { getImageDimensions, getFittedDimensions } from '../utils/imageProcessing';

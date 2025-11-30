@@ -5,7 +5,7 @@
  */
 
 import * as ImageManipulator from 'expo-image-manipulator';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 
 export interface ImageDimensions {
   width: number;
@@ -30,23 +30,12 @@ export interface AdjustmentParams {
  */
 export async function getImageDimensions(uri: string): Promise<ImageDimensions> {
   try {
-    const result = await ImageManipulator.manipulateAsync(
-      uri,
-      [],
-      { format: ImageManipulator.SaveFormat.JPEG }
-    );
+    // ImageManipulator returns width and height directly
+    const result = await ImageManipulator.manipulateAsync(uri, []);
 
-    // Get dimensions from file info
-    const info = await FileSystem.getInfoAsync(result.uri);
-    if (!info.exists) {
-      throw new Error('Image file not found');
-    }
-
-    // Read image to get dimensions
-    const manipResult = await ImageManipulator.manipulateAsync(uri, []);
     return {
-      width: manipResult.width,
-      height: manipResult.height,
+      width: result.width,
+      height: result.height,
     };
   } catch (error) {
     console.error('Error getting image dimensions:', error);
