@@ -18,7 +18,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useIsFocused } from '@react-navigation/native';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import * as ImagePicker from 'expo-image-picker';
-import { uploadImageToGCS, validateImage, UploadProgress, getRecentProjects, Project } from '../services';
+import { validateImage, getRecentProjects, Project } from '../services';
 import { COLORS, SPACING, BORDER_RADIUS, FONT_SIZES } from '../config/theme';
 
 type HomeScreenNavigationProp = NativeStackNavigationProp<
@@ -86,7 +86,7 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
   };
 
   /**
-   * Handle image selection and upload
+   * Handle image selection - LOCAL ONLY (No cloud upload)
    */
   const handleImageSelected = async (result: ImagePicker.ImagePickerResult) => {
     if (result.canceled) {
@@ -96,7 +96,7 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
     const asset = result.assets[0];
     const { uri, fileSize, mimeType } = asset;
 
-    console.log('Image selected:', { uri, fileSize, mimeType });
+    console.log('Image selected (local):', { uri, fileSize, mimeType });
 
     // Validate image
     const validation = validateImage(uri, fileSize, mimeType);
@@ -105,41 +105,23 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
       return;
     }
 
-    // Show loading and start upload
+    // Show brief loading message
     setUploading(true);
-    setUploadProgress(0);
-    setUploadMessage('Uploading image to cloud storage...');
+    setUploadMessage('Opening editor...');
 
     try {
-      // Upload to GCS
-      const uploadResult = await uploadImageToGCS(
-        uri,
-        'uploads',
-        (progress: UploadProgress) => {
-          setUploadProgress(progress.progress);
-          console.log('Upload progress:', progress.progress.toFixed(1) + '%');
-        }
-      );
-
-      if (uploadResult.success && uploadResult.url) {
-        console.log('Upload successful! GCS URL:', uploadResult.url);
-        setUploadMessage('Upload complete! Opening editor...');
-
-        // Wait a bit to show success message
-        setTimeout(() => {
-          setUploading(false);
-          // Navigate to Editor with GCS URL
-          navigation.navigate('Editor', { imageUrl: uploadResult.url! });
-        }, 500);
-      } else {
-        throw new Error(uploadResult.error || 'Upload failed');
-      }
+      // Small delay for smooth UX
+      setTimeout(() => {
+        setUploading(false);
+        // Navigate to Editor with LOCAL URI (no cloud upload!)
+        navigation.navigate('Editor', { imageUrl: uri });
+      }, 300);
     } catch (error: any) {
-      console.error('Upload error:', error);
+      console.error('Error opening editor:', error);
       setUploading(false);
       Alert.alert(
-        'Upload Failed',
-        error.message || 'Failed to upload image. Please try again.',
+        'Error',
+        'Failed to open editor. Please try again.',
         [{ text: 'OK' }]
       );
     }
