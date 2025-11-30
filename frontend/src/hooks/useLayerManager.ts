@@ -40,6 +40,7 @@ export interface LayerManagerActions {
     layerId: string,
     transform: Partial<Layer['transform']>
   ) => void;
+  updateLayerImageUri: (layerId: string, imageUri: string) => void;
   renameLayer: (layerId: string, name: string) => void;
 
   // Bulk operations
@@ -241,6 +242,13 @@ export function useLayerManager(
     );
   }, []);
 
+  // Update layer image URI
+  const updateLayerImageUri = useCallback((layerId: string, imageUri: string) => {
+    setLayers((prev) =>
+      prev.map((layer) => (layer.id === layerId ? { ...layer, imageUri } : layer))
+    );
+  }, []);
+
   // Merge layer with the one below it
   const mergeDown = useCallback((layerId: string) => {
     // TODO: Implement actual image merging
@@ -299,6 +307,7 @@ export function useLayerManager(
     moveLayerDown,
     reorderLayers,
     updateLayerTransform,
+    updateLayerImageUri,
     renameLayer,
     mergeDown,
     flattenAll,

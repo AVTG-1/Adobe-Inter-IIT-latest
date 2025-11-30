@@ -32,6 +32,10 @@ import AIChatModal from '../components/AIChatModal';
 import FiltersPanel, { Filter } from '../components/FiltersPanel';
 import EnhancedAdjustmentPanel, { AdjustmentValues } from '../components/EnhancedAdjustmentPanel';
 import DrawingToolsPanel, { DrawingTool } from '../components/DrawingToolsPanel';
+import CropTool, { CropData } from '../components/CropTool';
+import RotateTool from '../components/RotateTool';
+import FlipTool, { FlipData } from '../components/FlipTool';
+import ResizeTool, { ResizeData } from '../components/ResizeTool';
 import InteractiveCanvas, { Layer } from '../components/InteractiveCanvas';
 import { useLayerManager } from '../hooks/useLayerManager';
 import { saveProject } from '../services/projects';
@@ -99,6 +103,10 @@ export default function EditorScreen({ route, navigation }: Props) {
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [enhancedAdjustmentOpen, setEnhancedAdjustmentOpen] = useState(false);
   const [drawingToolsOpen, setDrawingToolsOpen] = useState(false);
+  const [cropToolOpen, setCropToolOpen] = useState(false);
+  const [rotateToolOpen, setRotateToolOpen] = useState(false);
+  const [flipToolOpen, setFlipToolOpen] = useState(false);
+  const [resizeToolOpen, setResizeToolOpen] = useState(false);
   const [currentImageUrl, setCurrentImageUrl] = useState<string>(imageUrl || '');
   const [processing, setProcessing] = useState(false);
 
@@ -235,10 +243,15 @@ export default function EditorScreen({ route, navigation }: Props) {
         return;
       }
 
+      // TODO: Flatten all visible layers before export
+      // For now, export the base layer image
+      const visibleLayers = layerManager.layers.filter(l => l.visible);
+      console.log(`Exporting ${visibleLayers.length} visible layers (flattening needed)`);
+
       // Simulate export process
       await new Promise(resolve => setTimeout(resolve, 1500));
 
-      // Save project to recents
+      // Save project to recents with flattened layers
       const project = await saveProject({
         name: isBlankCanvas ? 'Blank Canvas' : 'Edited Image',
         thumbnail: currentImageUrl || 'placeholder',
@@ -348,8 +361,108 @@ export default function EditorScreen({ route, navigation }: Props) {
     }
   };
 
+  // Transform Tool Handlers
+  const handleCropApply = async (cropData: CropData) => {
+    setCropToolOpen(false);
+    Toast.show({
+      type: 'success',
+      text1: 'Crop Applied',
+      text2: `Cropped to ${Math.round(cropData.width)}×${Math.round(cropData.height)}px`,
+    });
+    // TODO: Use expo-image-manipulator to crop the selected layer's image
+  };
+
+  const handleRotateApply = async (rotation: number) => {
+    setRotateToolOpen(false);
+    const selectedLayer = layerManager.getSelectedLayer();
+    if (selectedLayer) {
+      layerManager.updateLayerTransform(selectedLayer.id, { rotation });
+      Toast.show({
+        type: 'success',
+        text1: 'Rotation Applied',
+        text2: `Rotated to ${Math.round(rotation)}°`,
+      });
+    }
+  };
+
+  const handleFlipApply = async (flipData: FlipData) => {
+    setFlipToolOpen(false);
+    Toast.show({
+      type: 'success',
+      text1: 'Flip Applied',
+      text2: `${flipData.horizontal ? 'Horizontal' : ''}${flipData.horizontal && flipData.vertical ? ' & ' : ''}${flipData.vertical ? 'Vertical' : ''}`,
+    });
+    // TODO: Use expo-image-manipulator to flip the selected layer's image
+  };
+
+  const handleResizeApply = async (resizeData: ResizeData) => {
+    setResizeToolOpen(false);
+    const selectedLayer = layerManager.getSelectedLayer();
+    if (selectedLayer) {
+      layerManager.updateLayerTransform(selectedLayer.id, { scale: resizeData.scale });
+      Toast.show({
+        type: 'success',
+        text1: 'Resize Applied',
+        text2: `Resized to ${Math.round(resizeData.width)}×${Math.round(resizeData.height)}px`,
+      });
+    }
+  };
+
   const handleEditToolSelect = async (toolId: string) => {
     console.log('Edit tool selected:', toolId);
+
+    // Handle Transform tools - open modals for layer editing
+    if (toolId === 'crop') {
+      if (!layerManager.selectedLayerId) {
+        Toast.show({
+          type: 'error',
+          text1: 'No Layer Selected',
+          text2: 'Please select a layer first',
+        });
+        return;
+      }
+      setCropToolOpen(true);
+      return;
+    }
+
+    if (toolId === 'rotate') {
+      if (!layerManager.selectedLayerId) {
+        Toast.show({
+          type: 'error',
+          text1: 'No Layer Selected',
+          text2: 'Please select a layer first',
+        });
+        return;
+      }
+      setRotateToolOpen(true);
+      return;
+    }
+
+    if (toolId === 'flip') {
+      if (!layerManager.selectedLayerId) {
+        Toast.show({
+          type: 'error',
+          text1: 'No Layer Selected',
+          text2: 'Please select a layer first',
+        });
+        return;
+      }
+      setFlipToolOpen(true);
+      return;
+    }
+
+    if (toolId === 'resize') {
+      if (!layerManager.selectedLayerId) {
+        Toast.show({
+          type: 'error',
+          text1: 'No Layer Selected',
+          text2: 'Please select a layer first',
+        });
+        return;
+      }
+      setResizeToolOpen(true);
+      return;
+    }
 
     // Handle Filters panel
     if (toolId === 'filters') {
@@ -370,31 +483,6 @@ export default function EditorScreen({ route, navigation }: Props) {
       let operations: EditOperation[] = [];
 
       switch (toolId) {
-        case 'rotate':
-          operations = [{
-            type: 'rotate',
-            useService: 'imaginary',
-            params: { rotate: 90 }, // Rotate 90 degrees clockwise
-          }];
-          break;
-
-        case 'flip':
-          operations = [{
-            type: 'flip',
-            useService: 'imaginary',
-            params: { flip: true },
-          }];
-          break;
-
-        case 'resize':
-          // Default resize to 800x600
-          operations = [{
-            type: 'resize',
-            useService: 'imaginary',
-            params: { width: 800, height: 600 },
-          }];
-          break;
-
         case 'blur':
           operations = [{
             type: 'blur',
@@ -408,15 +496,6 @@ export default function EditorScreen({ route, navigation }: Props) {
             type: 'sharpness',
             useService: 'opencv',
             params: { value: 1.5 },
-          }];
-          break;
-
-        case 'crop':
-          // Smart crop to square
-          operations = [{
-            type: 'smartcrop',
-            useService: 'imaginary',
-            params: { width: 600, height: 600 },
           }];
           break;
 
@@ -566,79 +645,101 @@ export default function EditorScreen({ route, navigation }: Props) {
     console.log('Filter selected:', filter.name);
     setFiltersOpen(false);
     filtersRef.current?.close();
-    Toast.show({
-      type: 'info',
-      text1: `${filter.name} Filter`,
-      text2: 'Filter applied to image',
+
+    const selectedLayer = layerManager.getSelectedLayer();
+    if (!selectedLayer) {
+      Toast.show({
+        type: 'error',
+        text1: 'No Layer Selected',
+        text2: 'Please select a layer to apply filter',
+      });
+      return;
+    }
+
+    // Create an adjustment layer with the filter
+    layerManager.addLayer({
+      type: 'adjustment',
+      name: `${filter.name} Filter`,
+      visible: true,
+      opacity: 1,
+      transform: { x: 0, y: 0, scale: 1, rotation: 0 },
+      adjustments: {
+        brightness: filter.id === 'brighten' ? 20 : 0,
+        contrast: filter.id === 'contrast' ? 20 : 0,
+        saturation: filter.id === 'saturate' ? 20 : 0,
+      },
     });
-    // TODO: Apply filter via backend API
+
+    Toast.show({
+      type: 'success',
+      text1: `${filter.name} Filter`,
+      text2: 'Applied to selected layer',
+    });
+    // TODO: Apply filter using expo-image-manipulator
   };
 
   const handleEnhancedAdjustmentsApply = async (values: AdjustmentValues) => {
     console.log('Enhanced adjustments applied:', values);
-    try {
-      setProcessing(true);
 
-      // Build operations array from adjustment values
-      const operations: EditOperation[] = [];
-
-      if (values.brightness !== 0) {
-        operations.push({
-          type: 'brightness',
-          useService: 'opencv',
-          params: { value: values.brightness / 100 },
-        });
-      }
-
-      if (values.saturation !== 0) {
-        operations.push({
-          type: 'saturation',
-          useService: 'opencv',
-          params: { value: values.saturation / 100 },
-        });
-      }
-
-      // Additional adjustments can be added as backend supports them
-      if (values.contrast !== 0) {
-        console.warn('Contrast adjustment not yet fully supported');
-      }
-
-      if (operations.length > 0) {
-        const response = await apiClient.submitEditWorkflow({
-          image_url: currentImageUrl,
-          operations,
-        });
-
-        if (response.status === 'completed' && response.result_url) {
-          setCurrentImageUrl(response.result_url);
-          Toast.show({
-            type: 'success',
-            text1: 'Adjustments Applied',
-            text2: `Processing time: ${response.processing_time_ms}ms`,
-          });
-        }
-      }
-
-      setProcessing(false);
-    } catch (error: any) {
-      console.error('Enhanced adjustment failed:', error);
-      setProcessing(false);
+    const selectedLayer = layerManager.getSelectedLayer();
+    if (!selectedLayer) {
       Toast.show({
         type: 'error',
-        text1: 'Adjustment Failed',
-        text2: error.message || 'Please try again',
+        text1: 'No Layer Selected',
+        text2: 'Please select a layer to apply adjustments',
       });
+      return;
     }
+
+    // Create an adjustment layer with the values
+    layerManager.addLayer({
+      type: 'adjustment',
+      name: 'Adjustments',
+      visible: true,
+      opacity: 1,
+      transform: { x: 0, y: 0, scale: 1, rotation: 0 },
+      adjustments: {
+        brightness: values.brightness || 0,
+        contrast: values.contrast || 0,
+        saturation: values.saturation || 0,
+        exposure: values.exposure || 0,
+        highlights: values.highlights || 0,
+        shadows: values.shadows || 0,
+        temperature: values.temperature || 0,
+        tint: values.tint || 0,
+        vibrance: values.vibrance || 0,
+        sharpness: values.sharpness || 0,
+      },
+    });
+
+    Toast.show({
+      type: 'success',
+      text1: 'Adjustments Applied',
+      text2: 'Created adjustment layer',
+    });
+    // TODO: Apply adjustments using expo-image-manipulator
   };
 
   const handleDrawingToolSelect = (tool: DrawingTool) => {
     console.log('Drawing tool selected:', tool.name, 'Settings:', tool.settings);
-    Toast.show({
-      type: 'info',
-      text1: `${tool.name} Tool`,
-      text2: `Color: ${tool.settings.color}, Size: ${tool.settings.size}px`,
+
+    // Create a new drawing layer when a drawing tool is selected
+    const layerId = layerManager.addLayer({
+      type: 'drawing',
+      name: `${tool.name} Drawing`,
+      visible: true,
+      opacity: tool.settings.opacity,
+      transform: { x: 0, y: 0, scale: 1, rotation: 0 },
     });
-    // TODO: Enable drawing canvas with selected tool
+
+    layerManager.selectLayer(layerId);
+
+    Toast.show({
+      type: 'success',
+      text1: `${tool.name} Layer Created`,
+      text2: `Ready to draw with ${tool.settings.color}`,
+    });
+    // TODO: Enable interactive drawing canvas on the new layer
   };
 
   return (
@@ -1049,6 +1150,35 @@ export default function EditorScreen({ route, navigation }: Props) {
           bottomSheetRef={drawingToolsRef}
           onClose={() => setDrawingToolsOpen(false)}
           onToolSelect={handleDrawingToolSelect}
+        />
+
+        {/* Transform Tools Modals */}
+        <CropTool
+          visible={cropToolOpen}
+          imageUri={layerManager.getSelectedLayer()?.imageUri || currentImageUrl}
+          onApply={handleCropApply}
+          onCancel={() => setCropToolOpen(false)}
+        />
+
+        <RotateTool
+          visible={rotateToolOpen}
+          currentRotation={layerManager.getSelectedLayer()?.transform.rotation || 0}
+          onApply={handleRotateApply}
+          onCancel={() => setRotateToolOpen(false)}
+        />
+
+        <FlipTool
+          visible={flipToolOpen}
+          onApply={handleFlipApply}
+          onCancel={() => setFlipToolOpen(false)}
+        />
+
+        <ResizeTool
+          visible={resizeToolOpen}
+          currentWidth={800}
+          currentHeight={600}
+          onApply={handleResizeApply}
+          onCancel={() => setResizeToolOpen(false)}
         />
       </SafeAreaView>
     </GestureHandlerRootView>

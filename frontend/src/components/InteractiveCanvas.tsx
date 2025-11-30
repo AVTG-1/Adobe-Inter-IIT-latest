@@ -43,7 +43,32 @@ export interface Layer {
   name: string;
   visible: boolean;
   opacity: number;
+  blendMode?: 'normal' | 'multiply' | 'screen' | 'overlay' | 'darken' | 'lighten';
   imageUri?: string;
+  adjustments?: {
+    brightness?: number;
+    contrast?: number;
+    saturation?: number;
+    exposure?: number;
+    highlights?: number;
+    shadows?: number;
+    temperature?: number;
+    tint?: number;
+    vibrance?: number;
+    sharpness?: number;
+  };
+  text?: {
+    content: string;
+    fontSize: number;
+    fontFamily: string;
+    color: string;
+    align: 'left' | 'center' | 'right';
+  };
+  drawing?: {
+    paths: any[];
+    color: string;
+    strokeWidth: number;
+  };
   transform: {
     x: number;
     y: number;
