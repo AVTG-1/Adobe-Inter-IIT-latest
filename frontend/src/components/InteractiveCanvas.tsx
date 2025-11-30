@@ -196,9 +196,7 @@ const InteractiveCanvas: React.FC<InteractiveCanvasProps> = ({
             onPress={resetTransform}
             activeOpacity={0.7}
           >
-            <Text style={styles.zoomText}>
-              {Math.round(scale.value * 100)}%
-            </Text>
+            <Ionicons name="scan-outline" size={20} color={COLORS.textPrimary} />
           </TouchableOpacity>
 
           <TouchableOpacity

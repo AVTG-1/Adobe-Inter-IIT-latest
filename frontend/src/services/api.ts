@@ -141,7 +141,7 @@ class ApiClient {
         resolve({
           job_id: jobId,
           status: JobStatus.COMPLETED,
-          result_url: 'https://via.placeholder.com/800x600',
+          result_url: request.image_url, // Return original image URL instead of placeholder
           agent_thoughts: [
             'General edit workflow initiated',
             `Applying ${request.operations.length} operation(s)`,
@@ -159,7 +159,7 @@ class ApiClient {
         resolve({
           job_id: jobId,
           status: JobStatus.COMPLETED,
-          result_url: 'https://via.placeholder.com/800x600',
+          // result_url is optional - omit it since we don't have access to the original image URL
           agent_thoughts: ['Job completed'],
           processing_time_ms: 2000,
         });
