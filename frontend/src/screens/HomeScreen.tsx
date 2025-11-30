@@ -18,6 +18,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useIsFocused } from '@react-navigation/native';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import * as ImagePicker from 'expo-image-picker';
+import Toast from 'react-native-toast-message';
 import { validateImage, getRecentProjects, Project } from '../services';
 import { COLORS, SPACING, BORDER_RADIUS, FONT_SIZES } from '../config/theme';
 
@@ -253,12 +254,24 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
 
   const handleMenuPress = () => {
     console.log('Menu pressed');
-    // TODO: Implement menu drawer in future phases
+    Toast.show({
+      type: 'info',
+      text1: '☰ Menu',
+      text2: 'Menu feature coming soon!',
+      position: 'top',
+      visibilityTime: 2000,
+    });
   };
 
   const handleProfilePress = () => {
     console.log('Profile pressed');
-    // TODO: Implement profile screen in future phases
+    Toast.show({
+      type: 'info',
+      text1: '👤 Profile',
+      text2: 'Profile feature coming soon!',
+      position: 'top',
+      visibilityTime: 2000,
+    });
   };
 
   const handleProjectPress = (project: Project) => {
@@ -443,6 +456,8 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
           </View>
         </View>
       </Modal>
+
+      <Toast />
     </SafeAreaView>
   );
 };
