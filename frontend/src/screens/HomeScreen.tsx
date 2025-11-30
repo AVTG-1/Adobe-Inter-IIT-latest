@@ -11,9 +11,11 @@ import {
   Alert,
   ActivityIndicator,
   Modal,
+  Easing,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useIsFocused } from '@react-navigation/native';
 import { RootStackParamList } from '../navigation/AppNavigator';
@@ -37,9 +39,24 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
   const isFocused = useIsFocused();
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(30)).current;
+  const headerFade = useRef(new Animated.Value(0)).current;
+  const titleSlide = useRef(new Animated.Value(-20)).current;
+
+  // Card animations with stagger
+  const galleryFade = useRef(new Animated.Value(0)).current;
+  const gallerySlide = useRef(new Animated.Value(40)).current;
   const galleryScaleAnim = useRef(new Animated.Value(1)).current;
+
+  const cameraFade = useRef(new Animated.Value(0)).current;
+  const cameraSlide = useRef(new Animated.Value(40)).current;
   const cameraScaleAnim = useRef(new Animated.Value(1)).current;
+
+  const blankFade = useRef(new Animated.Value(0)).current;
+  const blankSlide = useRef(new Animated.Value(40)).current;
   const blankCanvasScaleAnim = useRef(new Animated.Value(1)).current;
+
+  const recentFade = useRef(new Animated.Value(0)).current;
+  const recentSlide = useRef(new Animated.Value(40)).current;
 
   // Upload state
   const [uploading, setUploading] = useState(false);
@@ -51,19 +68,100 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
   const [loadingProjects, setLoadingProjects] = useState(true);
 
   useEffect(() => {
-    // Fade in animation on mount
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 600,
-        useNativeDriver: true,
-      }),
-      Animated.spring(slideAnim, {
-        toValue: 0,
-        friction: 8,
-        tension: 40,
-        useNativeDriver: true,
-      }),
+    // Sophisticated staggered entrance animations
+    Animated.sequence([
+      // Header appears first
+      Animated.parallel([
+        Animated.timing(headerFade, {
+          toValue: 1,
+          duration: 400,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: true,
+        }),
+        Animated.spring(titleSlide, {
+          toValue: 0,
+          friction: 10,
+          tension: 50,
+          useNativeDriver: true,
+        }),
+      ]),
+      // Then section title
+      Animated.parallel([
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 400,
+          useNativeDriver: true,
+        }),
+        Animated.spring(slideAnim, {
+          toValue: 0,
+          friction: 10,
+          tension: 50,
+          useNativeDriver: true,
+        }),
+      ]),
+      // Then cards in staggered sequence
+      Animated.stagger(120, [
+        // Gallery card
+        Animated.parallel([
+          Animated.timing(galleryFade, {
+            toValue: 1,
+            duration: 500,
+            easing: Easing.out(Easing.cubic),
+            useNativeDriver: true,
+          }),
+          Animated.spring(gallerySlide, {
+            toValue: 0,
+            friction: 9,
+            tension: 45,
+            useNativeDriver: true,
+          }),
+        ]),
+        // Camera card
+        Animated.parallel([
+          Animated.timing(cameraFade, {
+            toValue: 1,
+            duration: 500,
+            easing: Easing.out(Easing.cubic),
+            useNativeDriver: true,
+          }),
+          Animated.spring(cameraSlide, {
+            toValue: 0,
+            friction: 9,
+            tension: 45,
+            useNativeDriver: true,
+          }),
+        ]),
+        // Blank canvas card
+        Animated.parallel([
+          Animated.timing(blankFade, {
+            toValue: 1,
+            duration: 500,
+            easing: Easing.out(Easing.cubic),
+            useNativeDriver: true,
+          }),
+          Animated.spring(blankSlide, {
+            toValue: 0,
+            friction: 9,
+            tension: 45,
+            useNativeDriver: true,
+          }),
+        ]),
+        // Recent projects section
+        Animated.parallel([
+          Animated.timing(recentFade, {
+            toValue: 1,
+            duration: 500,
+            easing: Easing.out(Easing.cubic),
+            useNativeDriver: true,
+          }),
+          Animated.spring(recentSlide, {
+            toValue: 0,
+            friction: 9,
+            tension: 45,
+            useNativeDriver: true,
+          }),
+        ]),
+      ]),
     ]).start();
   }, []);
 
@@ -285,8 +383,16 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
+      {/* Header with Animation */}
+      <Animated.View
+        style={[
+          styles.header,
+          {
+            opacity: headerFade,
+            transform: [{ translateY: titleSlide }],
+          },
+        ]}
+      >
         <TouchableOpacity onPress={handleMenuPress} style={styles.menuButton}>
           <View style={styles.menuLines}>
             <View style={styles.menuLine} />
@@ -300,7 +406,7 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
             <Ionicons name="person" size={24} color={COLORS.textPrimary} />
           </View>
         </TouchableOpacity>
-      </View>
+      </Animated.View>
 
       <ScrollView
         style={styles.scrollView}
@@ -319,63 +425,126 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
         >
           <Text style={styles.sectionTitle}>Start Creating</Text>
 
-          <Animated.View style={{ transform: [{ scale: galleryScaleAnim }] }}>
+          <Animated.View
+            style={{
+              opacity: galleryFade,
+              transform: [
+                { scale: galleryScaleAnim },
+                { translateY: gallerySlide },
+              ],
+            }}
+          >
             <TouchableOpacity
-              style={styles.actionCardLarge}
               onPress={handleImportGallery}
               activeOpacity={0.8}
               disabled={uploading}
             >
-              <View style={styles.cardIconContainerLarge}>
-                <Ionicons name="images" size={56} color={COLORS.primary} />
-              </View>
-              <View style={styles.cardContent}>
-                <Text style={styles.cardTitleLarge}>Import from Gallery</Text>
-                <Text style={styles.cardSubtitleLarge}>
-                  Select a photo to start editing
-                </Text>
-              </View>
-              <Ionicons name="chevron-forward" size={28} color={COLORS.textSecondary} />
+              <LinearGradient
+                colors={['#2A2A3E', '#1F1F2E', '#1A1A24']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.actionCardLarge}
+              >
+                <View style={styles.cardIconContainerLarge}>
+                  <LinearGradient
+                    colors={['#00D9FF', '#0099FF']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={styles.iconGradient}
+                  >
+                    <Ionicons name="images" size={56} color="#FFFFFF" />
+                  </LinearGradient>
+                </View>
+                <View style={styles.cardContent}>
+                  <Text style={styles.cardTitleLarge}>Import from Gallery</Text>
+                  <Text style={styles.cardSubtitleLarge}>
+                    Select a photo to start editing
+                  </Text>
+                </View>
+                <Ionicons name="chevron-forward" size={28} color={COLORS.textSecondary} />
+              </LinearGradient>
             </TouchableOpacity>
           </Animated.View>
 
-          <Animated.View style={{ transform: [{ scale: cameraScaleAnim }] }}>
+          <Animated.View
+            style={{
+              opacity: cameraFade,
+              transform: [
+                { scale: cameraScaleAnim },
+                { translateY: cameraSlide },
+              ],
+            }}
+          >
             <TouchableOpacity
-              style={styles.actionCardStandard}
               onPress={handleOpenCamera}
               activeOpacity={0.8}
               disabled={uploading}
             >
-              <View style={styles.cardIconContainerStandard}>
-                <Ionicons name="camera" size={32} color={COLORS.primary} />
-              </View>
-              <View style={styles.cardContent}>
-                <Text style={styles.cardTitle}>Open Camera</Text>
-                <Text style={styles.cardSubtitle}>
-                  Take a new photo to edit
-                </Text>
-              </View>
-              <Ionicons name="chevron-forward" size={20} color={COLORS.textSecondary} />
+              <LinearGradient
+                colors={['#2A2A3E', '#1F1F2E', '#1A1A24']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.actionCardStandard}
+              >
+                <View style={styles.cardIconContainerStandard}>
+                  <LinearGradient
+                    colors={['#FF00D9', '#CC00AA']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={styles.iconGradientSmall}
+                  >
+                    <Ionicons name="camera" size={32} color="#FFFFFF" />
+                  </LinearGradient>
+                </View>
+                <View style={styles.cardContent}>
+                  <Text style={styles.cardTitle}>Open Camera</Text>
+                  <Text style={styles.cardSubtitle}>
+                    Take a new photo to edit
+                  </Text>
+                </View>
+                <Ionicons name="chevron-forward" size={20} color={COLORS.textSecondary} />
+              </LinearGradient>
             </TouchableOpacity>
           </Animated.View>
 
-          <Animated.View style={{ transform: [{ scale: blankCanvasScaleAnim }] }}>
+          <Animated.View
+            style={{
+              opacity: blankFade,
+              transform: [
+                { scale: blankCanvasScaleAnim },
+                { translateY: blankSlide },
+              ],
+            }}
+          >
             <TouchableOpacity
-              style={styles.actionCardStandard}
               onPress={handleBlankCanvas}
               activeOpacity={0.8}
               disabled={uploading}
             >
-              <View style={styles.cardIconContainerStandard}>
-                <Ionicons name="create" size={32} color={COLORS.primary} />
-              </View>
-              <View style={styles.cardContent}>
-                <Text style={styles.cardTitle}>Blank Canvas</Text>
-                <Text style={styles.cardSubtitle}>
-                  Start creating from scratch
-                </Text>
-              </View>
-              <Ionicons name="chevron-forward" size={20} color={COLORS.textSecondary} />
+              <LinearGradient
+                colors={['#2A2A3E', '#1F1F2E', '#1A1A24']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.actionCardStandard}
+              >
+                <View style={styles.cardIconContainerStandard}>
+                  <LinearGradient
+                    colors={['#D9FF00', '#AACC00']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={styles.iconGradientSmall}
+                  >
+                    <Ionicons name="create" size={32} color="#000000" />
+                  </LinearGradient>
+                </View>
+                <View style={styles.cardContent}>
+                  <Text style={styles.cardTitle}>Blank Canvas</Text>
+                  <Text style={styles.cardSubtitle}>
+                    Start creating from scratch
+                  </Text>
+                </View>
+                <Ionicons name="chevron-forward" size={20} color={COLORS.textSecondary} />
+              </LinearGradient>
             </TouchableOpacity>
           </Animated.View>
         </Animated.View>
@@ -385,7 +554,8 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
           style={[
             styles.recentSection,
             {
-              opacity: fadeAnim,
+              opacity: recentFade,
+              transform: [{ translateY: recentSlide }],
             },
           ]}
         >
@@ -475,7 +645,12 @@ const styles = StyleSheet.create({
     paddingVertical: SPACING.md,
     backgroundColor: COLORS.surface,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.borderLight,
+    borderBottomColor: 'rgba(0, 217, 255, 0.1)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   headerTitle: {
     fontSize: FONT_SIZES.xl,
@@ -530,15 +705,16 @@ const styles = StyleSheet.create({
     minHeight: 140,
     borderRadius: 28,
     marginBottom: SPACING.lg,
-    backgroundColor: '#323232',
-    shadowColor: '#000',
+    shadowColor: '#00D9FF',
     shadowOffset: {
       width: 0,
-      height: 4,
+      height: 8,
     },
-    shadowOpacity: 0.4,
-    shadowRadius: 12,
-    elevation: 5,
+    shadowOpacity: 0.25,
+    shadowRadius: 16,
+    elevation: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(0, 217, 255, 0.15)',
   },
   actionCardStandard: {
     flexDirection: 'row',
@@ -548,15 +724,16 @@ const styles = StyleSheet.create({
     minHeight: 80,
     borderRadius: 20,
     marginBottom: SPACING.md,
-    backgroundColor: '#323232',
-    shadowColor: '#000',
+    shadowColor: '#FF00D9',
     shadowOffset: {
       width: 0,
-      height: 2,
+      height: 4,
     },
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-    elevation: 3,
+    shadowOpacity: 0.2,
+    shadowRadius: 10,
+    elevation: 5,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 0, 217, 0.1)',
   },
   actionCard: {
     flexDirection: 'row',
@@ -580,19 +757,39 @@ const styles = StyleSheet.create({
     width: 90,
     height: 90,
     borderRadius: 45,
-    backgroundColor: COLORS.surface,
+    overflow: 'hidden',
+    marginRight: SPACING.lg,
+    shadowColor: '#00D9FF',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  iconGradient: {
+    width: 90,
+    height: 90,
+    borderRadius: 45,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: SPACING.lg,
   },
   cardIconContainerStandard: {
     width: 50,
     height: 50,
     borderRadius: 25,
-    backgroundColor: COLORS.surface,
+    overflow: 'hidden',
+    marginRight: SPACING.md,
+    shadowColor: '#FF00D9',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 4,
+  },
+  iconGradientSmall: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: SPACING.md,
   },
   cardIconContainer: {
     width: 70,
@@ -651,17 +848,19 @@ const styles = StyleSheet.create({
     width: (width - 60) / 2,
     height: 110,
     marginBottom: SPACING.md,
-    backgroundColor: '#323232',
-    borderRadius: 10,
+    backgroundColor: '#2A2A3E',
+    borderRadius: 16,
     overflow: 'hidden',
-    shadowColor: '#000',
+    shadowColor: '#00D9FF',
     shadowOffset: {
       width: 0,
-      height: 1,
+      height: 4,
     },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 2,
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 4,
+    borderWidth: 1,
+    borderColor: 'rgba(0, 217, 255, 0.1)',
   },
   projectThumbnail: {
     width: '100%',

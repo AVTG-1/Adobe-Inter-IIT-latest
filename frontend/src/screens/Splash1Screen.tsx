@@ -1,20 +1,21 @@
 /**
- * Splash Screen - Creative Photo Editor Intro
+ * Splash Screen - Stunning Photo Editor Intro
  *
- * Features: Editing-themed animations, floating elements, large animated Skip button
+ * Features: Cinematic animations, gradient background, smooth transitions
  */
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   Animated,
   Dimensions,
-  TouchableOpacity,
+  Easing,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/AppNavigator';
 
@@ -30,280 +31,302 @@ interface Props {
 const { width, height } = Dimensions.get('window');
 
 const Splash1Screen: React.FC<Props> = ({ navigation }) => {
+  // Main animations
   const fadeAnim = useRef(new Animated.Value(0)).current;
-  const logoScale = useRef(new Animated.Value(0.8)).current;
+  const logoScale = useRef(new Animated.Value(0)).current;
+  const logoRotate = useRef(new Animated.Value(0)).current;
+  const titleSlide = useRef(new Animated.Value(50)).current;
+  const subtitleSlide = useRef(new Animated.Value(50)).current;
 
-  // Editing elements animations
-  const spark1 = useRef(new Animated.Value(0)).current;
-  const spark2 = useRef(new Animated.Value(0)).current;
-  const spark3 = useRef(new Animated.Value(0)).current;
-  const photoFrame = useRef(new Animated.Value(0)).current;
-  const brushStroke = useRef(new Animated.Value(0)).current;
+  // Floating elements
+  const particle1 = useRef(new Animated.Value(0)).current;
+  const particle2 = useRef(new Animated.Value(0)).current;
+  const particle3 = useRef(new Animated.Value(0)).current;
+  const particle4 = useRef(new Animated.Value(0)).current;
+  const particle5 = useRef(new Animated.Value(0)).current;
+  const particle6 = useRef(new Animated.Value(0)).current;
+
+  // Glow effect
+  const glowAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    // Main animation sequence
-    Animated.parallel([
-      // Logo entrance
-      Animated.sequence([
-        Animated.timing(logoScale, {
+    // Main entrance sequence
+    Animated.sequence([
+      // Logo appears with bounce
+      Animated.parallel([
+        Animated.spring(logoScale, {
           toValue: 1,
-          duration: 600,
+          friction: 4,
+          tension: 40,
           useNativeDriver: true,
         }),
-        // Logo subtle pulse
-        Animated.loop(
-          Animated.sequence([
-            Animated.timing(logoScale, {
-              toValue: 1.05,
-              duration: 2000,
-              useNativeDriver: true,
-            }),
-            Animated.timing(logoScale, {
-              toValue: 1,
-              duration: 2000,
-              useNativeDriver: true,
-            }),
-          ])
-        ),
-      ]),
-      // Fade in everything
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 800,
-        useNativeDriver: true,
-      }),
-      // Sparks floating animation
-      Animated.loop(
-        Animated.parallel([
-          Animated.sequence([
-            Animated.timing(spark1, {
-              toValue: 1,
-              duration: 3000,
-              useNativeDriver: true,
-            }),
-            Animated.timing(spark1, {
-              toValue: 0,
-              duration: 0,
-              useNativeDriver: true,
-            }),
-          ]),
-          Animated.sequence([
-            Animated.delay(600),
-            Animated.timing(spark2, {
-              toValue: 1,
-              duration: 3200,
-              useNativeDriver: true,
-            }),
-            Animated.timing(spark2, {
-              toValue: 0,
-              duration: 0,
-              useNativeDriver: true,
-            }),
-          ]),
-          Animated.sequence([
-            Animated.delay(1200),
-            Animated.timing(spark3, {
-              toValue: 1,
-              duration: 2800,
-              useNativeDriver: true,
-            }),
-            Animated.timing(spark3, {
-              toValue: 0,
-              duration: 0,
-              useNativeDriver: true,
-            }),
-          ]),
-        ])
-      ),
-      // Photo frame rotation
-      Animated.loop(
-        Animated.timing(photoFrame, {
+        Animated.timing(logoRotate, {
           toValue: 1,
-          duration: 4000,
+          duration: 1200,
+          easing: Easing.elastic(1.2),
           useNativeDriver: true,
-        })
-      ),
-      // Brush stroke animation
-      Animated.loop(
-        Animated.sequence([
-          Animated.timing(brushStroke, {
-            toValue: 1,
-            duration: 2000,
-            useNativeDriver: true,
-          }),
-          Animated.timing(brushStroke, {
-            toValue: 0,
-            duration: 2000,
-            useNativeDriver: true,
-          }),
-        ])
-      ),
+        }),
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 800,
+          useNativeDriver: true,
+        }),
+      ]),
+      // Title and subtitle slide in
+      Animated.parallel([
+        Animated.spring(titleSlide, {
+          toValue: 0,
+          friction: 8,
+          tension: 40,
+          useNativeDriver: true,
+        }),
+        Animated.spring(subtitleSlide, {
+          toValue: 0,
+          delay: 100,
+          friction: 8,
+          tension: 40,
+          useNativeDriver: true,
+        }),
+      ]),
     ]).start();
 
-    // Auto-navigate after 3 seconds
+    // Continuous glow pulse
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(glowAnim, {
+          toValue: 1,
+          duration: 2000,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+        Animated.timing(glowAnim, {
+          toValue: 0,
+          duration: 2000,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+      ])
+    ).start();
+
+    // Floating particles animations
+    const particleAnimation = (particle: Animated.Value, delay: number, duration: number) => {
+      Animated.loop(
+        Animated.sequence([
+          Animated.delay(delay),
+          Animated.timing(particle, {
+            toValue: 1,
+            duration: duration,
+            easing: Easing.inOut(Easing.ease),
+            useNativeDriver: true,
+          }),
+          Animated.timing(particle, {
+            toValue: 0,
+            duration: 0,
+            useNativeDriver: true,
+          }),
+        ])
+      ).start();
+    };
+
+    particleAnimation(particle1, 0, 4000);
+    particleAnimation(particle2, 500, 3500);
+    particleAnimation(particle3, 1000, 4500);
+    particleAnimation(particle4, 1500, 3800);
+    particleAnimation(particle5, 2000, 4200);
+    particleAnimation(particle6, 2500, 3600);
+
+    // Auto-navigate after 3.5 seconds
     const timer = setTimeout(() => {
       navigation.replace('Home');
-    }, 3000);
+    }, 3500);
 
     return () => {
       clearTimeout(timer);
     };
   }, [navigation]);
 
+  const createParticle = (particle: Animated.Value, icon: string, startPos: any, color: string) => (
+    <Animated.View
+      style={[
+        styles.particle,
+        startPos,
+        {
+          opacity: particle.interpolate({
+            inputRange: [0, 0.2, 0.8, 1],
+            outputRange: [0, 1, 1, 0],
+          }),
+          transform: [
+            {
+              translateY: particle.interpolate({
+                inputRange: [0, 1],
+                outputRange: [0, -height * 0.3],
+              }),
+            },
+            {
+              translateX: particle.interpolate({
+                inputRange: [0, 0.5, 1],
+                outputRange: [0, 20, -10],
+              }),
+            },
+            {
+              scale: particle.interpolate({
+                inputRange: [0, 0.5, 1],
+                outputRange: [0.3, 1, 0.3],
+              }),
+            },
+            {
+              rotate: particle.interpolate({
+                inputRange: [0, 1],
+                outputRange: ['0deg', '360deg'],
+              }),
+            },
+          ],
+        },
+      ]}
+    >
+      <Ionicons name={icon as any} size={24} color={color} />
+    </Animated.View>
+  );
+
   return (
     <View style={styles.container}>
-      <SafeAreaView style={styles.content}>
-        {/* Floating Spark Elements */}
-        <Animated.View
-          style={[
-            styles.spark,
-            {
-              top: '15%',
-              left: '20%',
-              opacity: spark1.interpolate({
-                inputRange: [0, 0.5, 1],
-                outputRange: [0, 1, 0],
-              }),
-              transform: [
+      <LinearGradient
+        colors={['#000000', '#0F0F1E', '#1A1A2E', '#0F0F1E', '#000000']}
+        style={styles.gradient}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+      >
+        <SafeAreaView style={styles.content}>
+          {/* Floating Particles */}
+          {createParticle(particle1, 'sparkles', { top: '15%', left: '15%' }, '#00D9FF')}
+          {createParticle(particle2, 'color-filter', { top: '20%', right: '20%' }, '#FF00D9')}
+          {createParticle(particle3, 'brush', { top: '60%', left: '10%' }, '#D9FF00')}
+          {createParticle(particle4, 'color-wand', { top: '70%', right: '15%' }, '#00FFD9')}
+          {createParticle(particle5, 'shapes', { top: '40%', left: '8%' }, '#FF6B00')}
+          {createParticle(particle6, 'flash', { top: '50%', right: '12%' }, '#00D9FF')}
+
+          {/* Main Logo */}
+          <Animated.View
+            style={[
+              styles.logoContainer,
+              {
+                opacity: fadeAnim,
+                transform: [
+                  { scale: logoScale },
+                  {
+                    rotate: logoRotate.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: ['0deg', '360deg'],
+                    }),
+                  },
+                ],
+              },
+            ]}
+          >
+            {/* Glow effect */}
+            <Animated.View
+              style={[
+                styles.glow,
                 {
-                  translateY: spark1.interpolate({
+                  opacity: glowAnim.interpolate({
                     inputRange: [0, 1],
-                    outputRange: [0, -60],
+                    outputRange: [0.3, 0.8],
                   }),
+                  transform: [
+                    {
+                      scale: glowAnim.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [1, 1.2],
+                      }),
+                    },
+                  ],
                 },
-                {
-                  scale: spark1.interpolate({
-                    inputRange: [0, 0.5, 1],
-                    outputRange: [0.5, 1, 0.5],
-                  }),
-                },
-              ],
-            },
-          ]}
-        >
-          <Ionicons name="sparkles" size={24} color="#00D9FF" />
-        </Animated.View>
+              ]}
+            />
 
-        <Animated.View
-          style={[
-            styles.spark,
-            {
-              top: '25%',
-              right: '15%',
-              opacity: spark2.interpolate({
-                inputRange: [0, 0.5, 1],
-                outputRange: [0, 1, 0],
-              }),
-              transform: [
-                {
-                  translateY: spark2.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [0, -70],
-                  }),
-                },
-              ],
-            },
-          ]}
-        >
-          <Ionicons name="flash" size={20} color="#00D9FF" />
-        </Animated.View>
+            {/* Icon */}
+            <View style={styles.iconWrapper}>
+              <LinearGradient
+                colors={['#00D9FF', '#0099FF', '#0066FF']}
+                style={styles.iconGradient}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+              >
+                <Ionicons name="camera" size={80} color="#FFFFFF" />
+              </LinearGradient>
+            </View>
 
-        <Animated.View
-          style={[
-            styles.spark,
-            {
-              top: '70%',
-              left: '15%',
-              opacity: spark3.interpolate({
-                inputRange: [0, 0.5, 1],
-                outputRange: [0, 1, 0],
-              }),
-              transform: [
-                {
-                  translateY: spark3.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [0, -50],
-                  }),
-                },
-              ],
-            },
-          ]}
-        >
-          <Ionicons name="color-wand" size={22} color="#00D9FF" />
-        </Animated.View>
-
-        {/* Photo Frame Element */}
-        <Animated.View
-          style={[
-            styles.photoFrame,
-            {
-              opacity: fadeAnim,
-              transform: [
-                {
-                  rotate: photoFrame.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: ['0deg', '360deg'],
-                  }),
-                },
-              ],
-            },
-          ]}
-        >
-          <View style={styles.frameInner} />
-        </Animated.View>
-
-        {/* Brush Stroke Element */}
-        <Animated.View
-          style={[
-            styles.brushStroke,
-            {
-              opacity: brushStroke.interpolate({
-                inputRange: [0, 0.5, 1],
-                outputRange: [0.3, 0.6, 0.3],
-              }),
-              transform: [
-                {
-                  scaleX: brushStroke.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [0, 1],
-                  }),
-                },
-              ],
-            },
-          ]}
-        />
-
-        {/* Main Logo Container */}
-        <Animated.View
-          style={[
-            styles.logoContainer,
-            {
-              opacity: fadeAnim,
-              transform: [{ scale: logoScale }],
-            },
-          ]}
-        >
-          {/* Camera Icon */}
-          <View style={styles.iconWrapper}>
-            <Ionicons name="camera" size={70} color="#00D9FF" />
-          </View>
-
-          {/* Editing Icons Around Camera */}
-          <View style={styles.orbitIcon} pointerEvents="none">
-            <Ionicons name="brush" size={20} color="#FFFFFF" />
-          </View>
-          <View style={[styles.orbitIcon, styles.orbitIcon2]} pointerEvents="none">
-            <Ionicons name="crop" size={18} color="#FFFFFF" />
-          </View>
-          <View style={[styles.orbitIcon, styles.orbitIcon3]} pointerEvents="none">
-            <Ionicons name="color-filter" size={18} color="#FFFFFF" />
-          </View>
+            {/* Orbiting Icons */}
+            <View style={styles.orbitIcon}>
+              <Ionicons name="brush" size={22} color="#FFFFFF" />
+            </View>
+            <View style={[styles.orbitIcon, styles.orbitIcon2]}>
+              <Ionicons name="crop" size={20} color="#FFFFFF" />
+            </View>
+            <View style={[styles.orbitIcon, styles.orbitIcon3]}>
+              <Ionicons name="color-filter" size={20} color="#FFFFFF" />
+            </View>
+          </Animated.View>
 
           {/* Title */}
-          <Text style={styles.title}>AI Photo Editor</Text>
-          <Text style={styles.subtitle}>Professional Editing Powered by AI</Text>
-        </Animated.View>
-      </SafeAreaView>
+          <Animated.View
+            style={[
+              styles.titleContainer,
+              {
+                opacity: fadeAnim,
+                transform: [{ translateY: titleSlide }],
+              },
+            ]}
+          >
+            <Text style={styles.title}>AI Photo Editor</Text>
+          </Animated.View>
+
+          {/* Subtitle */}
+          <Animated.View
+            style={[
+              styles.subtitleContainer,
+              {
+                opacity: fadeAnim,
+                transform: [{ translateY: subtitleSlide }],
+              },
+            ]}
+          >
+            <Text style={styles.subtitle}>Professional Editing • AI Powered</Text>
+            <View style={styles.featureRow}>
+              <View style={styles.featureDot} />
+              <Text style={styles.featureText}>Transform</Text>
+              <View style={styles.featureDot} />
+              <Text style={styles.featureText}>Create</Text>
+              <View style={styles.featureDot} />
+              <Text style={styles.featureText}>Enhance</Text>
+            </View>
+          </Animated.View>
+
+          {/* Loading indicator */}
+          <Animated.View
+            style={[
+              styles.loadingContainer,
+              {
+                opacity: fadeAnim,
+              },
+            ]}
+          >
+            <View style={styles.loadingBar}>
+              <Animated.View
+                style={[
+                  styles.loadingBarFill,
+                  {
+                    width: glowAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: ['0%', '100%'],
+                    }),
+                  },
+                ]}
+              />
+            </View>
+          </Animated.View>
+        </SafeAreaView>
+      </LinearGradient>
     </View>
   );
 };
@@ -311,88 +334,143 @@ const Splash1Screen: React.FC<Props> = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000000',
+  },
+  gradient: {
+    flex: 1,
   },
   content: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    paddingHorizontal: 40,
   },
-  spark: {
+  particle: {
     position: 'absolute',
-  },
-  photoFrame: {
-    position: 'absolute',
-    top: '20%',
-    right: '10%',
-    width: 80,
-    height: 80,
-    borderWidth: 3,
-    borderColor: 'rgba(0, 217, 255, 0.3)',
-    borderRadius: 8,
-    borderStyle: 'dashed',
-  },
-  frameInner: {
-    flex: 1,
-    margin: 8,
-    backgroundColor: 'rgba(0, 217, 255, 0.1)',
-    borderRadius: 4,
-  },
-  brushStroke: {
-    position: 'absolute',
-    bottom: '35%',
-    left: '10%',
-    width: 100,
-    height: 4,
-    backgroundColor: '#00D9FF',
-    borderRadius: 2,
   },
   logoContainer: {
     alignItems: 'center',
+    justifyContent: 'center',
     position: 'relative',
+    marginBottom: 40,
+  },
+  glow: {
+    position: 'absolute',
+    width: 200,
+    height: 200,
+    borderRadius: 100,
+    backgroundColor: '#00D9FF',
+    opacity: 0.3,
+    shadowColor: '#00D9FF',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 1,
+    shadowRadius: 40,
   },
   iconWrapper: {
-    width: 110,
-    height: 110,
-    borderRadius: 55,
-    backgroundColor: 'rgba(0, 217, 255, 0.15)',
+    width: 140,
+    height: 140,
+    borderRadius: 70,
+    overflow: 'hidden',
+    elevation: 20,
+    shadowColor: '#00D9FF',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.5,
+    shadowRadius: 20,
+  },
+  iconGradient: {
+    width: '100%',
+    height: '100%',
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 2,
-    borderColor: 'rgba(0, 217, 255, 0.4)',
-    marginBottom: 8,
   },
   orbitIcon: {
     position: 'absolute',
-    top: 0,
-    right: -10,
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: 'rgba(0, 217, 255, 0.2)',
+    top: -5,
+    right: -5,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#FF00D9',
     justifyContent: 'center',
     alignItems: 'center',
+    shadowColor: '#FF00D9',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.5,
+    shadowRadius: 8,
+    elevation: 8,
   },
   orbitIcon2: {
-    top: 40,
-    right: -25,
+    top: 50,
+    right: -15,
+    backgroundColor: '#D9FF00',
+    shadowColor: '#D9FF00',
   },
   orbitIcon3: {
-    top: 80,
-    right: -10,
+    top: 105,
+    right: -5,
+    backgroundColor: '#00FFD9',
+    shadowColor: '#00FFD9',
+  },
+  titleContainer: {
+    alignItems: 'center',
+    marginBottom: 12,
   },
   title: {
-    fontSize: 30,
-    fontWeight: '700',
+    fontSize: 38,
+    fontWeight: '800',
     color: '#FFFFFF',
-    marginTop: 16,
     textAlign: 'center',
+    letterSpacing: 1,
+    textShadowColor: 'rgba(0, 217, 255, 0.5)',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 20,
+  },
+  subtitleContainer: {
+    alignItems: 'center',
+    marginBottom: 60,
   },
   subtitle: {
-    fontSize: 13,
+    fontSize: 15,
     color: '#B0B0B0',
-    marginTop: 6,
     textAlign: 'center',
+    marginBottom: 12,
+    letterSpacing: 0.5,
+  },
+  featureRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  featureDot: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#00D9FF',
+  },
+  featureText: {
+    fontSize: 12,
+    color: '#888',
+    fontWeight: '500',
+  },
+  loadingContainer: {
+    position: 'absolute',
+    bottom: 60,
+    width: width * 0.6,
+    alignItems: 'center',
+  },
+  loadingBar: {
+    width: '100%',
+    height: 3,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 2,
+    overflow: 'hidden',
+  },
+  loadingBarFill: {
+    height: '100%',
+    backgroundColor: '#00D9FF',
+    shadowColor: '#00D9FF',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 1,
+    shadowRadius: 8,
   },
 });
 

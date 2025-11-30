@@ -19,6 +19,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import BottomSheet from '@gorhom/bottom-sheet';
@@ -126,6 +127,7 @@ export default function EditorScreen({ route, navigation }: Props) {
   const [toolbarAnim] = useState(new Animated.Value(0));
   const [editPanelHeight] = useState(new Animated.Value(0));
   const [aiButtonScale] = useState(new Animated.Value(1));
+  const [aiButtonGlow] = useState(new Animated.Value(0));
 
   useEffect(() => {
     // Fade in animation - slower and smoother
@@ -143,6 +145,24 @@ export default function EditorScreen({ route, navigation }: Props) {
         useNativeDriver: true,
       }),
     ]).start();
+
+    // Pulsing glow animation for AI button
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(aiButtonGlow, {
+          toValue: 1,
+          duration: 2000,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+        Animated.timing(aiButtonGlow, {
+          toValue: 0,
+          duration: 2000,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+      ])
+    ).start();
   }, []);
 
   // Update base layer when image URL changes (from edits/filters)
@@ -1387,12 +1407,38 @@ export default function EditorScreen({ route, navigation }: Props) {
               },
             ]}
           >
+            {/* Glow effect */}
+            <Animated.View
+              style={[
+                styles.aiButtonGlow,
+                {
+                  opacity: aiButtonGlow.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [0.3, 0.7],
+                  }),
+                  transform: [
+                    {
+                      scale: aiButtonGlow.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [1, 1.15],
+                      }),
+                    },
+                  ],
+                },
+              ]}
+            />
             <TouchableOpacity
               onPress={handleOpenAIChat}
-              style={styles.aiChatButton}
               activeOpacity={0.8}
             >
-              <Ionicons name="chatbubble-ellipses" size={28} color="#000" />
+              <LinearGradient
+                colors={['#00D9FF', '#0099FF', '#0066FF']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.aiChatButton}
+              >
+                <Ionicons name="chatbubble-ellipses" size={28} color="#FFFFFF" />
+              </LinearGradient>
             </TouchableOpacity>
           </Animated.View>
         )}
@@ -1449,19 +1495,35 @@ export default function EditorScreen({ route, navigation }: Props) {
                       onPress={() => handleToolPress(tool.id)}
                       activeOpacity={0.7}
                     >
-                      <View
-                        style={[
-                          styles.toolIconContainer,
-                          selectedTool === tool.id && styles.toolIconContainerActive,
-                          index === 2 && styles.middleToolIcon,
-                        ]}
-                      >
-                        <Ionicons
-                          name={tool.icon as any}
-                          size={index === 2 ? 32 : 28}
-                          color={index === 2 ? '#000' : selectedTool === tool.id ? COLORS.toolActive : COLORS.toolDefault}
-                        />
-                      </View>
+                      {index === 2 ? (
+                        // Middle button with gradient
+                        <LinearGradient
+                          colors={['#00D9FF', '#0099FF', '#0066FF']}
+                          start={{ x: 0, y: 0 }}
+                          end={{ x: 1, y: 1 }}
+                          style={styles.middleToolIcon}
+                        >
+                          <Ionicons
+                            name={tool.icon as any}
+                            size={32}
+                            color="#FFFFFF"
+                          />
+                        </LinearGradient>
+                      ) : (
+                        // Regular tool buttons
+                        <View
+                          style={[
+                            styles.toolIconContainer,
+                            selectedTool === tool.id && styles.toolIconContainerActive,
+                          ]}
+                        >
+                          <Ionicons
+                            name={tool.icon as any}
+                            size={28}
+                            color={selectedTool === tool.id ? COLORS.toolActive : COLORS.toolDefault}
+                          />
+                        </View>
+                      )}
                       <Text
                         style={[
                           styles.toolLabel,
@@ -1705,8 +1767,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.md,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.borderLight,
+    borderBottomColor: 'rgba(0, 217, 255, 0.15)',
     backgroundColor: COLORS.surface,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   navButton: {
     padding: 8,
@@ -1715,17 +1782,19 @@ const styles = StyleSheet.create({
     width: 34,
     height: 34,
     borderRadius: 17,
-    backgroundColor: '#323232',
+    backgroundColor: '#2A2A3E',
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
-      height: 0,
+      height: 2,
     },
-    shadowOpacity: 0.5,
+    shadowOpacity: 0.3,
     shadowRadius: 4,
     elevation: 4,
+    borderWidth: 1,
+    borderColor: 'rgba(0, 217, 255, 0.1)',
   },
   navButtonDisabled: {
     opacity: 0.5,
@@ -1757,6 +1826,11 @@ const styles = StyleSheet.create({
     marginLeft: 8,
     minWidth: 90,
     justifyContent: 'center',
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 4,
   },
   exportText: {
     color: COLORS.buttonPrimaryText,
@@ -1813,8 +1887,13 @@ const styles = StyleSheet.create({
   toolbar: {
     backgroundColor: COLORS.surface,
     borderTopWidth: 1,
-    borderTopColor: COLORS.borderLight,
+    borderTopColor: 'rgba(0, 217, 255, 0.15)',
     paddingVertical: SPACING.md,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 5,
   },
   toolbarContent: {
     flexDirection: 'row',
@@ -1836,10 +1915,17 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: COLORS.toolBackground,
+    backgroundColor: '#2A2A3E',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 6,
+    borderWidth: 1,
+    borderColor: 'rgba(0, 217, 255, 0.1)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
   },
   toolIconContainerCenter: {
     width: 64,
@@ -1856,7 +1942,14 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   toolIconContainerActive: {
-    backgroundColor: COLORS.toolBackgroundActive,
+    backgroundColor: '#1A1A2E',
+    borderColor: COLORS.toolActive,
+    borderWidth: 2,
+    shadowColor: COLORS.toolActive,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.5,
+    shadowRadius: 8,
+    elevation: 6,
   },
   toolLabel: {
     fontSize: FONT_SIZES.xs,
@@ -1877,21 +1970,36 @@ const styles = StyleSheet.create({
     right: SPACING.md,
     zIndex: 10,
   },
+  aiButtonGlow: {
+    position: 'absolute',
+    width: 70,
+    height: 70,
+    borderRadius: 35,
+    backgroundColor: '#00D9FF',
+    shadowColor: '#00D9FF',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 1,
+    shadowRadius: 20,
+    elevation: 10,
+    left: -5,
+    top: -5,
+  },
   aiChatButton: {
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: COLORS.primary,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#000',
+    shadowColor: '#00D9FF',
     shadowOffset: {
       width: 0,
-      height: 4,
+      height: 6,
     },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
+    shadowOpacity: 0.5,
+    shadowRadius: 12,
+    elevation: 10,
+    borderWidth: 2,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
   },
   blankCanvas: {
     backgroundColor: '#ffffff',
@@ -1958,15 +2066,16 @@ const styles = StyleSheet.create({
     width: 68,
     height: 68,
     borderRadius: 34,
-    backgroundColor: COLORS.primary,
-    shadowColor: '#000',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#00D9FF',
     shadowOffset: {
       width: 0,
-      height: 4,
+      height: 6,
     },
-    shadowOpacity: 0.5,
-    shadowRadius: 8,
-    elevation: 10,
+    shadowOpacity: 0.6,
+    shadowRadius: 12,
+    elevation: 12,
     borderWidth: 3,
     borderColor: COLORS.background,
   },
