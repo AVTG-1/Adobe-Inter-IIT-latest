@@ -40,6 +40,7 @@ import InteractiveCanvas, { Layer } from '../components/InteractiveCanvas';
 import { useLayerManager } from '../hooks/useLayerManager';
 import { saveProject } from '../services/projects';
 import * as MediaLibrary from 'expo-media-library';
+import * as ImageManipulator from 'expo-image-manipulator';
 import Toast from 'react-native-toast-message';
 import { COLORS, SPACING, BORDER_RADIUS, FONT_SIZES } from '../config/theme';
 import { apiClient } from '../services/api';
@@ -361,50 +362,222 @@ export default function EditorScreen({ route, navigation }: Props) {
     }
   };
 
-  // Transform Tool Handlers
+  // Transform Tool Handlers - REAL IMAGE MANIPULATION
   const handleCropApply = async (cropData: CropData) => {
     setCropToolOpen(false);
-    Toast.show({
-      type: 'success',
-      text1: 'Crop Applied',
-      text2: `Cropped to ${Math.round(cropData.width)}×${Math.round(cropData.height)}px`,
-    });
-    // TODO: Use expo-image-manipulator to crop the selected layer's image
+    const selectedLayer = layerManager.getSelectedLayer();
+
+    if (!selectedLayer || !selectedLayer.imageUri) {
+      Toast.show({
+        type: 'error',
+        text1: 'Cannot Crop',
+        text2: 'No image selected',
+      });
+      return;
+    }
+
+    try {
+      setProcessing(true);
+
+      // Apply crop using expo-image-manipulator
+      const manipResult = await ImageManipulator.manipulateAsync(
+        selectedLayer.imageUri,
+        [
+          {
+            crop: {
+              originX: cropData.x,
+              originY: cropData.y,
+              width: cropData.width,
+              height: cropData.height,
+            },
+          },
+        ],
+        { compress: 1, format: ImageManipulator.SaveFormat.PNG }
+      );
+
+      // Update layer with cropped image
+      layerManager.updateLayerImageUri(selectedLayer.id, manipResult.uri);
+      setCurrentImageUrl(manipResult.uri);
+
+      Toast.show({
+        type: 'success',
+        text1: 'Crop Applied',
+        text2: `Cropped to ${Math.round(cropData.width)}×${Math.round(cropData.height)}px`,
+      });
+    } catch (error) {
+      console.error('Crop error:', error);
+      Toast.show({
+        type: 'error',
+        text1: 'Crop Failed',
+        text2: 'Please try again',
+      });
+    } finally {
+      setProcessing(false);
+    }
   };
 
   const handleRotateApply = async (rotation: number) => {
     setRotateToolOpen(false);
     const selectedLayer = layerManager.getSelectedLayer();
-    if (selectedLayer) {
-      layerManager.updateLayerTransform(selectedLayer.id, { rotation });
+
+    if (!selectedLayer || !selectedLayer.imageUri) {
+      Toast.show({
+        type: 'error',
+        text1: 'Cannot Rotate',
+        text2: 'No image selected',
+      });
+      return;
+    }
+
+    try {
+      setProcessing(true);
+
+      // Convert rotation to degrees (0-360)
+      const normalizedRotation = ((rotation % 360) + 360) % 360;
+
+      // Apply rotation using expo-image-manipulator
+      const manipResult = await ImageManipulator.manipulateAsync(
+        selectedLayer.imageUri,
+        [
+          {
+            rotate: normalizedRotation,
+          },
+        ],
+        { compress: 1, format: ImageManipulator.SaveFormat.PNG }
+      );
+
+      // Update layer with rotated image
+      layerManager.updateLayerImageUri(selectedLayer.id, manipResult.uri);
+      setCurrentImageUrl(manipResult.uri);
+
       Toast.show({
         type: 'success',
         text1: 'Rotation Applied',
-        text2: `Rotated to ${Math.round(rotation)}°`,
+        text2: `Rotated to ${Math.round(normalizedRotation)}°`,
       });
+    } catch (error) {
+      console.error('Rotate error:', error);
+      Toast.show({
+        type: 'error',
+        text1: 'Rotation Failed',
+        text2: 'Please try again',
+      });
+    } finally {
+      setProcessing(false);
     }
   };
 
   const handleFlipApply = async (flipData: FlipData) => {
     setFlipToolOpen(false);
-    Toast.show({
-      type: 'success',
-      text1: 'Flip Applied',
-      text2: `${flipData.horizontal ? 'Horizontal' : ''}${flipData.horizontal && flipData.vertical ? ' & ' : ''}${flipData.vertical ? 'Vertical' : ''}`,
-    });
-    // TODO: Use expo-image-manipulator to flip the selected layer's image
+    const selectedLayer = layerManager.getSelectedLayer();
+
+    if (!selectedLayer || !selectedLayer.imageUri) {
+      Toast.show({
+        type: 'error',
+        text1: 'Cannot Flip',
+        text2: 'No image selected',
+      });
+      return;
+    }
+
+    try {
+      setProcessing(true);
+
+      const actions: ImageManipulator.Action[] = [];
+
+      if (flipData.horizontal) {
+        actions.push({ flip: ImageManipulator.FlipType.Horizontal });
+      }
+      if (flipData.vertical) {
+        actions.push({ flip: ImageManipulator.FlipType.Vertical });
+      }
+
+      if (actions.length === 0) {
+        Toast.show({
+          type: 'info',
+          text1: 'No Flip Selected',
+          text2: 'Please select horizontal or vertical flip',
+        });
+        setProcessing(false);
+        return;
+      }
+
+      // Apply flip using expo-image-manipulator
+      const manipResult = await ImageManipulator.manipulateAsync(
+        selectedLayer.imageUri,
+        actions,
+        { compress: 1, format: ImageManipulator.SaveFormat.PNG }
+      );
+
+      // Update layer with flipped image
+      layerManager.updateLayerImageUri(selectedLayer.id, manipResult.uri);
+      setCurrentImageUrl(manipResult.uri);
+
+      Toast.show({
+        type: 'success',
+        text1: 'Flip Applied',
+        text2: `${flipData.horizontal ? 'Horizontal' : ''}${flipData.horizontal && flipData.vertical ? ' & ' : ''}${flipData.vertical ? 'Vertical' : ''}`,
+      });
+    } catch (error) {
+      console.error('Flip error:', error);
+      Toast.show({
+        type: 'error',
+        text1: 'Flip Failed',
+        text2: 'Please try again',
+      });
+    } finally {
+      setProcessing(false);
+    }
   };
 
   const handleResizeApply = async (resizeData: ResizeData) => {
     setResizeToolOpen(false);
     const selectedLayer = layerManager.getSelectedLayer();
-    if (selectedLayer) {
-      layerManager.updateLayerTransform(selectedLayer.id, { scale: resizeData.scale });
+
+    if (!selectedLayer || !selectedLayer.imageUri) {
+      Toast.show({
+        type: 'error',
+        text1: 'Cannot Resize',
+        text2: 'No image selected',
+      });
+      return;
+    }
+
+    try {
+      setProcessing(true);
+
+      // Apply resize using expo-image-manipulator
+      const manipResult = await ImageManipulator.manipulateAsync(
+        selectedLayer.imageUri,
+        [
+          {
+            resize: {
+              width: Math.round(resizeData.width),
+              height: Math.round(resizeData.height),
+            },
+          },
+        ],
+        { compress: 1, format: ImageManipulator.SaveFormat.PNG }
+      );
+
+      // Update layer with resized image
+      layerManager.updateLayerImageUri(selectedLayer.id, manipResult.uri);
+      setCurrentImageUrl(manipResult.uri);
+
       Toast.show({
         type: 'success',
         text1: 'Resize Applied',
         text2: `Resized to ${Math.round(resizeData.width)}×${Math.round(resizeData.height)}px`,
       });
+    } catch (error) {
+      console.error('Resize error:', error);
+      Toast.show({
+        type: 'error',
+        text1: 'Resize Failed',
+        text2: 'Please try again',
+      });
+    } finally {
+      setProcessing(false);
     }
   };
 
