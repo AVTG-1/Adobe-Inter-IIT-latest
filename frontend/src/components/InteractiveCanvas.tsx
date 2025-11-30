@@ -108,8 +108,23 @@ const InteractiveCanvas: React.FC<InteractiveCanvasProps> = ({
 
   // Handle image load
   const handleImageLoad = useCallback((event: any) => {
-    const { width, height } = event.nativeEvent.source;
-    setImageDimensions({ width, height });
+    // Cross-platform: On native, use nativeEvent.source; on web, use target
+    let width = 0;
+    let height = 0;
+
+    if (event.nativeEvent?.source) {
+      // React Native
+      width = event.nativeEvent.source.width;
+      height = event.nativeEvent.source.height;
+    } else if (event.target) {
+      // Web
+      width = event.target.naturalWidth || event.target.width;
+      height = event.target.naturalHeight || event.target.height;
+    }
+
+    if (width && height) {
+      setImageDimensions({ width, height });
+    }
     setImageLoaded(true);
     onImageLoad?.();
   }, [onImageLoad]);
