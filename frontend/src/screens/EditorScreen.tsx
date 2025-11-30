@@ -650,23 +650,34 @@ export default function EditorScreen({ route, navigation }: Props) {
     try {
       setProcessing(true);
 
-      // expo-image-manipulator doesn't support blur natively
-      // Options for production:
-      // 1. Use react-native-image-filter-kit
-      // 2. Send to backend API
-      // 3. Implement canvas-based blur
+      // Use backend API for blur
+      const operations: EditOperation[] = [{
+        type: 'blur',
+        useService: 'opencv',
+        params: { sigma: blurData.radius / 10 }, // Convert radius to sigma
+      }];
 
-      // For now, simulate blur with toast
-      await new Promise(resolve => setTimeout(resolve, 800));
-
-      Toast.show({
-        type: 'success',
-        text1: 'Blur Applied',
-        text2: `Radius: ${blurData.radius}px`,
+      const response = await apiClient.submitEditWorkflow({
+        image_url: selectedLayer.imageUri,
+        operations,
       });
 
-      // Push to history
-      history.pushHistory(selectedLayer.imageUri, 'Blur Applied', blurData);
+      if (response.status === 'completed' && response.result_url) {
+        // Update layer and current image
+        layerManager.updateLayerImageUri(selectedLayer.id, response.result_url);
+        setCurrentImageUrl(response.result_url);
+
+        // Push to history
+        history.pushHistory(response.result_url, 'Blur Applied', blurData);
+
+        Toast.show({
+          type: 'success',
+          text1: 'Blur Applied',
+          text2: `Radius: ${blurData.radius}px`,
+        });
+      } else if (response.error) {
+        throw new Error(response.error);
+      }
 
     } catch (error: any) {
       console.error('Blur error:', error);
@@ -1089,25 +1100,68 @@ export default function EditorScreen({ route, navigation }: Props) {
       setEnhancedAdjustmentOpen(false);
       enhancedAdjustmentRef.current?.close();
 
-      // TODO: expo-image-manipulator doesn't support all these adjustments natively
-      // For a production app, you would:
-      // 1. Send to backend API for processing
-      // 2. Use a library like react-native-image-filter-kit
-      // 3. Implement canvas-based manipulation
+      // Convert adjustments to backend API operations
+      const operations: EditOperation[] = [];
 
-      // For now, we'll simulate the adjustment with a toast
-      // In production, replace this with actual image processing
+      // Normalize values: sliders are -100 to 100, API expects -1.0 to 1.0 or multipliers
+      if (values.brightness !== 0) {
+        operations.push({
+          type: 'brightness',
+          useService: 'opencv',
+          params: { value: values.brightness / 100 },
+        });
+      }
 
-      await new Promise(resolve => setTimeout(resolve, 800)); // Simulate processing
+      if (values.contrast !== 0) {
+        operations.push({
+          type: 'contrast',
+          useService: 'opencv',
+          params: { value: 1 + (values.contrast / 100) }, // 1.0 is neutral
+        });
+      }
 
-      Toast.show({
-        type: 'success',
-        text1: 'Adjustments Applied',
-        text2: 'Image updated successfully',
+      if (values.saturation !== 0) {
+        operations.push({
+          type: 'saturation',
+          useService: 'opencv',
+          params: { value: values.saturation / 100 },
+        });
+      }
+
+      // Other adjustments can be added as backend supports them
+      // For now, apply the basic ones
+
+      if (operations.length === 0) {
+        Toast.show({
+          type: 'info',
+          text1: 'No Supported Adjustments',
+          text2: 'Only brightness, contrast, and saturation are currently supported',
+        });
+        setProcessing(false);
+        return;
+      }
+
+      const response = await apiClient.submitEditWorkflow({
+        image_url: selectedLayer.imageUri,
+        operations,
       });
 
-      // Push to history
-      history.pushHistory(selectedLayer.imageUri, 'Adjustments Applied', values);
+      if (response.status === 'completed' && response.result_url) {
+        // Update layer and current image
+        layerManager.updateLayerImageUri(selectedLayer.id, response.result_url);
+        setCurrentImageUrl(response.result_url);
+
+        // Push to history
+        history.pushHistory(response.result_url, 'Adjustments Applied', values);
+
+        Toast.show({
+          type: 'success',
+          text1: 'Adjustments Applied',
+          text2: `Processing time: ${response.processing_time_ms}ms`,
+        });
+      } else if (response.error) {
+        throw new Error(response.error);
+      }
 
     } catch (error: any) {
       console.error('Adjustments failed:', error);
