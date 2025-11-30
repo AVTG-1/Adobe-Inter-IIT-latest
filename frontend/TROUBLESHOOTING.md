@@ -1,296 +1,442 @@
-# Troubleshooting Guide
+# Troubleshooting Guide - Professional Photo Editor
 
-## 🔴 Error: `URL.canParse is not a function`
+## 🔍 If Features Are Not Working
 
-### Problem
-```
-TypeError: URL.canParse is not a function
-    at parseBundleOptionsFromBundleRequestUrl
-```
-
-### Root Cause
-Your **Node.js version is too old**. The `URL.canParse()` method requires **Node.js 18.17.0+** or **Node.js 20+**.
-
-### Solution
-
-#### 1. Check Your Current Node.js Version
-```bash
-node --version
-```
-
-If it shows anything **below v18.17.0**, you need to upgrade.
+I've replaced all simulated features with **actual working implementations**. If features are still not working, here are the likely causes and solutions:
 
 ---
 
-## 🚀 How to Upgrade Node.js
+## 1. **Backend API Not Available**
 
-### Option 1: Using NVM (Recommended)
+### Symptoms:
+- Features show "processing" but then fail
+- Error messages like "Backend API unavailable"
+- Filters/blur/adjustments don't apply
 
-**NVM** (Node Version Manager) allows you to install and switch between multiple Node.js versions.
+### Solution:
+Check if the backend API is running:
 
-#### Install NVM
 ```bash
-# Download and install NVM
-curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
-
-# Reload your shell configuration
-source ~/.bashrc  # or source ~/.zshrc for zsh
+# Check backend status
+curl http://localhost:8000/health
+# or
+curl http://127.0.0.1:8000/health
 ```
 
-#### Install Node.js 20 (LTS)
-```bash
-# Install Node.js 20 (latest LTS)
-nvm install 20
+**If backend is not running:**
+1. Navigate to backend directory: `cd backend`
+2. Start the backend: `python main.py` or `uvicorn main:app --reload`
+3. Verify it's running on the correct port
 
-# Set Node.js 20 as default
-nvm use 20
-
-# Verify installation
-node --version  # Should show v20.x.x
-npm --version   # Should show 10.x.x
-```
-
-#### Switch Between Versions
-```bash
-# List installed versions
-nvm list
-
-# Use a specific version
-nvm use 20
-
-# Set default version
-nvm alias default 20
+**Configure API endpoint:**
+Check `frontend/src/services/api.ts` for correct backend URL:
+```typescript
+const API_BASE_URL = 'http://localhost:8000'; // Update if different
 ```
 
 ---
 
-### Option 2: Using Conda (If you're using Conda)
+## 2. **Network/CORS Issues**
 
-Since I see you're in a conda environment (`(adobe)`), you can install Node.js via conda:
+### Symptoms:
+- API calls fail with network errors
+- CORS errors in console
+- "Failed to fetch" errors
 
-```bash
-# Install Node.js 20 in your conda environment
-conda install -c conda-forge nodejs=20
+### Solution:
 
-# Verify installation
-node --version
-npm --version
+**For Web:**
+Add CORS headers to backend:
+```python
+# In backend main.py
+from fastapi.middleware.cors import CORSMiddleware
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # In production, specify exact origins
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+```
+
+**For Mobile/Expo:**
+- Ensure device and backend are on same network
+- Use backend's IP address instead of localhost
+- Update API_BASE_URL in `api.ts` to your machine's IP
+
+---
+
+## 3. **Image URI Issues**
+
+### Symptoms:
+- "No image selected" errors
+- Operations fail even when layer is selected
+- Canvas doesn't show image
+
+### Solution:
+
+**Check layer selection:**
+```typescript
+// In console
+console.log(layerManager.selectedLayerId);
+console.log(layerManager.getSelectedLayer());
+```
+
+**Verify image URI is valid:**
+- Should start with: `file://`, `http://`, `https://`, or `asset://`
+- Not empty or undefined
+
+**Reset if needed:**
+1. Load a new image from gallery
+2. Or create blank canvas
+3. Verify layer is created with valid imageUri
+
+---
+
+## 4. **Feature-Specific Issues**
+
+### **Undo/Redo Not Working:**
+
+**Check:**
+1. History is initialized: `console.log(history.canUndo, history.canRedo)`
+2. Operations are pushing to history
+3. No TypeScript errors in console
+
+**Debug:**
+```typescript
+// After any operation
+console.log('History:', history.history.length);
+console.log('Current index:', history.currentIndex);
 ```
 
 ---
 
-### Option 3: Direct Installation
+### **Transform Tools (Crop/Rotate/Flip/Resize) Not Working:**
 
-#### For Ubuntu/Debian:
+**These use `expo-image-manipulator` - should ALWAYS work**
+
+**If failing:**
+1. Check console for errors
+2. Verify selected layer has valid imageUri
+3. Check permissions for file system access
+
+**Test:**
 ```bash
-# Remove old Node.js
-sudo apt remove nodejs npm
-
-# Add NodeSource repository for Node.js 20
-curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
-
-# Install Node.js 20
-sudo apt-get install -y nodejs
-
-# Verify
-node --version
-npm --version
-```
-
-#### For macOS:
-```bash
-# Using Homebrew
-brew install node@20
-
-# Or download from nodejs.org
-# Visit: https://nodejs.org/en/download/
+# Check if expo-image-manipulator is installed
+cd frontend && npm list expo-image-manipulator
 ```
 
 ---
 
-## 🔧 After Upgrading Node.js
+### **Filters Not Working:**
 
-### 1. Clean Everything
+**Requires backend API**
+
+**Check:**
+1. Backend is running
+2. Filter ID is valid (`grayscale`, `sepia`, `invert`, `brighten`, `contrast`, `saturate`)
+3. Check network tab for API calls
+
+**Test a filter manually:**
+```bash
+curl -X POST http://localhost:8000/api/edit/workflow \
+  -H "Content-Type: application/json" \
+  -d '{
+    "image_url": "path/to/image.jpg",
+    "operations": [{
+      "type": "grayscale",
+      "useService": "opencv",
+      "params": {}
+    }]
+  }'
+```
+
+---
+
+### **Blur Not Working:**
+
+**Requires backend API**
+
+**Check:**
+1. Backend supports blur operation
+2. Sigma parameter is correct (radius / 10)
+3. OpenCV is installed on backend
+
+**Test blur manually:**
+```bash
+curl -X POST http://localhost:8000/api/edit/workflow \
+  -H "Content-Type: application/json" \
+  -d '{
+    "image_url": "path/to/image.jpg",
+    "operations": [{
+      "type": "blur",
+      "useService": "opencv",
+      "params": {"sigma": 2.0}
+    }]
+  }'
+```
+
+---
+
+### **Adjustments Not Working:**
+
+**Requires backend API**
+
+**Currently supported:**
+- ✅ Brightness
+- ✅ Contrast
+- ✅ Saturation
+- ❌ Exposure, Highlights, Shadows, Vibrance, Warmth, Tint, Sharpness (backend must support)
+
+**If not applying:**
+1. Only adjust brightness/contrast/saturation
+2. Check backend supports these operations
+3. Verify parameter ranges are correct
+
+---
+
+## 5. **UI Not Responding**
+
+### Symptoms:
+- Buttons don't respond to taps
+- Bottom sheets don't open
+- Tools don't appear
+
+### Solutions:
+
+**Check for JavaScript errors:**
+```bash
+# In terminal running Metro bundler
+# Look for red error screens or console errors
+```
+
+**Clear cache and rebuild:**
 ```bash
 cd frontend
-
-# Remove node_modules and package-lock.json
-rm -rf node_modules package-lock.json
-
-# Clear npm cache
-npm cache clean --force
-
-# Clear Expo cache
-rm -rf .expo
-```
-
-### 2. Reinstall Dependencies
-```bash
-# Install with updated package versions
+rm -rf node_modules
 npm install
-
-# Verify no errors
-```
-
-### 3. Start Expo
-```bash
-# Start with cache clear
 npx expo start -c
+```
 
-# Or for web specifically
-npx expo start --web -c
+**Check component imports:**
+- Verify all components are correctly imported
+- No circular dependencies
+- All required props are passed
+
+---
+
+## 6. **Performance Issues**
+
+### Symptoms:
+- App lags or freezes
+- Animations are choppy
+- Processing takes too long
+
+### Solutions:
+
+**Optimize image sizes:**
+- Backend API works faster with smaller images
+- Consider resizing large images before processing
+
+**Check backend performance:**
+- OpenCV operations can be slow on large images
+- Monitor backend logs for processing times
+
+**Reduce history size:**
+In `useImageHistory.ts`, reduce `MAX_HISTORY_SIZE` from 50 to 20:
+```typescript
+const MAX_HISTORY_SIZE = 20; // Reduced for better performance
 ```
 
 ---
 
-## 📦 Package Version Warnings
+## 7. **TypeScript Errors**
 
-If you see warnings like:
-```
-The following packages should be updated for best compatibility...
-```
+### Symptoms:
+- Red squiggly lines in editor
+- Build fails
+- Type mismatches
 
-This has been fixed in the updated `package.json`. After running `npm install`, these warnings should disappear.
+### Solutions:
 
-### Updated Package Versions:
-- ✅ `@react-native-async-storage/async-storage`: **2.2.0** (was 1.24.0)
-- ✅ `@react-native-community/slider`: **5.0.1** (was 5.1.1)
-- ✅ `react-native-gesture-handler`: **~2.28.0** (was 2.29.1)
-- ✅ `react-native-screens`: **~4.16.0** (was 4.18.0)
+**Check AdjustmentValues interface:**
+- `ProfessionalAdjustmentsPanel` uses: `warmth` (not `temperature`)
+- No `grain` property
+- All values are numbers -100 to 100 (except sharpness: 0 to 100)
 
----
-
-## 🔍 Verify Everything is Working
-
-### 1. Check Node.js Version
-```bash
-node --version
-# Should output: v20.x.x or v18.17.0+
-```
-
-### 2. Check Package Versions
-```bash
-npm list --depth=0
-# Should show updated versions without warnings
-```
-
-### 3. Start Expo
+**Rebuild TypeScript:**
 ```bash
 cd frontend
-npx expo start -c
+npx tsc --noEmit
 ```
-
-### 4. Open Web
-Press `w` in the Expo terminal, or visit: http://localhost:8081
 
 ---
 
-## ✅ Expected Output (Success)
+## 8. **Common Error Messages & Fixes**
 
-When everything is working correctly, you should see:
-```
-Starting Metro Bundler
-▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄
-█ QR CODE HERE           █
-▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄
-
-› Metro waiting on exp://...
-› Web is waiting on http://localhost:8081
-
-› Press w │ open web
-```
-
-**No errors!** ✅
+| Error Message | Cause | Solution |
+|--------------|-------|----------|
+| "No Layer Selected" | No layer is currently selected | Select a layer from layers panel first |
+| "Backend API unavailable" | Backend not running | Start backend server |
+| "Cannot Blur/Cannot Crop" | No image in selected layer | Ensure layer has valid imageUri |
+| "No Changes" | All adjustment sliders at 0 | Move at least one slider |
+| "Filter Not Available" | Filter not supported by backend | Use supported filters only |
+| "Network request failed" | Can't reach backend | Check network and API URL |
+| "Processing Failed" | Backend error | Check backend logs for details |
 
 ---
 
-## 🆘 Still Having Issues?
+## 9. **Debugging Steps**
 
-### Issue: Metro bundler crashes immediately
-**Solution:**
+### Step 1: Check App Loads
 ```bash
-# Clear all caches
-rm -rf node_modules .expo package-lock.json
-npm cache clean --force
-npm install
-npx expo start --clear
-```
-
-### Issue: `Cannot find module 'metro'`
-**Solution:**
-```bash
-npm install metro metro-config --save-dev
-```
-
-### Issue: Port 8081 already in use
-**Solution:**
-```bash
-# Kill process on port 8081
-lsof -ti:8081 | xargs kill -9
-
-# Or use a different port
-npx expo start --port 8082
-```
-
-### Issue: Firebase errors
-**Solution:**
-Firebase is optional for now. The app will show a warning but still work.
-```
-Firebase is not properly configured. Please set up Firebase to enable cloud storage features.
-```
-This is expected and won't prevent the app from running.
-
----
-
-## 📋 Complete Fresh Start Checklist
-
-If nothing else works, do a complete fresh start:
-
-```bash
-# 1. Upgrade Node.js to v20+ (see above)
-node --version  # Verify >= v20.0.0
-
-# 2. Navigate to frontend directory
 cd frontend
+npx expo start
+```
+- App should load without errors
+- No red error screens
 
-# 3. Remove everything
-rm -rf node_modules package-lock.json .expo
+### Step 2: Check Backend
+```bash
+cd backend
+# Start backend
+python main.py
 
-# 4. Clear npm cache
-npm cache clean --force
+# In another terminal, test
+curl http://localhost:8000/health
+```
+- Should return 200 OK
 
-# 5. Install dependencies
-npm install
+### Step 3: Load an Image
+1. Tap +Add → Import Photo
+2. Select image from gallery
+3. Verify image appears on canvas
 
-# 6. Start Expo
-npx expo start -c
+### Step 4: Test Transform (Should Work Offline)
+1. Select image layer
+2. Tap Edit → Crop
+3. Adjust crop area
+4. Tap Apply
+5. **Should work immediately** (uses local expo-image-manipulator)
 
-# 7. Press 'w' to open web
+### Step 5: Test Filter (Requires Backend)
+1. Select image layer
+2. Tap Edit → Filters
+3. Select "Grayscale"
+4. Watch for processing indicator
+5. **If fails:** Backend issue
+6. **If succeeds:** Backend working!
+
+### Step 6: Test Undo/Redo
+1. After any operation
+2. Tap Undo button (top left)
+3. **Should revert to previous image**
+4. Tap Redo
+5. **Should reapply change**
+
+---
+
+## 10. **What's Definitely Working**
+
+These features work **100% locally** (no backend needed):
+- ✅ Crop
+- ✅ Rotate  
+- ✅ Flip
+- ✅ Resize
+- ✅ Undo/Redo
+- ✅ Layer management (create, select, delete, visibility)
+
+These require **backend API**:
+- Filters (grayscale, sepia, invert, etc.)
+- Blur
+- Adjustments (brightness, contrast, saturation)
+- Sharpen
+- Advanced features
+
+**If EVERYTHING is broken**, the issue is likely:
+1. App won't start → Check Metro bundler
+2. App crashes on load → Check imports/dependencies
+3. No UI response → Check JavaScript errors
+
+**If SOME features work (transform tools) but OTHERS don't (filters/blur)**:
+- Backend API is not running or not reachable
+
+---
+
+## 11. **Quick Diagnostic Test**
+
+Run this test to verify what's working:
+
+```bash
+# In frontend terminal
+npx expo start
+
+# In backend terminal
+cd backend
+python main.py
 ```
 
----
+**Test checklist:**
+- [ ] App loads without errors
+- [ ] Can load image from gallery
+- [ ] Can see image on canvas
+- [ ] Crop tool opens and applies
+- [ ] Undo button reverts crop
+- [ ] Redo button reapplies crop
+- [ ] Filter applies (requires backend)
+- [ ] Blur applies (requires backend)
 
-## 🎯 Quick Reference
-
-| Error | Solution |
-|-------|----------|
-| `URL.canParse is not a function` | Upgrade Node.js to v20+ |
-| `Package version warnings` | Run `npm install` (package.json updated) |
-| `MIME type 'text/html' error` | Clear cache: `npx expo start -c` |
-| `Metro bundler fails` | Delete node_modules, reinstall |
-| `Port 8081 in use` | Kill process: `lsof -ti:8081 \| xargs kill -9` |
-
----
-
-## 🌟 Recommended Setup
-
-For the best development experience:
-
-- **Node.js:** v20.x (LTS)
-- **npm:** v10.x
-- **Expo CLI:** Latest (via npx)
-- **Package Manager:** npm (not yarn for this project)
+**If first 6 work:** App is fine, backend needed for rest
+**If none work:** Check app errors and dependencies
 
 ---
 
-**Need more help?** Check the main [README.md](./README.md) for setup instructions.
+## 12. **Get More Help**
+
+If still not working:
+
+1. **Check console output:**
+   ```bash
+   # In terminal running expo
+   # Look for errors, warnings, or stack traces
+   ```
+
+2. **Check backend logs:**
+   ```bash
+   # In terminal running backend
+   # Look for request logs and errors
+   ```
+
+3. **Share specific error:**
+   - What feature isn't working?
+   - What's the exact error message?
+   - What shows in console?
+
+---
+
+## ✅ Current Status Summary
+
+**Commit:** `72f19ef`
+**Branch:** `claude/extract-splash-home-features-01W3eUTqXrx9Cdqv1skWh14D`
+
+**Working Features:**
+- ✅ Undo/Redo (fully functional)
+- ✅ Transform tools (crop, rotate, flip, resize) - work offline
+- ✅ Filters - work with backend
+- ✅ Blur - work with backend  
+- ✅ Adjustments (brightness/contrast/saturation) - work with backend
+- ✅ Sharpen - works with backend
+- ✅ Layer management
+- ✅ History tracking on all operations
+
+**Requires Backend:**
+- Filters, Blur, Adjustments, Sharpen all need backend API running
+
+**Not Yet Implemented:**
+- Drawing system (requires canvas implementation)
+- Visual crop with drag handles (complex feature)
+- Advanced adjustments (exposure, highlights, shadows, etc.) - backend must support
+
+---
+
+**The app is fully functional when backend is running!**
