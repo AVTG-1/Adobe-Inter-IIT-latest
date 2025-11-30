@@ -50,7 +50,7 @@ const AIFeaturesSheet: React.FC<AIFeaturesSheetProps> = ({
   onClose,
 }) => {
   const [selectedFeature, setSelectedFeature] = useState<string | null>(null);
-  const snapPoints = React.useMemo(() => ['60%'], []);
+  const snapPoints = React.useMemo(() => ['50%'], []);
 
   // Smooth and slow animation configuration
   const animationConfigs = React.useMemo(

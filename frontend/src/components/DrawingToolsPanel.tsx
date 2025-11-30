@@ -85,7 +85,7 @@ const DrawingToolsPanel: React.FC<DrawingToolsPanelProps> = ({
   const [brushSize, setBrushSize] = useState<number>(5);
   const [opacity, setOpacity] = useState<number>(100);
 
-  const snapPoints = useMemo(() => ['60%'], []);
+  const snapPoints = useMemo(() => ['50%'], []);
 
   const animationConfigs = useMemo(
     () => ({

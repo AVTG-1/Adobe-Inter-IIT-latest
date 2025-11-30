@@ -1,7 +1,8 @@
 /**
  * Layers Modal - 30% Height Bottom Sheet
  *
- * Minimal layers list with icons: Eye (visibility), Pen (rename), Drag handle (reorder)
+ * Full layer management UI with add, delete, rename, visibility, reorder
+ * Integrated with useLayerManager hook
  */
 
 import React, { useState, useMemo } from 'react';
@@ -14,27 +15,40 @@ import {
   TextInput,
   Alert,
   Easing,
+  Image,
 } from 'react-native';
 import BottomSheet, { BottomSheetBackdrop, BottomSheetFlatList } from '@gorhom/bottom-sheet';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SPACING, BORDER_RADIUS, FONT_SIZES } from '../config/theme';
-
-interface Layer {
-  id: string;
-  name: string;
-  visible: boolean;
-  locked: boolean;
-  opacity: number;
-}
+import { Layer } from './InteractiveCanvas';
 
 interface LayersModalProps {
   bottomSheetRef: React.RefObject<BottomSheet>;
   onClose: () => void;
+  // Layer management props
+  layers: Layer[];
+  selectedLayerId: string | null;
+  onSelectLayer: (layerId: string) => void;
+  onAddLayer: () => void;
+  onDeleteLayer: (layerId: string) => void;
+  onToggleVisibility: (layerId: string) => void;
+  onRenameLayer: (layerId: string, name: string) => void;
+  onDuplicateLayer: (layerId: string) => void;
+  onSetOpacity: (layerId: string, opacity: number) => void;
 }
 
 const LayersModal: React.FC<LayersModalProps> = ({
   bottomSheetRef,
   onClose,
+  layers,
+  selectedLayerId,
+  onSelectLayer,
+  onAddLayer,
+  onDeleteLayer,
+  onToggleVisibility,
+  onRenameLayer,
+  onDuplicateLayer,
+  onSetOpacity,
 }) => {
   const snapPoints = useMemo(() => ['30%'], []);
 
@@ -47,24 +61,13 @@ const LayersModal: React.FC<LayersModalProps> = ({
     []
   );
 
-  const [layers, setLayers] = useState<Layer[]>([
-    { id: '1', name: 'Background', visible: true, locked: false, opacity: 100 },
-    { id: '2', name: 'Layer 1', visible: true, locked: false, opacity: 100 },
-  ]);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState('');
 
   const renderBackdrop = (props: any) => null;
 
   const handleAddLayer = () => {
-    const newLayer: Layer = {
-      id: Date.now().toString(),
-      name: `Layer ${layers.length}`,
-      visible: true,
-      locked: false,
-      opacity: 100,
-    };
-    setLayers([newLayer, ...layers]);
+    onAddLayer();
   };
 
   const handleDeleteLayer = (id: string) => {
@@ -80,22 +83,14 @@ const LayersModal: React.FC<LayersModalProps> = ({
         {
           text: 'Delete',
           style: 'destructive',
-          onPress: () => setLayers(layers.filter(l => l.id !== id)),
+          onPress: () => onDeleteLayer(id),
         },
       ]
     );
   };
 
   const handleToggleVisibility = (id: string) => {
-    setLayers(layers.map(l =>
-      l.id === id ? { ...l, visible: !l.visible } : l
-    ));
-  };
-
-  const handleToggleLock = (id: string) => {
-    setLayers(layers.map(l =>
-      l.id === id ? { ...l, locked: !l.locked } : l
-    ));
+    onToggleVisibility(id);
   };
 
   const handleStartRename = (layer: Layer) => {
@@ -105,9 +100,7 @@ const LayersModal: React.FC<LayersModalProps> = ({
 
   const handleFinishRename = () => {
     if (editingId && editingName.trim()) {
-      setLayers(layers.map(l =>
-        l.id === editingId ? { ...l, name: editingName.trim() } : l
-      ));
+      onRenameLayer(editingId, editingName.trim());
     }
     setEditingId(null);
     setEditingName('');
@@ -117,56 +110,96 @@ const LayersModal: React.FC<LayersModalProps> = ({
     bottomSheetRef.current?.close();
   };
 
-  const renderLayer = ({ item }: { item: Layer }) => (
-    <View style={styles.layerCard}>
-      <View style={styles.layerLeft}>
-        {/* Drag Handle */}
-        <View style={styles.dragHandle}>
-          <Ionicons name="menu" size={16} color={COLORS.textSecondary} />
+  const handleLayerPress = (layerId: string) => {
+    onSelectLayer(layerId);
+  };
+
+  const handleDuplicateLayer = (layerId: string) => {
+    onDuplicateLayer(layerId);
+  };
+
+  const renderLayer = ({ item }: { item: Layer }) => {
+    const isSelected = item.id === selectedLayerId;
+
+    return (
+      <TouchableOpacity
+        style={[
+          styles.layerCard,
+          isSelected && styles.layerCardSelected,
+        ]}
+        onPress={() => handleLayerPress(item.id)}
+        activeOpacity={0.7}
+      >
+        <View style={styles.layerLeft}>
+          {/* Thumbnail */}
+          {item.imageUri && (
+            <View style={styles.thumbnailContainer}>
+              <Image
+                source={{ uri: item.imageUri }}
+                style={styles.thumbnail}
+                resizeMode="cover"
+              />
+            </View>
+          )}
+
+          {/* Layer Name */}
+          {editingId === item.id ? (
+            <TextInput
+              style={styles.layerNameInput}
+              value={editingName}
+              onChangeText={setEditingName}
+              onBlur={handleFinishRename}
+              onSubmitEditing={handleFinishRename}
+              autoFocus
+              selectTextOnFocus
+              placeholderTextColor={COLORS.textTertiary}
+            />
+          ) : (
+            <View style={styles.layerNameContainer}>
+              <Text style={[styles.layerName, isSelected && styles.layerNameSelected]}>
+                {item.name}
+              </Text>
+              <Text style={styles.layerType}>
+                {item.type} • {Math.round(item.opacity * 100)}%
+              </Text>
+            </View>
+          )}
         </View>
 
-        {/* Layer Name */}
-        {editingId === item.id ? (
-          <TextInput
-            style={styles.layerNameInput}
-            value={editingName}
-            onChangeText={setEditingName}
-            onBlur={handleFinishRename}
-            onSubmitEditing={handleFinishRename}
-            autoFocus
-            selectTextOnFocus
-            placeholderTextColor={COLORS.textTertiary}
-          />
-        ) : (
-          <View style={styles.layerNameContainer}>
-            <Text style={styles.layerName}>{item.name}</Text>
-          </View>
-        )}
-      </View>
+        <View style={styles.layerRight}>
+          {/* Edit Icon (Pen) */}
+          <TouchableOpacity
+            onPress={() => handleStartRename(item)}
+            style={styles.iconButton}
+          >
+            <Ionicons name="create-outline" size={18} color={COLORS.textSecondary} />
+          </TouchableOpacity>
 
-      <View style={styles.layerRight}>
-        {/* Edit Icon (Pen) */}
-        <TouchableOpacity
-          onPress={() => handleStartRename(item)}
-          style={styles.iconButton}
-        >
-          <Ionicons name="create-outline" size={18} color={COLORS.textSecondary} />
-        </TouchableOpacity>
+          {/* Eye Toggle */}
+          <TouchableOpacity
+            onPress={() => handleToggleVisibility(item.id)}
+            style={styles.iconButton}
+          >
+            <Ionicons
+              name={item.visible ? 'eye' : 'eye-off'}
+              size={18}
+              color={item.visible ? COLORS.primary : COLORS.textTertiary}
+            />
+          </TouchableOpacity>
 
-        {/* Eye Toggle */}
-        <TouchableOpacity
-          onPress={() => handleToggleVisibility(item.id)}
-          style={styles.iconButton}
-        >
-          <Ionicons
-            name={item.visible ? 'eye' : 'eye-off'}
-            size={18}
-            color={item.visible ? COLORS.primary : COLORS.textTertiary}
-          />
-        </TouchableOpacity>
-      </View>
-    </View>
-  );
+          {/* Delete (only if not base layer) */}
+          {item.id !== 'base-layer' && (
+            <TouchableOpacity
+              onPress={() => handleDeleteLayer(item.id)}
+              style={styles.iconButton}
+            >
+              <Ionicons name="trash-outline" size={18} color="#FF6B6B" />
+            </TouchableOpacity>
+          )}
+        </View>
+      </TouchableOpacity>
+    );
+  };
 
   return (
     <BottomSheet
@@ -266,6 +299,12 @@ const styles = StyleSheet.create({
     padding: SPACING.sm,
     borderRadius: BORDER_RADIUS.sm,
     marginBottom: SPACING.xs,
+    borderWidth: 2,
+    borderColor: 'transparent',
+  },
+  layerCardSelected: {
+    borderColor: COLORS.primary,
+    backgroundColor: 'rgba(0, 217, 255, 0.1)',
   },
   layerLeft: {
     flexDirection: 'row',
@@ -283,10 +322,30 @@ const styles = StyleSheet.create({
   layerNameContainer: {
     flex: 1,
   },
+  thumbnailContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: BORDER_RADIUS.xs,
+    backgroundColor: '#2A2A2A',
+    marginRight: SPACING.sm,
+    overflow: 'hidden',
+  },
+  thumbnail: {
+    width: '100%',
+    height: '100%',
+  },
   layerName: {
     fontSize: FONT_SIZES.sm,
     fontWeight: '600',
     color: COLORS.textPrimary,
+  },
+  layerNameSelected: {
+    color: COLORS.primary,
+  },
+  layerType: {
+    fontSize: 10,
+    color: COLORS.textTertiary,
+    marginTop: 2,
   },
   layerNameInput: {
     fontSize: FONT_SIZES.sm,

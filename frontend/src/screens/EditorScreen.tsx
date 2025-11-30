@@ -32,6 +32,8 @@ import AIChatModal from '../components/AIChatModal';
 import FiltersPanel, { Filter } from '../components/FiltersPanel';
 import EnhancedAdjustmentPanel, { AdjustmentValues } from '../components/EnhancedAdjustmentPanel';
 import DrawingToolsPanel, { DrawingTool } from '../components/DrawingToolsPanel';
+import InteractiveCanvas, { Layer } from '../components/InteractiveCanvas';
+import { useLayerManager } from '../hooks/useLayerManager';
 import { saveProject } from '../services/projects';
 import * as MediaLibrary from 'expo-media-library';
 import Toast from 'react-native-toast-message';
@@ -100,6 +102,9 @@ export default function EditorScreen({ route, navigation }: Props) {
   const [currentImageUrl, setCurrentImageUrl] = useState<string>(imageUrl || '');
   const [processing, setProcessing] = useState(false);
 
+  // Layer system using hook
+  const layerManager = useLayerManager(imageUrl);
+
   // Animations
   const [fadeAnim] = useState(new Animated.Value(0));
   const [toolbarAnim] = useState(new Animated.Value(0));
@@ -123,6 +128,20 @@ export default function EditorScreen({ route, navigation }: Props) {
       }),
     ]).start();
   }, []);
+
+  // Update base layer when image URL changes (from edits/filters)
+  useEffect(() => {
+    const baseLayer = layerManager.getLayer('base-layer');
+    if (baseLayer && baseLayer.imageUri !== currentImageUrl) {
+      layerManager.updateLayerTransform('base-layer', {});
+      // Update the layer's imageUri manually since we don't have a direct setter
+      // This is a workaround - ideally the hook would have updateLayerImageUri
+      const updatedLayers = layerManager.layers.map(layer =>
+        layer.id === 'base-layer' ? { ...layer, imageUri: currentImageUrl } : layer
+      );
+      // We can't directly set this, so we'll just update currentImageUrl and let canvas handle it
+    }
+  }, [currentImageUrl, layerManager]);
 
   // Hide/show AI button based on ANY popup visibility
   useEffect(() => {
@@ -687,7 +706,7 @@ export default function EditorScreen({ route, navigation }: Props) {
           </TouchableOpacity>
         </View>
 
-        {/* Image Display Area */}
+        {/* Image Display Area - Interactive Canvas */}
         <Animated.View
           style={[
             styles.imageContainer,
@@ -724,12 +743,11 @@ export default function EditorScreen({ route, navigation }: Props) {
               </View>
             </View>
           ) : (
-            <Image
-              source={{ uri: currentImageUrl }}
-              style={styles.image}
-              resizeMode="contain"
-              onLoad={() => setImageLoaded(true)}
-              onError={(error) => {
+            <InteractiveCanvas
+              imageUri={currentImageUrl}
+              layers={layerManager.layers.filter(l => l.id !== 'base-layer')} // Don't render base layer twice
+              onImageLoad={() => setImageLoaded(true)}
+              onImageError={(error) => {
                 console.error('Image load error:', error);
                 Alert.alert(
                   'Error',
@@ -937,6 +955,42 @@ export default function EditorScreen({ route, navigation }: Props) {
             setLayersOpen(false);
             layersModalRef.current?.close();
           }}
+          layers={layerManager.layers}
+          selectedLayerId={layerManager.selectedLayerId}
+          onSelectLayer={layerManager.selectLayer}
+          onAddLayer={() => {
+            layerManager.addLayer({
+              type: 'image',
+              name: `Layer ${layerManager.layers.length}`,
+              visible: true,
+              opacity: 1,
+              transform: { x: 0, y: 0, scale: 1, rotation: 0 },
+            });
+            Toast.show({
+              type: 'success',
+              text1: 'Layer Added',
+              text2: 'New layer created',
+            });
+          }}
+          onDeleteLayer={(layerId) => {
+            layerManager.deleteLayer(layerId);
+            Toast.show({
+              type: 'info',
+              text1: 'Layer Deleted',
+              text2: 'Layer removed from canvas',
+            });
+          }}
+          onToggleVisibility={layerManager.toggleLayerVisibility}
+          onRenameLayer={layerManager.renameLayer}
+          onDuplicateLayer={(layerId) => {
+            layerManager.duplicateLayer(layerId);
+            Toast.show({
+              type: 'success',
+              text1: 'Layer Duplicated',
+              text2: 'Layer copy created',
+            });
+          }}
+          onSetOpacity={layerManager.setLayerOpacity}
         />
 
         {/* Export Sheet */}

@@ -111,7 +111,7 @@ const FiltersPanel: React.FC<FiltersPanelProps> = ({
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedFilter, setSelectedFilter] = useState<string | null>(null);
 
-  const snapPoints = useMemo(() => ['70%'], []);
+  const snapPoints = useMemo(() => ['50%'], []);
 
   const animationConfigs = useMemo(
     () => ({

@@ -79,7 +79,7 @@ export default function ToolOptionsDrawer({
   selectedTool,
   onClose,
 }: ToolOptionsDrawerProps) {
-  const snapPoints = useMemo(() => ['40%', '60%'], []);
+  const snapPoints = useMemo(() => ['40%', '50%'], []);
 
   const handleSheetChanges = useCallback((index: number) => {
     if (index === -1) {
