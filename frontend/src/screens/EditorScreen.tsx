@@ -37,6 +37,7 @@ import RotateTool from '../components/RotateTool';
 import FlipTool, { FlipData } from '../components/FlipTool';
 import ResizeTool, { ResizeData } from '../components/ResizeTool';
 import ProfessionalBlurTool, { BlurData } from '../components/ProfessionalBlurTool';
+import DrawingModal, { DrawingData } from '../components/DrawingModal';
 import InteractiveCanvas, { Layer } from '../components/InteractiveCanvas';
 import { useLayerManager } from '../hooks/useLayerManager';
 import { useImageHistory } from '../hooks/useImageHistory';
@@ -109,6 +110,8 @@ export default function EditorScreen({ route, navigation }: Props) {
   const [flipToolOpen, setFlipToolOpen] = useState(false);
   const [resizeToolOpen, setResizeToolOpen] = useState(false);
   const [blurToolOpen, setBlurToolOpen] = useState(false);
+  const [drawingModalOpen, setDrawingModalOpen] = useState(false);
+  const [currentDrawingTool, setCurrentDrawingTool] = useState<DrawingTool | null>(null);
   const [currentImageUrl, setCurrentImageUrl] = useState<string>(imageUrl || '');
   const [processing, setProcessing] = useState(false);
 
@@ -1178,23 +1181,55 @@ export default function EditorScreen({ route, navigation }: Props) {
   const handleDrawingToolSelect = (tool: DrawingTool) => {
     console.log('Drawing tool selected:', tool.name, 'Settings:', tool.settings);
 
-    // Create a new drawing layer when a drawing tool is selected
-    const layerId = layerManager.addLayer({
-      type: 'drawing',
-      name: `${tool.name} Drawing`,
-      visible: true,
-      opacity: tool.settings.opacity,
-      transform: { x: 0, y: 0, scale: 1, rotation: 0 },
-    });
+    // Close drawing tools panel
+    setDrawingToolsOpen(false);
+    drawingToolsRef.current?.close();
 
-    layerManager.selectLayer(layerId);
+    // Open drawing modal with selected tool
+    setCurrentDrawingTool(tool);
+    setDrawingModalOpen(true);
+  };
 
-    Toast.show({
-      type: 'success',
-      text1: `${tool.name} Layer Created`,
-      text2: `Ready to draw with ${tool.settings.color}`,
-    });
-    // TODO: Enable interactive drawing canvas on the new layer
+  const handleDrawingApply = async (drawingData: DrawingData) => {
+    setDrawingModalOpen(false);
+
+    if (!currentDrawingTool || drawingData.paths.length === 0) {
+      return;
+    }
+
+    try {
+      // Create a new drawing layer with the drawing data
+      const layerId = layerManager.addLayer({
+        type: 'drawing',
+        name: `${currentDrawingTool.name} Drawing`,
+        visible: true,
+        opacity: drawingData.settings.opacity,
+        transform: { x: 0, y: 0, scale: 1, rotation: 0 },
+        drawing: {
+          paths: drawingData.paths,
+          color: drawingData.settings.color,
+          strokeWidth: drawingData.settings.size,
+        },
+      });
+
+      layerManager.selectLayer(layerId);
+
+      Toast.show({
+        type: 'success',
+        text1: `${currentDrawingTool.name} Applied`,
+        text2: `${drawingData.paths.length} strokes added`,
+      });
+
+      // Note: Drawings are stored as vector paths in the layer
+      // They need to be rendered on the InteractiveCanvas component
+    } catch (error: any) {
+      console.error('Drawing apply failed:', error);
+      Toast.show({
+        type: 'error',
+        text1: 'Drawing Failed',
+        text2: error.message || 'Please try again',
+      });
+    }
   };
 
   return (
@@ -1643,6 +1678,16 @@ export default function EditorScreen({ route, navigation }: Props) {
           onApply={handleBlurApply}
           onCancel={() => setBlurToolOpen(false)}
         />
+
+        {/* Drawing Modal */}
+        {currentDrawingTool && (
+          <DrawingModal
+            visible={drawingModalOpen}
+            tool={currentDrawingTool}
+            onApply={handleDrawingApply}
+            onCancel={() => setDrawingModalOpen(false)}
+          />
+        )}
       </SafeAreaView>
     </GestureHandlerRootView>
   );
