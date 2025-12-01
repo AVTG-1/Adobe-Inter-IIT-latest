@@ -73,8 +73,8 @@ const Splash2Screen: React.FC<Props> = ({ navigation }) => {
       <SafeAreaView style={styles.container} edges={['bottom']}>
         <Animated.View style={[styles.content, { opacity: fadeAnim }]}>
           <View style={styles.textContainer}>
-            <Text style={styles.title}>Create & Transform</Text>
-            <Text style={styles.subtitle}>Powerful tools at your fingertips</Text>
+            <Text style={styles.title}>Auralite</Text>
+            <Text style={styles.subtitle}>The best editing mobile app</Text>
           </View>
         </Animated.View>
 

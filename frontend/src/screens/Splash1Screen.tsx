@@ -278,7 +278,7 @@ const Splash1Screen: React.FC<Props> = ({ navigation }) => {
               },
             ]}
           >
-            <Text style={styles.title}>AI Photo Editor</Text>
+            <Text style={styles.title}>Auralite</Text>
           </Animated.View>
 
           {/* Subtitle */}
@@ -291,7 +291,7 @@ const Splash1Screen: React.FC<Props> = ({ navigation }) => {
               },
             ]}
           >
-            <Text style={styles.subtitle}>Professional Editing • AI Powered</Text>
+            <Text style={styles.subtitle}>The best editing mobile app</Text>
             <View style={styles.featureRow}>
               <View style={styles.featureDot} />
               <Text style={styles.featureText}>Transform</Text>
