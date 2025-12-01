@@ -237,7 +237,8 @@ export default function EditorScreen({ route, navigation }: Props) {
         layersModalRef.current?.snapToIndex(0);
         break;
       case 'ai':
-        setAiChatOpen(true);
+        setAiFeaturesOpen(true);
+        aiFeaturesRef.current?.snapToIndex(0);
         break;
     }
   };
@@ -552,6 +553,15 @@ export default function EditorScreen({ route, navigation }: Props) {
             </TouchableOpacity>
           </View>
 
+          {/* Floating AI Chat Button */}
+          <TouchableOpacity
+            style={styles.floatingAIButton}
+            onPress={() => setAiChatOpen(true)}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="chatbubble-ellipses" size={24} color="#FFFFFF" />
+          </TouchableOpacity>
+
           {/* Bottom Toolbar */}
           <View style={styles.bottomToolbar}>
             <View style={styles.toolbarContent}>
@@ -856,6 +866,23 @@ const styles = StyleSheet.create({
     backgroundColor: '#242428',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  floatingAIButton: {
+    position: 'absolute',
+    bottom: 100,
+    right: 13,
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: '#4A9EFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#4A9EFF',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
+    elevation: 8,
+    zIndex: 5,
   },
   bottomToolbar: {
     height: 90,

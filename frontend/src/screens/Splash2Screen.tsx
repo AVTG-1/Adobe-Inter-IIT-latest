@@ -1,7 +1,7 @@
 /**
- * Splash Screen 2 - Onboarding
+ * Splash Screen 2 - Auralite Brand (Alternative)
  *
- * Second cinematic intro with different artistic background
+ * Clean, minimal splash matching app aesthetic
  */
 
 import React, { useEffect, useRef } from 'react';
@@ -11,7 +11,6 @@ import {
   StyleSheet,
   Animated,
   TouchableOpacity,
-  ImageBackground,
   Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -63,15 +62,12 @@ const Splash2Screen: React.FC<Props> = ({ navigation }) => {
   };
 
   return (
-    <ImageBackground
-      source={{ uri: 'https://images.unsplash.com/photo-1618556450994-a6a128ef0d9d?w=800' }}
-      style={styles.background}
-      resizeMode="cover"
-    >
-      <View style={styles.overlay} />
-
+    <View style={styles.background}>
       <SafeAreaView style={styles.container} edges={['bottom']}>
         <Animated.View style={[styles.content, { opacity: fadeAnim }]}>
+          <View style={styles.iconCircle}>
+            <Ionicons name="brush" size={40} color="#FFFFFF" />
+          </View>
           <View style={styles.textContainer}>
             <Text style={styles.title}>Auralite</Text>
             <Text style={styles.subtitle}>The best editing mobile app</Text>
@@ -84,24 +80,19 @@ const Splash2Screen: React.FC<Props> = ({ navigation }) => {
             onPress={handleSkip}
             activeOpacity={0.8}
           >
-            <Text style={styles.skipText}>Skip</Text>
+            <Text style={styles.skipText}>Get Started</Text>
             <Ionicons name="arrow-forward" size={18} color="#000" />
           </TouchableOpacity>
         </Animated.View>
       </SafeAreaView>
-    </ImageBackground>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   background: {
     flex: 1,
-    width: width,
-    height: height,
-  },
-  overlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    backgroundColor: '#000000',
   },
   container: {
     flex: 1,
@@ -113,39 +104,45 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 40,
   },
+  iconCircle: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: '#242428',
+    borderWidth: 2,
+    borderColor: '#323232',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 30,
+  },
   textContainer: {
     alignItems: 'center',
   },
   title: {
-    fontSize: 36,
+    fontSize: 38,
     fontWeight: 'bold',
-    color: '#fff',
+    color: '#FFFFFF',
     marginBottom: 12,
     textAlign: 'center',
-    textShadowColor: 'rgba(0, 0, 0, 0.75)',
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 10,
+    letterSpacing: 0.5,
   },
   subtitle: {
     fontSize: 16,
-    color: '#fff',
+    color: '#B0B0B0',
     textAlign: 'center',
-    opacity: 0.9,
-    textShadowColor: 'rgba(0, 0, 0, 0.75)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 8,
+    letterSpacing: 0.3,
   },
   skipContainer: {
     paddingHorizontal: 24,
     paddingBottom: 40,
-    alignItems: 'flex-end',
+    alignItems: 'center',
   },
   skipButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
-    paddingVertical: 12,
-    paddingHorizontal: 24,
+    backgroundColor: '#D9D9D9',
+    paddingVertical: 14,
+    paddingHorizontal: 28,
     borderRadius: 25,
     shadowColor: '#000',
     shadowOffset: {
