@@ -217,40 +217,6 @@ const InteractiveCanvas: React.FC<InteractiveCanvasProps> = ({
     <View style={[styles.container, { width: canvasWidth, height: canvasHeight }]}>
       {/* Canvas background */}
       <View style={styles.canvasBackground}>
-        {/* Zoom controls */}
-        <View style={styles.zoomControls}>
-          <TouchableOpacity
-            style={styles.zoomButton}
-            onPress={() => {
-              const newScale = Math.min(5, scale.value + 0.5);
-              scale.value = withSpring(newScale);
-              savedScale.value = newScale;
-            }}
-            activeOpacity={0.7}
-          >
-            <Ionicons name="add" size={24} color={COLORS.textPrimary} />
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.zoomButton}
-            onPress={resetTransform}
-            activeOpacity={0.7}
-          >
-            <Ionicons name="scan-outline" size={20} color={COLORS.textPrimary} />
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.zoomButton}
-            onPress={() => {
-              const newScale = Math.max(0.5, scale.value - 0.5);
-              scale.value = withSpring(newScale);
-              savedScale.value = newScale;
-            }}
-            activeOpacity={0.7}
-          >
-            <Ionicons name="remove" size={24} color={COLORS.textPrimary} />
-          </TouchableOpacity>
-        </View>
 
         {/* Interactive image with gestures */}
         <GestureDetector gesture={composedGestures}>
@@ -346,29 +312,6 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-  },
-  zoomControls: {
-    position: 'absolute',
-    bottom: 20,
-    right: 16,
-    flexDirection: 'column',
-    gap: 8,
-    zIndex: 10,
-  },
-  zoomButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: 'rgba(50, 50, 50, 0.9)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
-  },
-  zoomText: {
-    color: COLORS.textPrimary,
-    fontSize: 12,
-    fontWeight: '600',
   },
   helperContainer: {
     position: 'absolute',

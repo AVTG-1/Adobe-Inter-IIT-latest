@@ -24,10 +24,11 @@ import BottomSheet from '@gorhom/bottom-sheet';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import LayersModal from '../components/LayersModal';
 import ExportSheet, { ExportFormat } from '../components/ExportSheet';
-import AddMenuSheet from '../components/AddMenuSheet';
+import SimplifiedAddMenuModal from '../components/SimplifiedAddMenuModal';
+import AIChatInput from '../components/AIChatInput';
 import AIFeaturesSheet from '../components/AIFeaturesSheet';
 import FiltersPanel, { Filter } from '../components/FiltersPanel';
-import ProfessionalAdjustmentsPanel, { AdjustmentValues } from '../components/ProfessionalAdjustmentsPanel';
+import SimplifiedAdjustmentsPanel, { AdjustmentValues } from '../components/SimplifiedAdjustmentsPanel';
 import DrawingToolsPanel, { DrawingTool } from '../components/DrawingToolsPanel';
 import CropTool, { CropData } from '../components/CropTool';
 import RotateTool from '../components/RotateTool';
@@ -41,6 +42,7 @@ import { useImageHistory } from '../hooks/useImageHistory';
 import { saveProject } from '../services/projects';
 import * as MediaLibrary from 'expo-media-library';
 import * as ImageManipulator from 'expo-image-manipulator';
+import * as ImagePicker from 'expo-image-picker';
 import Toast from 'react-native-toast-message';
 import { apiClient } from '../services/api';
 import { EditOperation } from '../types/api';
@@ -69,6 +71,7 @@ export default function EditorScreen({ route, navigation }: Props) {
   const [exportOpen, setExportOpen] = useState(false);
   const [addMenuOpen, setAddMenuOpen] = useState(false);
   const [aiFeaturesOpen, setAiFeaturesOpen] = useState(false);
+  const [aiChatOpen, setAiChatOpen] = useState(false);
   const [adjustmentOpen, setAdjustmentOpen] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [drawingToolsOpen, setDrawingToolsOpen] = useState(false);
@@ -234,8 +237,7 @@ export default function EditorScreen({ route, navigation }: Props) {
         layersModalRef.current?.snapToIndex(0);
         break;
       case 'ai':
-        setAiFeaturesOpen(true);
-        aiFeaturesRef.current?.snapToIndex(0);
+        setAiChatOpen(true);
         break;
     }
   };
@@ -254,6 +256,96 @@ export default function EditorScreen({ route, navigation }: Props) {
         useNativeDriver: true,
       }),
     ]).start();
+  };
+
+  // Handle camera
+  const handleOpenCamera = async () => {
+    try {
+      setAddMenuOpen(false);
+
+      // Request camera permissions
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+
+      if (status !== 'granted') {
+        Alert.alert(
+          'Permission Required',
+          'Please grant camera permission to take photos.',
+          [{ text: 'OK' }]
+        );
+        return;
+      }
+
+      // Launch camera
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: false,
+        quality: 1,
+      });
+
+      if (!result.canceled) {
+        const asset = result.assets[0];
+        // Add as new layer or replace current
+        Toast.show({
+          type: 'success',
+          text1: 'Image Captured',
+          text2: 'Photo added from camera',
+        });
+        // TODO: Implement layer addition logic
+      }
+    } catch (error: any) {
+      console.error('Camera error:', error);
+      Alert.alert('Error', 'Failed to open camera. Please try again.');
+    }
+  };
+
+  // Handle gallery import
+  const handleImportGallery = async () => {
+    try {
+      setAddMenuOpen(false);
+
+      // Request permissions
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+      if (status !== 'granted') {
+        Alert.alert(
+          'Permission Required',
+          'Please grant permission to access your photo library.',
+          [{ text: 'OK' }]
+        );
+        return;
+      }
+
+      // Launch image picker
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: false,
+        quality: 1,
+      });
+
+      if (!result.canceled) {
+        const asset = result.assets[0];
+        // Add as new layer or replace current
+        Toast.show({
+          type: 'success',
+          text1: 'Image Imported',
+          text2: 'Photo added from gallery',
+        });
+        // TODO: Implement layer addition logic
+      }
+    } catch (error: any) {
+      console.error('Gallery picker error:', error);
+      Alert.alert('Error', 'Failed to open gallery. Please try again.');
+    }
+  };
+
+  // Handle AI chat message
+  const handleAIChatSend = (message: string) => {
+    console.log('AI Chat message:', message);
+    Toast.show({
+      type: 'info',
+      text1: 'AI Assistant',
+      text2: 'AI chat feature coming soon!',
+    });
   };
 
   // Handle crop
@@ -561,18 +653,12 @@ export default function EditorScreen({ route, navigation }: Props) {
           }}
         />
 
-        {/* Add Menu Sheet */}
-        <AddMenuSheet
-          bottomSheetRef={addMenuRef}
-          onOptionSelect={(option) => {
-            console.log('Add option:', option);
-            setAddMenuOpen(false);
-            addMenuRef.current?.close();
-          }}
-          onClose={() => {
-            setAddMenuOpen(false);
-            addMenuRef.current?.close();
-          }}
+        {/* Add Menu Modal */}
+        <SimplifiedAddMenuModal
+          visible={addMenuOpen}
+          onOpenCamera={handleOpenCamera}
+          onImportGallery={handleImportGallery}
+          onClose={() => setAddMenuOpen(false)}
         />
 
         {/* AI Features Sheet */}
@@ -595,16 +681,14 @@ export default function EditorScreen({ route, navigation }: Props) {
         />
 
         {/* Adjustments Panel */}
-        <ProfessionalAdjustmentsPanel
-          bottomSheetRef={adjustmentPanelRef}
+        <SimplifiedAdjustmentsPanel
+          visible={adjustmentOpen}
           onClose={() => {
             setAdjustmentOpen(false);
-            adjustmentPanelRef.current?.close();
           }}
           onApply={async (values: AdjustmentValues) => {
             console.log('Adjustments:', values);
             setAdjustmentOpen(false);
-            adjustmentPanelRef.current?.close();
             Toast.show({
               type: 'success',
               text1: 'Adjustments Applied',
@@ -656,6 +740,13 @@ export default function EditorScreen({ route, navigation }: Props) {
             onCancel={() => setDrawingModalOpen(false)}
           />
         )}
+
+        {/* AI Chat Input */}
+        <AIChatInput
+          visible={aiChatOpen}
+          onSend={handleAIChatSend}
+          onClose={() => setAiChatOpen(false)}
+        />
 
         <Toast />
       </SafeAreaView>
