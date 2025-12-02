@@ -218,7 +218,7 @@ export default function EditorScreen({ route, navigation }: Props) {
   const handleToolPress = (toolId: string) => {
     // Toggle edit panel if Edit is pressed
     if (toolId === 'edit') {
-      setSelectedTool(toolId);
+      setSelectedTool(editPanelOpen ? null : toolId);
       setEditPanelOpen(!editPanelOpen);
       return;
     }
@@ -719,27 +719,23 @@ export default function EditorScreen({ route, navigation }: Props) {
             </TouchableOpacity>
           </Animated.View>
 
-          {/* Bottom Toolbar - 6 Tools */}
+          {/* Bottom Toolbar - Dynamic: 5 main buttons OR 6 editing tools */}
           <View style={styles.bottomToolbar}>
             <View style={styles.toolbarContent}>
-              {/* Edit - Always visible */}
-              <TouchableOpacity
-                style={styles.toolItem}
-                onPress={() => handleToolPress('edit')}
-                activeOpacity={0.7}
-              >
-                {selectedTool === 'edit' && <View style={styles.activeIndicator} />}
-                <Ionicons
-                  name="brush-outline"
-                  size={24}
-                  color={selectedTool === 'edit' ? '#000000' : '#E0E0E0'}
-                />
-                <Text style={styles.toolLabel}>Edit</Text>
-              </TouchableOpacity>
-
-              {/* Hide other buttons when edit panel is open */}
-              {!editPanelOpen && (
+              {editPanelOpen && selectedTool === 'edit' ? (
+                // When Edit panel is open: Show 6 editing tools
                 <>
+                  {/* Edit */}
+                  <TouchableOpacity
+                    style={styles.toolItem}
+                    onPress={() => handleToolPress('edit')}
+                    activeOpacity={0.7}
+                  >
+                    <View style={styles.activeIndicator} />
+                    <Ionicons name="brush-outline" size={24} color="#000000" />
+                    <Text style={styles.toolLabel}>Edit</Text>
+                  </TouchableOpacity>
+
                   {/* Filter */}
                   <TouchableOpacity
                     style={styles.toolItem}
@@ -788,6 +784,52 @@ export default function EditorScreen({ route, navigation }: Props) {
                   >
                     <Ionicons name="square-outline" size={24} color="#E0E0E0" />
                     <Text style={styles.toolLabel}>Shape</Text>
+                  </TouchableOpacity>
+                </>
+              ) : (
+                // Normal state: Show 5 main buttons
+                <>
+                  {/* Edit */}
+                  <TouchableOpacity
+                    style={styles.toolItem}
+                    onPress={() => handleToolPress('edit')}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons name="brush-outline" size={24} color="#E0E0E0" />
+                    <Text style={styles.toolLabel}>Edit</Text>
+                  </TouchableOpacity>
+
+                  {/* Adjust */}
+                  <TouchableOpacity
+                    style={styles.toolItem}
+                    onPress={() => handleToolPress('adjust')}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons name="options-outline" size={24} color="#E0E0E0" />
+                    <Text style={styles.toolLabel}>Adjust</Text>
+                  </TouchableOpacity>
+
+                  {/* Spacer for Plus Button */}
+                  <View style={{ width: 60 }} />
+
+                  {/* Layer */}
+                  <TouchableOpacity
+                    style={styles.toolItem}
+                    onPress={() => handleToolPress('layers')}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons name="layers-outline" size={24} color="#E0E0E0" />
+                    <Text style={styles.toolLabel}>Layer</Text>
+                  </TouchableOpacity>
+
+                  {/* AI */}
+                  <TouchableOpacity
+                    style={styles.toolItem}
+                    onPress={() => handleToolPress('ai')}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons name="rocket-outline" size={24} color="#E0E0E0" />
+                    <Text style={styles.toolLabel}>AI</Text>
                   </TouchableOpacity>
                 </>
               )}
