@@ -406,6 +406,7 @@ export default function EditorScreen({ route, navigation }: Props) {
 
     setIsExecutingAI(false);
     setAiPrompt('');
+    setAiChatOpen(false); // Close AI chat after completion
     Toast.show({
       type: 'success',
       text1: 'AI Editing Complete',
