@@ -97,16 +97,39 @@ export default function EditorScreen({ route, navigation }: Props) {
   // Animations
   const [fadeAnim] = useState(new Animated.Value(0));
   const plusButtonScale = useRef(new Animated.Value(1)).current;
+  const aiChatBottom = useRef(new Animated.Value(237)).current;
+  const floatingAIBottom = useRef(new Animated.Value(110)).current;
 
   useEffect(() => {
-    // Fade in animation
+    // Fade in animation with iOS-smooth easing
     Animated.timing(fadeAnim, {
       toValue: 1,
-      duration: 600,
-      easing: Easing.out(Easing.cubic),
+      duration: 500,
+      easing: Easing.bezier(0.25, 0.1, 0.25, 1), // iOS default easing
       useNativeDriver: true,
     }).start();
   }, []);
+
+  // Animate AI features when Edit panel opens/closes
+  useEffect(() => {
+    const toBottomChat = editPanelOpen ? 300 : 237; // Move up when Edit mode active
+    const toBottomFloating = editPanelOpen ? 173 : 110; // Move up when Edit mode active
+
+    Animated.parallel([
+      Animated.spring(aiChatBottom, {
+        toValue: toBottomChat,
+        friction: 8,
+        tension: 40,
+        useNativeDriver: false,
+      }),
+      Animated.spring(floatingAIBottom, {
+        toValue: toBottomFloating,
+        friction: 8,
+        tension: 40,
+        useNativeDriver: false,
+      }),
+    ]).start();
+  }, [editPanelOpen]);
 
   const handleHome = () => {
     Alert.alert(
@@ -302,14 +325,15 @@ export default function EditorScreen({ route, navigation }: Props) {
   const animatePlusButton = () => {
     Animated.sequence([
       Animated.timing(plusButtonScale, {
-        toValue: 0.9,
+        toValue: 0.85,
         duration: 100,
+        easing: Easing.bezier(0.25, 0.1, 0.25, 1), // iOS smooth easing
         useNativeDriver: true,
       }),
       Animated.spring(plusButtonScale, {
         toValue: 1,
-        friction: 3,
-        tension: 40,
+        friction: 6,
+        tension: 100,
         useNativeDriver: true,
       }),
     ]).start();
@@ -604,9 +628,9 @@ export default function EditorScreen({ route, navigation }: Props) {
             </View>
           </TouchableWithoutFeedback>
 
-          {/* Global AI Chat Panel */}
+          {/* Global AI Chat Panel - Animated position */}
           {aiChatOpen && (
-            <View style={styles.globalAIChatPanel}>
+            <Animated.View style={[styles.globalAIChatPanel, { bottom: aiChatBottom }]}>
               <TouchableOpacity style={styles.aiAssistantButton}>
                 <Ionicons name="sparkles" size={24} color="#FFFFFF" />
               </TouchableOpacity>
@@ -621,18 +645,20 @@ export default function EditorScreen({ route, navigation }: Props) {
               >
                 <Ionicons name="close" size={20} color="#FFFFFF" />
               </TouchableOpacity>
-            </View>
+            </Animated.View>
           )}
 
 
-          {/* Floating AI Button */}
-          <TouchableOpacity
-            style={styles.floatingAIButton}
-            onPress={() => setAiChatOpen(!aiChatOpen)}
-            activeOpacity={0.8}
-          >
-            <Ionicons name="layers" size={24} color="#FFFFFF" />
-          </TouchableOpacity>
+          {/* Floating AI Button - Animated position */}
+          <Animated.View style={[styles.floatingAIButton, { bottom: floatingAIBottom }]}>
+            <TouchableOpacity
+              style={styles.floatingAIButtonInner}
+              onPress={() => setAiChatOpen(!aiChatOpen)}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="layers" size={24} color="#FFFFFF" />
+            </TouchableOpacity>
+          </Animated.View>
 
           {/* Plus Button (Elevated) - Hide when other tool is active */}
           {(selectedTool === null || selectedTool === 'add') && (
@@ -1035,7 +1061,6 @@ const styles = StyleSheet.create({
   },
   globalAIChatPanel: {
     position: 'absolute',
-    bottom: 237,
     left: 18,
     width: 405,
     height: 72,
@@ -1078,8 +1103,10 @@ const styles = StyleSheet.create({
   },
   floatingAIButton: {
     position: 'absolute',
-    bottom: 110,
     right: 13,
+    zIndex: 5,
+  },
+  floatingAIButtonInner: {
     width: 38,
     height: 38,
     borderRadius: 19,
@@ -1091,7 +1118,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.5,
     shadowRadius: 4,
     elevation: 4,
-    zIndex: 5,
   },
   plusButtonContainer: {
     position: 'absolute',
