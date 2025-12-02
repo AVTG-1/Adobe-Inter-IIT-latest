@@ -15,8 +15,9 @@ import {
   Easing,
   ActivityIndicator,
   Alert,
+  StatusBar,
+  Platform,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/AppNavigator';
@@ -448,7 +449,8 @@ export default function EditorScreen({ route, navigation }: Props) {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <SafeAreaView style={styles.container} edges={[]}>
+      <StatusBar barStyle="light-content" backgroundColor="#000000" />
+      <View style={styles.container}>
         <Animated.View style={[styles.content, { opacity: fadeAnim }]}>
           {/* Top Bar */}
           <View style={styles.topBar}>
@@ -749,7 +751,7 @@ export default function EditorScreen({ route, navigation }: Props) {
         />
 
         <Toast />
-      </SafeAreaView>
+      </View>
     </GestureHandlerRootView>
   );
 }
@@ -758,6 +760,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#000000',
+    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 44,
   },
   content: {
     flex: 1,
