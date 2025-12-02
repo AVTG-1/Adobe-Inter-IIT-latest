@@ -19,6 +19,7 @@ import {
   Platform,
   TextInput,
   TouchableWithoutFeedback,
+  ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -440,6 +441,38 @@ export default function EditorScreen({ route, navigation }: Props) {
     setProcessing(false);
   };
 
+  const handleStepIconTap = (step: any) => {
+    // Open the corresponding panel based on action type
+    switch (step.actionId) {
+      case 'brightness':
+      case 'contrast':
+      case 'saturation':
+        // Open adjustments panel
+        setAdjustmentOpen(true);
+        adjustmentPanelRef.current?.snapToIndex(0);
+        break;
+      case 'filter':
+        // Open filters panel
+        setFiltersOpen(true);
+        filtersRef.current?.snapToIndex(0);
+        break;
+      case 'crop':
+        // Open crop tool
+        setCropToolOpen(true);
+        break;
+      case 'rotate':
+        // Open rotate tool
+        setRotateToolOpen(true);
+        break;
+      default:
+        Toast.show({
+          type: 'info',
+          text1: step.name,
+          text2: step.description,
+        });
+    }
+  };
+
   // Handle camera
   const handleOpenCamera = async () => {
     try {
@@ -779,10 +812,15 @@ export default function EditorScreen({ route, navigation }: Props) {
             </TouchableOpacity>
           </Animated.View>
 
-          {/* Vertical Step Timeline - Left Side */}
+          {/* Horizontal Step Timeline - Above Bottom Toolbar */}
           {executedSteps.length > 0 && (
             <View style={styles.stepTimelineContainer}>
-              <View style={styles.stepTimeline}>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                style={styles.stepTimeline}
+                contentContainerStyle={styles.stepTimelineContent}
+              >
                 {executedSteps.map((step, index) => (
                   <Animated.View
                     key={step.id}
@@ -804,66 +842,31 @@ export default function EditorScreen({ route, navigation }: Props) {
                         styles.stepIconButton,
                         index === currentStepIndex - 1 && isExecutingAI && styles.stepIconActive,
                       ]}
-                      onPress={() => setSelectedStepDetail(step)}
+                      onPress={() => handleStepIconTap(step)}
                       activeOpacity={0.7}
                     >
-                      <Ionicons name={step.icon as any} size={20} color="#FFFFFF" />
-                      <View style={styles.stepNumber}>
-                        <Text style={styles.stepNumberText}>{index + 1}</Text>
-                      </View>
+                      <Ionicons name={step.icon as any} size={18} color="#E0E0E0" />
                       {index === currentStepIndex - 1 && isExecutingAI && (
                         <View style={styles.stepPulse}>
-                          <ActivityIndicator size="small" color="#4A9EFF" />
+                          <ActivityIndicator size="small" color="#FFFFFF" />
                         </View>
                       )}
                     </TouchableOpacity>
                   </Animated.View>
                 ))}
-              </View>
 
-              {/* Clear Steps Button */}
-              {!isExecutingAI && (
-                <TouchableOpacity
-                  style={styles.clearStepsButton}
-                  onPress={() => setExecutedSteps([])}
-                  activeOpacity={0.7}
-                >
-                  <Ionicons name="trash-outline" size={18} color="#FF6B6B" />
-                </TouchableOpacity>
-              )}
+                {/* Clear Steps Button */}
+                {!isExecutingAI && (
+                  <TouchableOpacity
+                    style={styles.clearStepsButton}
+                    onPress={() => setExecutedSteps([])}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons name="close-circle" size={16} color="#666666" />
+                  </TouchableOpacity>
+                )}
+              </ScrollView>
             </View>
-          )}
-
-          {/* Step Detail Modal */}
-          {selectedStepDetail && (
-            <TouchableOpacity
-              style={styles.stepDetailOverlay}
-              activeOpacity={1}
-              onPress={() => setSelectedStepDetail(null)}
-            >
-              <View style={styles.stepDetailPanel}>
-                <View style={styles.stepDetailHeader}>
-                  <Ionicons name={selectedStepDetail.icon as any} size={32} color="#4A9EFF" />
-                  <Text style={styles.stepDetailTitle}>{selectedStepDetail.name}</Text>
-                </View>
-                <Text style={styles.stepDetailDescription}>{selectedStepDetail.description}</Text>
-                <View style={styles.stepDetailParams}>
-                  <Text style={styles.stepDetailParamsTitle}>Parameters:</Text>
-                  {Object.entries(selectedStepDetail.params).map(([key, value]) => (
-                    <View key={key} style={styles.paramRow}>
-                      <Text style={styles.paramKey}>{key}:</Text>
-                      <Text style={styles.paramValue}>{String(value)}</Text>
-                    </View>
-                  ))}
-                </View>
-                <TouchableOpacity
-                  style={styles.closeDetailButton}
-                  onPress={() => setSelectedStepDetail(null)}
-                >
-                  <Text style={styles.closeDetailText}>Close</Text>
-                </TouchableOpacity>
-              </View>
-            </TouchableOpacity>
           )}
 
           {/* Plus Button (Elevated) - Hide when other tool is active */}
@@ -1317,146 +1320,55 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  // AI Step Timeline Styles
+  // AI Step Timeline Styles - Horizontal
   stepTimelineContainer: {
     position: 'absolute',
-    left: 13,
-    bottom: 180,
+    left: 0,
+    right: 0,
+    bottom: 110,
     zIndex: 15,
+    paddingHorizontal: 13,
   },
   stepTimeline: {
-    maxHeight: 350,
+    maxHeight: 50,
+  },
+  stepTimelineContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
   },
   stepIcon: {
-    marginBottom: 12,
+    marginRight: 0,
   },
   stepIconButton: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    backgroundColor: '#242428',
-    borderWidth: 2,
-    borderColor: '#4A9EFF',
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: '#323232',
+    borderWidth: 1,
+    borderColor: '#555555',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#4A9EFF',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.6,
-    shadowRadius: 10,
-    elevation: 10,
   },
   stepIconActive: {
-    borderColor: '#FFD700',
-    shadowColor: '#FFD700',
-    backgroundColor: '#2A2A2D',
-  },
-  stepNumber: {
-    position: 'absolute',
-    top: -4,
-    right: -4,
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: '#4A9EFF',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: '#000000',
-  },
-  stepNumberText: {
-    fontSize: 11,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
+    borderColor: '#FFFFFF',
+    backgroundColor: '#3A3A3D',
   },
   stepPulse: {
     position: 'absolute',
-    bottom: -8,
+    top: -2,
+    right: -2,
   },
   clearStepsButton: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    backgroundColor: '#242428',
-    borderWidth: 2,
-    borderColor: '#FF6B6B',
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: '#323232',
+    borderWidth: 1,
+    borderColor: '#555555',
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 12,
-  },
-  stepDetailOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.8)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 20,
-  },
-  stepDetailPanel: {
-    width: '85%',
-    backgroundColor: '#242428',
-    borderRadius: 24,
-    padding: 24,
-    borderWidth: 2,
-    borderColor: '#4A9EFF',
-    shadowColor: '#4A9EFF',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.5,
-    shadowRadius: 20,
-    elevation: 20,
-  },
-  stepDetailHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  stepDetailTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-    marginLeft: 12,
-  },
-  stepDetailDescription: {
-    fontSize: 14,
-    color: '#CCCCCC',
-    marginBottom: 20,
-    lineHeight: 20,
-  },
-  stepDetailParams: {
-    backgroundColor: '#1A1A1D',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 20,
-  },
-  stepDetailParamsTitle: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: '#4A9EFF',
-    marginBottom: 12,
-  },
-  paramRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 8,
-  },
-  paramKey: {
-    fontSize: 14,
-    color: '#FFFFFF',
-    fontWeight: '500',
-  },
-  paramValue: {
-    fontSize: 14,
-    color: '#4A9EFF',
-    fontWeight: 'bold',
-  },
-  closeDetailButton: {
-    backgroundColor: '#4A9EFF',
-    borderRadius: 12,
-    paddingVertical: 14,
-    alignItems: 'center',
-  },
-  closeDetailText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
+    marginLeft: 8,
   },
   activeIndicator: {
     position: 'absolute',
