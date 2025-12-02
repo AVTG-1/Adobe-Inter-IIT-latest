@@ -17,6 +17,7 @@ import {
   Alert,
   StatusBar,
   Platform,
+  TextInput,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -26,7 +27,6 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import LayersModal from '../components/LayersModal';
 import ExportSheet, { ExportFormat } from '../components/ExportSheet';
 import SimplifiedAddMenuModal from '../components/SimplifiedAddMenuModal';
-import AIChatInput from '../components/AIChatInput';
 import AIFeaturesSheet from '../components/AIFeaturesSheet';
 import FiltersPanel, { Filter } from '../components/FiltersPanel';
 import SimplifiedAdjustmentsPanel, { AdjustmentValues } from '../components/SimplifiedAdjustmentsPanel';
@@ -85,6 +85,7 @@ export default function EditorScreen({ route, navigation }: Props) {
   const [currentDrawingTool, setCurrentDrawingTool] = useState<DrawingTool | null>(null);
   const [currentImageUrl, setCurrentImageUrl] = useState<string>(imageUrl || '');
   const [processing, setProcessing] = useState(false);
+  const [editPanelOpen, setEditPanelOpen] = useState(false);
 
   // Layer system using hook
   const layerManager = useLayerManager(imageUrl);
@@ -215,31 +216,52 @@ export default function EditorScreen({ route, navigation }: Props) {
   };
 
   const handleToolPress = (toolId: string) => {
-    closeAllPanels();
+    // Toggle edit panel if Edit is pressed
+    if (toolId === 'edit') {
+      setSelectedTool(toolId);
+      setEditPanelOpen(!editPanelOpen);
+      return;
+    }
+
+    // Close edit panel when other tools are selected
+    setEditPanelOpen(false);
     setSelectedTool(toolId);
 
+    // Handle other tool-specific actions
     switch (toolId) {
-      case 'edit':
-        // Show edit tools panel (filters, drawing, blur, etc.)
+      case 'filter':
         setFiltersOpen(true);
         filtersRef.current?.snapToIndex(0);
         break;
-      case 'adjust':
-        setAdjustmentOpen(true);
-        adjustmentPanelRef.current?.snapToIndex(0);
+      case 'draw':
+        setDrawingToolsOpen(true);
+        drawingToolsRef.current?.snapToIndex(0);
+        break;
+      case 'curve':
+        Toast.show({
+          type: 'info',
+          text1: 'Curve Tool',
+          text2: 'Coming soon!',
+        });
+        break;
+      case 'text':
+        Toast.show({
+          type: 'info',
+          text1: 'Text Tool',
+          text2: 'Coming soon!',
+        });
+        break;
+      case 'shape':
+        Toast.show({
+          type: 'info',
+          text1: 'Shape Tool',
+          text2: 'Coming soon!',
+        });
         break;
       case 'add':
         animatePlusButton();
         setAddMenuOpen(true);
         addMenuRef.current?.snapToIndex(0);
-        break;
-      case 'layers':
-        setLayersOpen(true);
-        layersModalRef.current?.snapToIndex(0);
-        break;
-      case 'ai':
-        setAiFeaturesOpen(true);
-        aiFeaturesRef.current?.snapToIndex(0);
         break;
     }
   };
@@ -545,14 +567,74 @@ export default function EditorScreen({ route, navigation }: Props) {
             </TouchableOpacity>
           </View>
 
-          {/* Floating AI Chat Button */}
+          {/* Global AI Chat Panel */}
+          {aiChatOpen && (
+            <View style={styles.globalAIChatPanel}>
+              <TouchableOpacity style={styles.aiAssistantButton}>
+                <Ionicons name="sparkles" size={24} color="#FFFFFF" />
+              </TouchableOpacity>
+              <TextInput
+                style={styles.aiChatInput}
+                placeholder="Type something"
+                placeholderTextColor="#888888"
+              />
+              <TouchableOpacity
+                style={styles.aiChatCloseButton}
+                onPress={() => setAiChatOpen(false)}
+              >
+                <Ionicons name="close" size={20} color="#FFFFFF" />
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {/* Expandable Edit Panel */}
+          {editPanelOpen && selectedTool === 'edit' && (
+            <View style={styles.expandableEditPanel}>
+              <View style={styles.editToolsRow}>
+                <TouchableOpacity style={styles.editTool}>
+                  <Text style={styles.editToolLabel}>Overlay</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.editTool}>
+                  <Text style={styles.editToolLabel}>Style transfer</Text>
+                  <Text style={styles.asterisk}>*</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.editTool}>
+                  <Text style={styles.editToolLabel}>Scene replacement</Text>
+                  <Text style={styles.asterisk}>*</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.editTool}>
+                  <Text style={styles.editToolLabel}>Eraser</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.editTool}>
+                  <Text style={styles.editToolLabel}>Pose</Text>
+                  <Text style={styles.asterisk}>*</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.editTool}>
+                  <Text style={styles.editToolLabel}>Gen AI expand</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
+
+          {/* Floating AI Button */}
           <TouchableOpacity
             style={styles.floatingAIButton}
-            onPress={() => setAiChatOpen(true)}
+            onPress={() => setAiChatOpen(!aiChatOpen)}
             activeOpacity={0.8}
           >
             <Ionicons name="layers" size={24} color="#FFFFFF" />
           </TouchableOpacity>
+
+          {/* Plus Button (Elevated) */}
+          <Animated.View style={[styles.plusButtonContainer, { transform: [{ scale: plusButtonScale }] }]}>
+            <TouchableOpacity
+              style={styles.plusButton}
+              onPress={() => handleToolPress('add')}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="add" size={30} color="#000000" />
+            </TouchableOpacity>
+          </Animated.View>
 
           {/* Bottom Toolbar */}
           <View style={styles.bottomToolbar}>
@@ -563,49 +645,63 @@ export default function EditorScreen({ route, navigation }: Props) {
                 onPress={() => handleToolPress('edit')}
                 activeOpacity={0.7}
               >
-                <Ionicons name="brush-outline" size={24} color="#E0E0E0" />
+                {selectedTool === 'edit' && <View style={styles.activeIndicator} />}
+                <Ionicons
+                  name="brush-outline"
+                  size={24}
+                  color={selectedTool === 'edit' ? '#000000' : '#E0E0E0'}
+                />
                 <Text style={styles.toolLabel}>Edit</Text>
               </TouchableOpacity>
 
-              {/* Adjust */}
+              {/* Filter */}
               <TouchableOpacity
                 style={styles.toolItem}
-                onPress={() => handleToolPress('adjust')}
+                onPress={() => handleToolPress('filter')}
                 activeOpacity={0.7}
               >
-                <Ionicons name="options-outline" size={24} color="#E0E0E0" />
-                <Text style={styles.toolLabel}>Adjust</Text>
+                <Ionicons name="color-filter-outline" size={24} color="#E0E0E0" />
+                <Text style={styles.toolLabel}>Filter</Text>
               </TouchableOpacity>
 
-              {/* Plus Button (Add) - Center */}
-              <Animated.View style={{ transform: [{ scale: plusButtonScale }] }}>
-                <TouchableOpacity
-                  style={styles.plusButton}
-                  onPress={() => handleToolPress('add')}
-                  activeOpacity={0.8}
-                >
-                  <Ionicons name="add" size={30} color="#000000" />
-                </TouchableOpacity>
-              </Animated.View>
-
-              {/* Layers */}
+              {/* Draw */}
               <TouchableOpacity
                 style={styles.toolItem}
-                onPress={() => handleToolPress('layers')}
+                onPress={() => handleToolPress('draw')}
                 activeOpacity={0.7}
               >
-                <Ionicons name="layers" size={24} color="#FFFFFF" />
-                <Text style={styles.toolLabel}>Layer</Text>
+                <Ionicons name="pencil-outline" size={24} color="#E0E0E0" />
+                <Text style={styles.toolLabel}>Draw</Text>
               </TouchableOpacity>
 
-              {/* AI */}
+              {/* Curve */}
               <TouchableOpacity
                 style={styles.toolItem}
-                onPress={() => handleToolPress('ai')}
+                onPress={() => handleToolPress('curve')}
                 activeOpacity={0.7}
               >
-                <Ionicons name="rocket" size={24} color="#FFFFFF" />
-                <Text style={styles.toolLabel}>AI</Text>
+                <Ionicons name="git-branch-outline" size={24} color="#E0E0E0" />
+                <Text style={styles.toolLabel}>Curve</Text>
+              </TouchableOpacity>
+
+              {/* Text */}
+              <TouchableOpacity
+                style={styles.toolItem}
+                onPress={() => handleToolPress('text')}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="text-outline" size={24} color="#E0E0E0" />
+                <Text style={styles.toolLabel}>Text</Text>
+              </TouchableOpacity>
+
+              {/* Shape */}
+              <TouchableOpacity
+                style={styles.toolItem}
+                onPress={() => handleToolPress('shape')}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="square-outline" size={24} color="#E0E0E0" />
+                <Text style={styles.toolLabel}>Shape</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -743,12 +839,6 @@ export default function EditorScreen({ route, navigation }: Props) {
           />
         )}
 
-        {/* AI Chat Input */}
-        <AIChatInput
-          visible={aiChatOpen}
-          onSend={handleAIChatSend}
-          onClose={() => setAiChatOpen(false)}
-        />
 
         <Toast />
       </View>
@@ -850,6 +940,89 @@ const styles = StyleSheet.create({
   undoRedoButtonDisabled: {
     opacity: 0.5,
   },
+  globalAIChatPanel: {
+    position: 'absolute',
+    bottom: 237,
+    left: 18,
+    width: 405,
+    height: 72,
+    borderRadius: 30,
+    borderWidth: 1,
+    borderColor: '#9c9c9c',
+    backgroundColor: '#242428',
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 13,
+    zIndex: 3,
+  },
+  aiAssistantButton: {
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    backgroundColor: '#000000',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  aiChatInput: {
+    flex: 1,
+    marginLeft: 16,
+    fontSize: 16,
+    color: '#FFFFFF',
+  },
+  aiChatCloseButton: {
+    width: 32,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  expandableEditPanel: {
+    position: 'absolute',
+    bottom: 172,
+    left: 13,
+    right: 13,
+    height: 137,
+    backgroundColor: '#242428',
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    zIndex: 2,
+  },
+  editToolsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+    justifyContent: 'space-between',
+  },
+  editTool: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    backgroundColor: '#323232',
+    borderRadius: 12,
+    minWidth: 100,
+  },
+  editToolLabel: {
+    fontSize: 10,
+    color: '#E0E0E0',
+    textAlign: 'center',
+  },
+  asterisk: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    fontSize: 12,
+    color: '#FFD700',
+    fontWeight: 'bold',
+  },
+  activeIndicator: {
+    position: 'absolute',
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: '#FFFFFF',
+    zIndex: -1,
+  },
   floatingAIButton: {
     position: 'absolute',
     bottom: 110,
@@ -866,6 +1039,12 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 4,
     zIndex: 5,
+  },
+  plusButtonContainer: {
+    position: 'absolute',
+    bottom: 84,
+    left: SCREEN_WIDTH / 2 - 30,
+    zIndex: 4,
   },
   bottomToolbar: {
     backgroundColor: '#242428',
@@ -897,7 +1076,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#D9D9D9',
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: -30,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
