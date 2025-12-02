@@ -110,10 +110,15 @@ export default function EditorScreen({ route, navigation }: Props) {
     }).start();
   }, []);
 
-  // Animate AI features when Edit panel opens/closes - slow and smooth
+  // Animate AI features when ANY panel opens/closes - slow and smooth
   useEffect(() => {
-    const toBottomChat = editPanelOpen ? 300 : 237; // Move up when Edit mode active
-    const toBottomFloating = editPanelOpen ? 173 : 110; // Move up when Edit mode active
+    // Check if any panel is open
+    const anyPanelOpen = editPanelOpen || adjustmentOpen || filtersOpen ||
+                         drawingToolsOpen || layersOpen || aiFeaturesOpen ||
+                         addMenuOpen || exportOpen;
+
+    const toBottomChat = anyPanelOpen ? 300 : 237; // Move up when any panel active
+    const toBottomFloating = anyPanelOpen ? 173 : 110; // Move up when any panel active
 
     Animated.parallel([
       Animated.spring(aiChatBottom, {
@@ -129,7 +134,7 @@ export default function EditorScreen({ route, navigation }: Props) {
         useNativeDriver: false,
       }),
     ]).start();
-  }, [editPanelOpen]);
+  }, [editPanelOpen, adjustmentOpen, filtersOpen, drawingToolsOpen, layersOpen, aiFeaturesOpen, addMenuOpen, exportOpen]);
 
   const handleHome = () => {
     Alert.alert(
@@ -531,6 +536,11 @@ export default function EditorScreen({ route, navigation }: Props) {
       <StatusBar barStyle="light-content" backgroundColor="#000000" />
       <View style={styles.container}>
         <Animated.View style={[styles.content, { opacity: fadeAnim }]}>
+          {/* Full-screen tap handler - close panels when tapping outside */}
+          <TouchableWithoutFeedback onPress={handleCanvasTap}>
+            <View style={styles.tapOverlay} />
+          </TouchableWithoutFeedback>
+
           {/* Top Bar */}
           <View style={styles.topBar}>
             {/* Home Button */}
@@ -560,9 +570,8 @@ export default function EditorScreen({ route, navigation }: Props) {
             </TouchableOpacity>
           </View>
 
-          {/* Canvas Area - Tap to close panels */}
-          <TouchableWithoutFeedback onPress={handleCanvasTap}>
-            <View style={styles.canvasArea}>
+          {/* Canvas Area */}
+          <View style={styles.canvasArea}>
               {!imageLoaded && !isBlankCanvas && (
                 <View style={styles.loadingContainer}>
                   <ActivityIndicator size="large" color="#FFFFFF" />
@@ -594,12 +603,10 @@ export default function EditorScreen({ route, navigation }: Props) {
                   />
                 </View>
               )}
-            </View>
-          </TouchableWithoutFeedback>
+          </View>
 
-          {/* Undo/Redo Controls (Below Canvas) - Tap to close panels */}
-          <TouchableWithoutFeedback onPress={handleCanvasTap}>
-            <View style={styles.undoRedoControls}>
+          {/* Undo/Redo Controls (Below Canvas) */}
+          <View style={styles.undoRedoControls}>
               <TouchableOpacity
                 style={[styles.undoRedoButton, !history.canUndo && styles.undoRedoButtonDisabled]}
                 onPress={handleUndo}
@@ -625,8 +632,7 @@ export default function EditorScreen({ route, navigation }: Props) {
                   color={history.canRedo ? '#FFFFFF' : '#666666'}
                 />
               </TouchableOpacity>
-            </View>
-          </TouchableWithoutFeedback>
+          </View>
 
           {/* Global AI Chat Panel - Animated position */}
           {aiChatOpen && (
@@ -973,6 +979,10 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
+  },
+  tapOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 0,
   },
   topBar: {
     flexDirection: 'row',
