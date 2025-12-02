@@ -108,6 +108,7 @@ export default function EditorScreen({ route, navigation }: Props) {
   const plusButtonScale = useRef(new Animated.Value(1)).current;
   const aiChatBottom = useRef(new Animated.Value(237)).current;
   const floatingAIBottom = useRef(new Animated.Value(110)).current;
+  const timelineBottom = useRef(new Animated.Value(110)).current;
 
   useEffect(() => {
     // Fade in animation - slow and smooth
@@ -119,7 +120,7 @@ export default function EditorScreen({ route, navigation }: Props) {
     }).start();
   }, []);
 
-  // Animate AI features when ANY panel opens/closes - slow and smooth
+  // Animate AI features and timeline when ANY panel opens/closes - slow and smooth
   useEffect(() => {
     // Check if any panel is open
     const anyPanelOpen = editPanelOpen || adjustmentOpen || filtersOpen ||
@@ -128,6 +129,7 @@ export default function EditorScreen({ route, navigation }: Props) {
 
     const toBottomChat = anyPanelOpen ? 300 : 237; // Move up when any panel active
     const toBottomFloating = anyPanelOpen ? 173 : 110; // Move up when any panel active
+    const toBottomTimeline = anyPanelOpen ? 400 : 110; // Move timeline up significantly
 
     Animated.parallel([
       Animated.spring(aiChatBottom, {
@@ -138,6 +140,12 @@ export default function EditorScreen({ route, navigation }: Props) {
       }),
       Animated.spring(floatingAIBottom, {
         toValue: toBottomFloating,
+        friction: 12,
+        tension: 30,
+        useNativeDriver: false,
+      }),
+      Animated.spring(timelineBottom, {
+        toValue: toBottomTimeline,
         friction: 12,
         tension: 30,
         useNativeDriver: false,
@@ -812,9 +820,9 @@ export default function EditorScreen({ route, navigation }: Props) {
             </TouchableOpacity>
           </Animated.View>
 
-          {/* Horizontal Step Timeline - Above Bottom Toolbar */}
+          {/* Horizontal Step Timeline - Animated position */}
           {executedSteps.length > 0 && (
-            <View style={styles.stepTimelineContainer}>
+            <Animated.View style={[styles.stepTimelineContainer, { bottom: timelineBottom }]}>
               <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
@@ -866,7 +874,7 @@ export default function EditorScreen({ route, navigation }: Props) {
                   </TouchableOpacity>
                 )}
               </ScrollView>
-            </View>
+            </Animated.View>
           )}
 
           {/* Plus Button (Elevated) - Hide when other tool is active */}
@@ -1320,12 +1328,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  // AI Step Timeline Styles - Horizontal
+  // AI Step Timeline Styles - Horizontal with animated position
   stepTimelineContainer: {
     position: 'absolute',
     left: 0,
     right: 0,
-    bottom: 110,
     zIndex: 15,
     paddingHorizontal: 13,
   },
