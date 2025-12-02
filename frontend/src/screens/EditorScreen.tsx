@@ -18,6 +18,7 @@ import {
   StatusBar,
   Platform,
   TextInput,
+  TouchableWithoutFeedback,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -213,6 +214,16 @@ export default function EditorScreen({ route, navigation }: Props) {
     adjustmentPanelRef.current?.close();
     filtersRef.current?.close();
     drawingToolsRef.current?.close();
+  };
+
+  const handleCanvasTap = () => {
+    // Close all panels and return to normal state when canvas is tapped
+    if (editPanelOpen || selectedTool !== null || aiChatOpen) {
+      setEditPanelOpen(false);
+      setSelectedTool(null);
+      setAiChatOpen(false);
+      closeAllPanels();
+    }
   };
 
   const handleToolPress = (toolId: string) => {
@@ -525,69 +536,73 @@ export default function EditorScreen({ route, navigation }: Props) {
             </TouchableOpacity>
           </View>
 
-          {/* Canvas Area */}
-          <View style={styles.canvasArea}>
-            {!imageLoaded && !isBlankCanvas && (
-              <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color="#FFFFFF" />
-                <Text style={styles.loadingText}>Loading image...</Text>
-              </View>
-            )}
+          {/* Canvas Area - Tap to close panels */}
+          <TouchableWithoutFeedback onPress={handleCanvasTap}>
+            <View style={styles.canvasArea}>
+              {!imageLoaded && !isBlankCanvas && (
+                <View style={styles.loadingContainer}>
+                  <ActivityIndicator size="large" color="#FFFFFF" />
+                  <Text style={styles.loadingText}>Loading image...</Text>
+                </View>
+              )}
 
-            {isBlankCanvas ? (
-              <View style={[styles.blankCanvas]}>
-                <Ionicons name="create-outline" size={60} color="#666666" />
-                <Text style={styles.blankCanvasText}>
-                  Start creating on your blank canvas
-                </Text>
-              </View>
-            ) : (
-              <View style={styles.canvasContainer}>
-                <InteractiveCanvas
-                  imageUri={currentImageUrl}
-                  layers={layerManager.layers.filter(l => l.id !== 'base-layer')}
-                  onImageLoad={() => setImageLoaded(true)}
-                  onImageError={(error) => {
-                    console.error('Image load error:', error);
-                    Alert.alert(
-                      'Error',
-                      'Failed to load image. Please try again.',
-                      [{ text: 'Go Back', onPress: () => navigation.goBack() }]
-                    );
-                  }}
+              {isBlankCanvas ? (
+                <View style={[styles.blankCanvas]}>
+                  <Ionicons name="create-outline" size={60} color="#666666" />
+                  <Text style={styles.blankCanvasText}>
+                    Start creating on your blank canvas
+                  </Text>
+                </View>
+              ) : (
+                <View style={styles.canvasContainer}>
+                  <InteractiveCanvas
+                    imageUri={currentImageUrl}
+                    layers={layerManager.layers.filter(l => l.id !== 'base-layer')}
+                    onImageLoad={() => setImageLoaded(true)}
+                    onImageError={(error) => {
+                      console.error('Image load error:', error);
+                      Alert.alert(
+                        'Error',
+                        'Failed to load image. Please try again.',
+                        [{ text: 'Go Back', onPress: () => navigation.goBack() }]
+                      );
+                    }}
+                  />
+                </View>
+              )}
+            </View>
+          </TouchableWithoutFeedback>
+
+          {/* Undo/Redo Controls (Below Canvas) - Tap to close panels */}
+          <TouchableWithoutFeedback onPress={handleCanvasTap}>
+            <View style={styles.undoRedoControls}>
+              <TouchableOpacity
+                style={[styles.undoRedoButton, !history.canUndo && styles.undoRedoButtonDisabled]}
+                onPress={handleUndo}
+                disabled={!history.canUndo}
+                activeOpacity={0.7}
+              >
+                <Ionicons
+                  name="arrow-undo"
+                  size={20}
+                  color={history.canUndo ? '#FFFFFF' : '#666666'}
                 />
-              </View>
-            )}
-          </View>
+              </TouchableOpacity>
 
-          {/* Undo/Redo Controls (Below Canvas) */}
-          <View style={styles.undoRedoControls}>
-            <TouchableOpacity
-              style={[styles.undoRedoButton, !history.canUndo && styles.undoRedoButtonDisabled]}
-              onPress={handleUndo}
-              disabled={!history.canUndo}
-              activeOpacity={0.7}
-            >
-              <Ionicons
-                name="arrow-undo"
-                size={20}
-                color={history.canUndo ? '#FFFFFF' : '#666666'}
-              />
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.undoRedoButton, !history.canRedo && styles.undoRedoButtonDisabled]}
-              onPress={handleRedo}
-              disabled={!history.canRedo}
-              activeOpacity={0.7}
-            >
-              <Ionicons
-                name="arrow-redo"
-                size={20}
-                color={history.canRedo ? '#FFFFFF' : '#666666'}
-              />
-            </TouchableOpacity>
-          </View>
+              <TouchableOpacity
+                style={[styles.undoRedoButton, !history.canRedo && styles.undoRedoButtonDisabled]}
+                onPress={handleRedo}
+                disabled={!history.canRedo}
+                activeOpacity={0.7}
+              >
+                <Ionicons
+                  name="arrow-redo"
+                  size={20}
+                  color={history.canRedo ? '#FFFFFF' : '#666666'}
+                />
+              </TouchableOpacity>
+            </View>
+          </TouchableWithoutFeedback>
 
           {/* Global AI Chat Panel */}
           {aiChatOpen && (
