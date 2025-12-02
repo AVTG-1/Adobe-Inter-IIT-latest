@@ -727,16 +727,18 @@ export default function EditorScreen({ route, navigation }: Props) {
             <Ionicons name="layers" size={24} color="#FFFFFF" />
           </TouchableOpacity>
 
-          {/* Plus Button (Elevated) */}
-          <Animated.View style={[styles.plusButtonContainer, { transform: [{ scale: plusButtonScale }] }]}>
-            <TouchableOpacity
-              style={styles.plusButton}
-              onPress={() => handleToolPress('add')}
-              activeOpacity={0.8}
-            >
-              <Ionicons name="add" size={30} color="#000000" />
-            </TouchableOpacity>
-          </Animated.View>
+          {/* Plus Button (Elevated) - Hide when other tool is active */}
+          {(selectedTool === null || selectedTool === 'add') && (
+            <Animated.View style={[styles.plusButtonContainer, { transform: [{ scale: plusButtonScale }] }]}>
+              <TouchableOpacity
+                style={styles.plusButton}
+                onPress={() => handleToolPress('add')}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="add" size={30} color="#000000" />
+              </TouchableOpacity>
+            </Animated.View>
+          )}
 
           {/* Bottom Toolbar - Dynamic: 5 main buttons OR active button only */}
           <View style={styles.bottomToolbar}>
