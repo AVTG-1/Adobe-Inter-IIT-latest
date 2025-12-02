@@ -23,6 +23,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/AppNavigator';
+import editingActionsData from '../data/editingActions.json';
 import BottomSheet from '@gorhom/bottom-sheet';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import LayersModal from '../components/LayersModal';
@@ -87,6 +88,13 @@ export default function EditorScreen({ route, navigation }: Props) {
   const [currentImageUrl, setCurrentImageUrl] = useState<string>(imageUrl || '');
   const [processing, setProcessing] = useState(false);
   const [editPanelOpen, setEditPanelOpen] = useState(false);
+
+  // AI Editing System state
+  const [aiPrompt, setAiPrompt] = useState('');
+  const [executedSteps, setExecutedSteps] = useState<any[]>([]);
+  const [isExecutingAI, setIsExecutingAI] = useState(false);
+  const [currentStepIndex, setCurrentStepIndex] = useState(0);
+  const [selectedStepDetail, setSelectedStepDetail] = useState<any | null>(null);
 
   // Layer system using hook
   const layerManager = useLayerManager(imageUrl);
@@ -342,6 +350,94 @@ export default function EditorScreen({ route, navigation }: Props) {
         useNativeDriver: true,
       }),
     ]).start();
+  };
+
+  // AI Editing System Functions
+  const handleAIPromptSubmit = async () => {
+    if (!aiPrompt.trim() || isExecutingAI) return;
+
+    setIsExecutingAI(true);
+    setExecutedSteps([]);
+    setCurrentStepIndex(0);
+
+    // Get predefined sequence from JSON (for now, always use default)
+    const sequence = editingActionsData.predefinedSequences.default;
+
+    // Execute steps one by one
+    for (let i = 0; i < sequence.length; i++) {
+      const step = sequence[i];
+      const actionDef = editingActionsData.actions.find((a) => a.id === step.action);
+
+      if (!actionDef) continue;
+
+      // Create step record
+      const executedStep = {
+        id: `step-${Date.now()}-${i}`,
+        actionId: step.action,
+        name: actionDef.name,
+        description: actionDef.description,
+        icon: actionDef.icon,
+        params: step.params,
+        timestamp: Date.now(),
+      };
+
+      // Add step to timeline
+      setExecutedSteps((prev) => [...prev, executedStep]);
+      setCurrentStepIndex(i + 1);
+
+      // Execute the actual editing action
+      try {
+        await executeAIStep(step.action, step.params);
+        // Wait to show transformation
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+      } catch (error) {
+        console.error(`Failed to execute step ${step.action}:`, error);
+      }
+    }
+
+    setIsExecutingAI(false);
+    setAiPrompt('');
+    Toast.show({
+      type: 'success',
+      text1: 'AI Editing Complete',
+      text2: `Applied ${sequence.length} transformations`,
+    });
+  };
+
+  const executeAIStep = async (action: string, params: any) => {
+    setProcessing(true);
+
+    // Simulate processing - In real app, apply actual transformations
+    await new Promise((resolve) => setTimeout(resolve, 500));
+
+    // Here you would call actual image processing functions
+    // based on the action type and parameters
+    switch (action) {
+      case 'brightness':
+        console.log(`Applying brightness: ${params.value}%`);
+        // TODO: Call actual brightness adjustment
+        break;
+      case 'contrast':
+        console.log(`Applying contrast: ${params.value}%`);
+        // TODO: Call actual contrast adjustment
+        break;
+      case 'saturation':
+        console.log(`Applying saturation: ${params.value}%`);
+        // TODO: Call actual saturation adjustment
+        break;
+      case 'crop':
+        console.log(`Applying crop: ${params.aspectRatio}`);
+        // TODO: Call actual crop function
+        break;
+      case 'filter':
+        console.log(`Applying filter: ${params.filterName}`);
+        // TODO: Call actual filter application
+        break;
+      default:
+        console.log(`Unknown action: ${action}`);
+    }
+
+    setProcessing(false);
   };
 
   // Handle camera
@@ -642,9 +738,26 @@ export default function EditorScreen({ route, navigation }: Props) {
               </TouchableOpacity>
               <TextInput
                 style={styles.aiChatInput}
-                placeholder="Type something"
+                placeholder="Describe how to edit..."
                 placeholderTextColor="#888888"
+                value={aiPrompt}
+                onChangeText={setAiPrompt}
+                editable={!isExecutingAI}
+                onSubmitEditing={handleAIPromptSubmit}
+                returnKeyType="send"
               />
+              <TouchableOpacity
+                style={[styles.aiSendButton, !aiPrompt.trim() && styles.aiSendButtonDisabled]}
+                onPress={handleAIPromptSubmit}
+                disabled={!aiPrompt.trim() || isExecutingAI}
+                activeOpacity={0.7}
+              >
+                {isExecutingAI ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <Ionicons name="send" size={20} color="#FFFFFF" />
+                )}
+              </TouchableOpacity>
               <TouchableOpacity
                 style={styles.aiChatCloseButton}
                 onPress={() => setAiChatOpen(false)}
@@ -665,6 +778,93 @@ export default function EditorScreen({ route, navigation }: Props) {
               <Ionicons name="layers" size={24} color="#FFFFFF" />
             </TouchableOpacity>
           </Animated.View>
+
+          {/* Vertical Step Timeline - Left Side */}
+          {executedSteps.length > 0 && (
+            <View style={styles.stepTimelineContainer}>
+              <View style={styles.stepTimeline}>
+                {executedSteps.map((step, index) => (
+                  <Animated.View
+                    key={step.id}
+                    style={[
+                      styles.stepIcon,
+                      {
+                        opacity: fadeAnim,
+                        transform: [{
+                          scale: fadeAnim.interpolate({
+                            inputRange: [0, 1],
+                            outputRange: [0.3, 1],
+                          }),
+                        }],
+                      },
+                    ]}
+                  >
+                    <TouchableOpacity
+                      style={[
+                        styles.stepIconButton,
+                        index === currentStepIndex - 1 && isExecutingAI && styles.stepIconActive,
+                      ]}
+                      onPress={() => setSelectedStepDetail(step)}
+                      activeOpacity={0.7}
+                    >
+                      <Ionicons name={step.icon as any} size={20} color="#FFFFFF" />
+                      <View style={styles.stepNumber}>
+                        <Text style={styles.stepNumberText}>{index + 1}</Text>
+                      </View>
+                      {index === currentStepIndex - 1 && isExecutingAI && (
+                        <View style={styles.stepPulse}>
+                          <ActivityIndicator size="small" color="#4A9EFF" />
+                        </View>
+                      )}
+                    </TouchableOpacity>
+                  </Animated.View>
+                ))}
+              </View>
+
+              {/* Clear Steps Button */}
+              {!isExecutingAI && (
+                <TouchableOpacity
+                  style={styles.clearStepsButton}
+                  onPress={() => setExecutedSteps([])}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons name="trash-outline" size={18} color="#FF6B6B" />
+                </TouchableOpacity>
+              )}
+            </View>
+          )}
+
+          {/* Step Detail Modal */}
+          {selectedStepDetail && (
+            <TouchableOpacity
+              style={styles.stepDetailOverlay}
+              activeOpacity={1}
+              onPress={() => setSelectedStepDetail(null)}
+            >
+              <View style={styles.stepDetailPanel}>
+                <View style={styles.stepDetailHeader}>
+                  <Ionicons name={selectedStepDetail.icon as any} size={32} color="#4A9EFF" />
+                  <Text style={styles.stepDetailTitle}>{selectedStepDetail.name}</Text>
+                </View>
+                <Text style={styles.stepDetailDescription}>{selectedStepDetail.description}</Text>
+                <View style={styles.stepDetailParams}>
+                  <Text style={styles.stepDetailParamsTitle}>Parameters:</Text>
+                  {Object.entries(selectedStepDetail.params).map(([key, value]) => (
+                    <View key={key} style={styles.paramRow}>
+                      <Text style={styles.paramKey}>{key}:</Text>
+                      <Text style={styles.paramValue}>{String(value)}</Text>
+                    </View>
+                  ))}
+                </View>
+                <TouchableOpacity
+                  style={styles.closeDetailButton}
+                  onPress={() => setSelectedStepDetail(null)}
+                >
+                  <Text style={styles.closeDetailText}>Close</Text>
+                </TouchableOpacity>
+              </View>
+            </TouchableOpacity>
+          )}
 
           {/* Plus Button (Elevated) - Hide when other tool is active */}
           {(selectedTool === null || selectedTool === 'add') && (
@@ -1094,14 +1294,169 @@ const styles = StyleSheet.create({
   aiChatInput: {
     flex: 1,
     marginLeft: 16,
+    marginRight: 12,
     fontSize: 16,
     color: '#FFFFFF',
+  },
+  aiSendButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#4A9EFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 8,
+  },
+  aiSendButtonDisabled: {
+    backgroundColor: '#333333',
+    opacity: 0.5,
   },
   aiChatCloseButton: {
     width: 32,
     height: 32,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  // AI Step Timeline Styles
+  stepTimelineContainer: {
+    position: 'absolute',
+    left: 13,
+    bottom: 180,
+    zIndex: 15,
+  },
+  stepTimeline: {
+    maxHeight: 350,
+  },
+  stepIcon: {
+    marginBottom: 12,
+  },
+  stepIconButton: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: '#242428',
+    borderWidth: 2,
+    borderColor: '#4A9EFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#4A9EFF',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.6,
+    shadowRadius: 10,
+    elevation: 10,
+  },
+  stepIconActive: {
+    borderColor: '#FFD700',
+    shadowColor: '#FFD700',
+    backgroundColor: '#2A2A2D',
+  },
+  stepNumber: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: '#4A9EFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: '#000000',
+  },
+  stepNumberText: {
+    fontSize: 11,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+  },
+  stepPulse: {
+    position: 'absolute',
+    bottom: -8,
+  },
+  clearStepsButton: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: '#242428',
+    borderWidth: 2,
+    borderColor: '#FF6B6B',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 12,
+  },
+  stepDetailOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 20,
+  },
+  stepDetailPanel: {
+    width: '85%',
+    backgroundColor: '#242428',
+    borderRadius: 24,
+    padding: 24,
+    borderWidth: 2,
+    borderColor: '#4A9EFF',
+    shadowColor: '#4A9EFF',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.5,
+    shadowRadius: 20,
+    elevation: 20,
+  },
+  stepDetailHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  stepDetailTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+    marginLeft: 12,
+  },
+  stepDetailDescription: {
+    fontSize: 14,
+    color: '#CCCCCC',
+    marginBottom: 20,
+    lineHeight: 20,
+  },
+  stepDetailParams: {
+    backgroundColor: '#1A1A1D',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 20,
+  },
+  stepDetailParamsTitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#4A9EFF',
+    marginBottom: 12,
+  },
+  paramRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  paramKey: {
+    fontSize: 14,
+    color: '#FFFFFF',
+    fontWeight: '500',
+  },
+  paramValue: {
+    fontSize: 14,
+    color: '#4A9EFF',
+    fontWeight: 'bold',
+  },
+  closeDetailButton: {
+    backgroundColor: '#4A9EFF',
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+  closeDetailText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
   },
   activeIndicator: {
     position: 'absolute',
