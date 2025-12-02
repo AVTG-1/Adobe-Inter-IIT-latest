@@ -624,99 +624,6 @@ export default function EditorScreen({ route, navigation }: Props) {
             </View>
           )}
 
-          {/* Expandable Edit Panel - Shows advanced tools when Edit is tapped */}
-          {editPanelOpen && selectedTool === 'edit' && (
-            <View style={styles.expandableEditPanel}>
-              <View style={styles.editToolsRow}>
-                <TouchableOpacity
-                  style={styles.editTool}
-                  onPress={() => {
-                    Toast.show({
-                      type: 'info',
-                      text1: 'Overlay Tool',
-                      text2: 'Coming soon!',
-                    });
-                  }}
-                >
-                  <Ionicons name="layers-outline" size={24} color="#E0E0E0" />
-                  <Text style={styles.editToolLabel}>Overlay</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={styles.editTool}
-                  onPress={() => {
-                    Toast.show({
-                      type: 'info',
-                      text1: 'Style Transfer',
-                      text2: 'Coming soon!',
-                    });
-                  }}
-                >
-                  <Ionicons name="color-palette-outline" size={24} color="#E0E0E0" />
-                  <Text style={styles.editToolLabel}>Style transfer</Text>
-                  <Text style={styles.asterisk}>*</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={styles.editTool}
-                  onPress={() => {
-                    Toast.show({
-                      type: 'info',
-                      text1: 'Scene Replacement',
-                      text2: 'Coming soon!',
-                    });
-                  }}
-                >
-                  <Ionicons name="images-outline" size={24} color="#E0E0E0" />
-                  <Text style={styles.editToolLabel}>Scene replacement</Text>
-                  <Text style={styles.asterisk}>*</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={styles.editTool}
-                  onPress={() => {
-                    Toast.show({
-                      type: 'info',
-                      text1: 'Eraser Tool',
-                      text2: 'Coming soon!',
-                    });
-                  }}
-                >
-                  <Ionicons name="brush-outline" size={24} color="#E0E0E0" />
-                  <Text style={styles.editToolLabel}>Eraser</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={styles.editTool}
-                  onPress={() => {
-                    Toast.show({
-                      type: 'info',
-                      text1: 'Pose Tool',
-                      text2: 'Coming soon!',
-                    });
-                  }}
-                >
-                  <Ionicons name="body-outline" size={24} color="#E0E0E0" />
-                  <Text style={styles.editToolLabel}>Pose</Text>
-                  <Text style={styles.asterisk}>*</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={styles.editTool}
-                  onPress={() => {
-                    Toast.show({
-                      type: 'info',
-                      text1: 'Gen AI Expand',
-                      text2: 'Coming soon!',
-                    });
-                  }}
-                >
-                  <Ionicons name="expand-outline" size={24} color="#E0E0E0" />
-                  <Text style={styles.editToolLabel}>Gen AI expand</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          )}
 
           {/* Floating AI Button */}
           <TouchableOpacity
@@ -740,75 +647,81 @@ export default function EditorScreen({ route, navigation }: Props) {
             </Animated.View>
           )}
 
-          {/* Bottom Toolbar - Dynamic: 5 main buttons OR active button only */}
+          {/* Bottom Toolbar - Dynamic: 5 main buttons OR active button only OR 12 tools grid */}
           <View style={styles.bottomToolbar}>
-            <View style={styles.toolbarContent}>
-              {editPanelOpen && selectedTool === 'edit' ? (
-                // When Edit panel is open: Show 6 editing tools
-                <>
-                  {/* Edit */}
-                  <TouchableOpacity
-                    style={styles.toolItem}
-                    onPress={() => handleToolPress('edit')}
-                    activeOpacity={0.7}
-                  >
+            {editPanelOpen && selectedTool === 'edit' ? (
+              // When Edit mode is active: Show 12 tools in 2×6 grid
+              <View style={styles.editGridContainer}>
+                {/* Row 1 - First 6 tools */}
+                <View style={styles.editGridRow}>
+                  <TouchableOpacity style={styles.toolItem} onPress={() => handleToolPress('edit')} activeOpacity={0.7}>
                     <View style={styles.activeIndicator} />
                     <Ionicons name="brush-outline" size={24} color="#000000" />
                     <Text style={styles.toolLabel}>Edit</Text>
                   </TouchableOpacity>
 
-                  {/* Filter */}
-                  <TouchableOpacity
-                    style={styles.toolItem}
-                    onPress={() => handleToolPress('filter')}
-                    activeOpacity={0.7}
-                  >
+                  <TouchableOpacity style={styles.toolItem} onPress={() => handleToolPress('filter')} activeOpacity={0.7}>
                     <Ionicons name="color-filter-outline" size={24} color="#E0E0E0" />
                     <Text style={styles.toolLabel}>Filter</Text>
                   </TouchableOpacity>
 
-                  {/* Draw */}
-                  <TouchableOpacity
-                    style={styles.toolItem}
-                    onPress={() => handleToolPress('draw')}
-                    activeOpacity={0.7}
-                  >
+                  <TouchableOpacity style={styles.toolItem} onPress={() => handleToolPress('draw')} activeOpacity={0.7}>
                     <Ionicons name="pencil-outline" size={24} color="#E0E0E0" />
                     <Text style={styles.toolLabel}>Draw</Text>
                   </TouchableOpacity>
 
-                  {/* Curve */}
-                  <TouchableOpacity
-                    style={styles.toolItem}
-                    onPress={() => handleToolPress('curve')}
-                    activeOpacity={0.7}
-                  >
+                  <TouchableOpacity style={styles.toolItem} onPress={() => handleToolPress('curve')} activeOpacity={0.7}>
                     <Ionicons name="git-branch-outline" size={24} color="#E0E0E0" />
                     <Text style={styles.toolLabel}>Curve</Text>
                   </TouchableOpacity>
 
-                  {/* Text */}
-                  <TouchableOpacity
-                    style={styles.toolItem}
-                    onPress={() => handleToolPress('text')}
-                    activeOpacity={0.7}
-                  >
+                  <TouchableOpacity style={styles.toolItem} onPress={() => handleToolPress('text')} activeOpacity={0.7}>
                     <Ionicons name="text-outline" size={24} color="#E0E0E0" />
                     <Text style={styles.toolLabel}>Text</Text>
                   </TouchableOpacity>
 
-                  {/* Shape */}
-                  <TouchableOpacity
-                    style={styles.toolItem}
-                    onPress={() => handleToolPress('shape')}
-                    activeOpacity={0.7}
-                  >
+                  <TouchableOpacity style={styles.toolItem} onPress={() => handleToolPress('shape')} activeOpacity={0.7}>
                     <Ionicons name="square-outline" size={24} color="#E0E0E0" />
                     <Text style={styles.toolLabel}>Shape</Text>
                   </TouchableOpacity>
-                </>
-              ) : (
-                // Normal state OR other panel open: Show all 5 buttons OR only active button
+                </View>
+
+                {/* Row 2 - Next 6 tools */}
+                <View style={styles.editGridRow}>
+                  <TouchableOpacity style={styles.toolItem} onPress={() => { Toast.show({ type: 'info', text1: 'Overlay', text2: 'Coming soon!' }); }} activeOpacity={0.7}>
+                    <Ionicons name="layers-outline" size={24} color="#E0E0E0" />
+                    <Text style={styles.toolLabel}>Overlay</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity style={styles.toolItem} onPress={() => { Toast.show({ type: 'info', text1: 'Style Transfer', text2: 'Coming soon!' }); }} activeOpacity={0.7}>
+                    <Ionicons name="color-palette-outline" size={24} color="#E0E0E0" />
+                    <Text style={styles.toolLabel}>Style*</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity style={styles.toolItem} onPress={() => { Toast.show({ type: 'info', text1: 'Scene Replacement', text2: 'Coming soon!' }); }} activeOpacity={0.7}>
+                    <Ionicons name="images-outline" size={24} color="#E0E0E0" />
+                    <Text style={styles.toolLabel}>Scene*</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity style={styles.toolItem} onPress={() => { Toast.show({ type: 'info', text1: 'Eraser', text2: 'Coming soon!' }); }} activeOpacity={0.7}>
+                    <Ionicons name="brush-outline" size={24} color="#E0E0E0" />
+                    <Text style={styles.toolLabel}>Eraser</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity style={styles.toolItem} onPress={() => { Toast.show({ type: 'info', text1: 'Pose', text2: 'Coming soon!' }); }} activeOpacity={0.7}>
+                    <Ionicons name="body-outline" size={24} color="#E0E0E0" />
+                    <Text style={styles.toolLabel}>Pose*</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity style={styles.toolItem} onPress={() => { Toast.show({ type: 'info', text1: 'Gen AI Expand', text2: 'Coming soon!' }); }} activeOpacity={0.7}>
+                    <Ionicons name="expand-outline" size={24} color="#E0E0E0" />
+                    <Text style={styles.toolLabel}>Expand</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            ) : (
+              <View style={styles.toolbarContent}>
+                {/* Normal state OR other panel open: Show all 5 buttons OR only active button */}
                 <>
                   {/* Edit - Show always or when not selected */}
                   {(selectedTool === null || selectedTool === 'edit') && (
@@ -861,8 +774,8 @@ export default function EditorScreen({ route, navigation }: Props) {
                     </TouchableOpacity>
                   )}
                 </>
-              )}
-            </View>
+              </View>
+            )}
           </View>
 
           {/* Processing Overlay */}
@@ -1155,48 +1068,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  expandableEditPanel: {
-    position: 'absolute',
-    bottom: 172,
-    left: 13,
-    right: 13,
-    height: 137,
-    backgroundColor: '#242428',
-    borderRadius: 20,
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-    zIndex: 2,
-  },
-  editToolsRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-    justifyContent: 'space-between',
-  },
-  editTool: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 16,
-    paddingHorizontal: 12,
-    backgroundColor: '#323232',
-    borderRadius: 12,
-    width: '30%',
-    minHeight: 80,
-  },
-  editToolLabel: {
-    fontSize: 11,
-    color: '#E0E0E0',
-    textAlign: 'center',
-    marginTop: 8,
-  },
-  asterisk: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
-    fontSize: 12,
-    color: '#FFD700',
-    fontWeight: 'bold',
-  },
   activeIndicator: {
     position: 'absolute',
     width: 50,
@@ -1245,6 +1116,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-around',
     paddingHorizontal: 13,
+  },
+  editGridContainer: {
+    paddingHorizontal: 13,
+    paddingTop: 8,
+  },
+  editGridRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-around',
+    height: 54,
+    marginBottom: 4,
   },
   toolItem: {
     alignItems: 'center',
