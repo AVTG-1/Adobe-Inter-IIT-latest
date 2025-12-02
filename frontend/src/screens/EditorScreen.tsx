@@ -108,7 +108,7 @@ export default function EditorScreen({ route, navigation }: Props) {
   const plusButtonScale = useRef(new Animated.Value(1)).current;
   const aiChatBottom = useRef(new Animated.Value(237)).current;
   const floatingAIBottom = useRef(new Animated.Value(110)).current;
-  const timelineBottom = useRef(new Animated.Value(110)).current;
+  const timelineBottom = useRef(new Animated.Value(520)).current;
 
   useEffect(() => {
     // Fade in animation - slow and smooth
@@ -129,7 +129,7 @@ export default function EditorScreen({ route, navigation }: Props) {
 
     const toBottomChat = anyPanelOpen ? 300 : 237; // Move up when any panel active
     const toBottomFloating = anyPanelOpen ? 173 : 110; // Move up when any panel active
-    const toBottomTimeline = anyPanelOpen ? 400 : 110; // Move timeline up significantly
+    const toBottomTimeline = anyPanelOpen ? 350 : 520; // Timeline stays close to canvas bottom, moves up when panel opens
 
     Animated.parallel([
       Animated.spring(aiChatBottom, {
@@ -263,7 +263,13 @@ export default function EditorScreen({ route, navigation }: Props) {
 
   const handleCanvasTap = () => {
     // Close all panels and return to normal state when canvas is tapped
-    if (editPanelOpen || selectedTool !== null || aiChatOpen) {
+    // Always close panels if any are open, regardless of current state
+    const anyPanelOpen = editPanelOpen || adjustmentOpen || filtersOpen ||
+                         drawingToolsOpen || layersOpen || aiFeaturesOpen ||
+                         addMenuOpen || exportOpen || aiChatOpen ||
+                         selectedTool !== null;
+
+    if (anyPanelOpen) {
       setEditPanelOpen(false);
       setSelectedTool(null);
       setAiChatOpen(false);
@@ -431,9 +437,21 @@ export default function EditorScreen({ route, navigation }: Props) {
         console.log(`Applying contrast: ${params.value}%`);
         // TODO: Call actual contrast adjustment
         break;
+      case 'hue':
+        console.log(`Applying hue: ${params.value}°`);
+        // TODO: Call actual hue adjustment
+        break;
       case 'saturation':
         console.log(`Applying saturation: ${params.value}%`);
         // TODO: Call actual saturation adjustment
+        break;
+      case 'draw':
+        console.log(`Applying draw: tool=${params.tool}, color=${params.color}`);
+        // TODO: Call actual draw function
+        break;
+      case 'eraser':
+        console.log(`Applying eraser: size=${params.size}px`);
+        // TODO: Call actual eraser function
         break;
       case 'crop':
         console.log(`Applying crop: ${params.aspectRatio}`);
@@ -451,19 +469,56 @@ export default function EditorScreen({ route, navigation }: Props) {
   };
 
   const handleStepIconTap = (step: any) => {
+    // Close any currently open panels first
+    closeAllPanels();
+
     // Open the corresponding panel based on action type
     switch (step.actionId) {
       case 'brightness':
       case 'contrast':
-      case 'saturation':
         // Open adjustments panel
         setAdjustmentOpen(true);
         adjustmentPanelRef.current?.snapToIndex(0);
+        break;
+      case 'hue':
+        // Open adjustments panel for hue
+        setAdjustmentOpen(true);
+        adjustmentPanelRef.current?.snapToIndex(0);
+        Toast.show({
+          type: 'info',
+          text1: 'Hue Adjustment',
+          text2: 'Adjust the color hue',
+        });
+        break;
+      case 'saturation':
+        // Open adjustments panel for saturation
+        setAdjustmentOpen(true);
+        adjustmentPanelRef.current?.snapToIndex(0);
+        Toast.show({
+          type: 'info',
+          text1: 'Saturation Adjustment',
+          text2: 'Adjust color saturation',
+        });
         break;
       case 'filter':
         // Open filters panel
         setFiltersOpen(true);
         filtersRef.current?.snapToIndex(0);
+        break;
+      case 'draw':
+        // Open drawing tools panel
+        setDrawingToolsOpen(true);
+        drawingToolsRef.current?.snapToIndex(0);
+        break;
+      case 'eraser':
+        // Open drawing tools panel for eraser
+        setDrawingToolsOpen(true);
+        drawingToolsRef.current?.snapToIndex(0);
+        Toast.show({
+          type: 'info',
+          text1: 'Eraser Tool',
+          text2: 'Erase parts of the image',
+        });
         break;
       case 'crop':
         // Open crop tool

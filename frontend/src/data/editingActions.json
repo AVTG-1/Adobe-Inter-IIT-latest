@@ -133,6 +133,53 @@
           "unit": "%"
         }
       }
+    },
+    {
+      "id": "hue",
+      "name": "Hue",
+      "description": "Adjust color hue",
+      "icon": "color-wand-outline",
+      "parameters": {
+        "value": {
+          "type": "number",
+          "default": 0,
+          "min": -180,
+          "max": 180,
+          "unit": "°"
+        }
+      }
+    },
+    {
+      "id": "draw",
+      "name": "Draw",
+      "description": "Draw on image",
+      "icon": "pencil-outline",
+      "parameters": {
+        "tool": {
+          "type": "string",
+          "default": "brush",
+          "options": ["brush", "pen", "marker"]
+        },
+        "color": {
+          "type": "string",
+          "default": "#FF0000"
+        }
+      }
+    },
+    {
+      "id": "eraser",
+      "name": "Eraser",
+      "description": "Erase parts of image",
+      "icon": "brush-outline",
+      "parameters": {
+        "size": {
+          "type": "number",
+          "default": 20,
+          "min": 5,
+          "max": 100,
+          "unit": "px"
+        }
+      }
     }
   ],
   "predefinedSequences": {
@@ -149,9 +196,10 @@
     "default": [
       { "action": "brightness", "params": { "value": 10 } },
       { "action": "contrast", "params": { "value": 15 } },
+      { "action": "hue", "params": { "value": 15 } },
       { "action": "saturation", "params": { "value": 5 } },
-      { "action": "crop", "params": { "aspectRatio": "1:1" } },
-      { "action": "filter", "params": { "filterName": "vivid" } }
+      { "action": "draw", "params": { "tool": "brush", "color": "#FF0000" } },
+      { "action": "eraser", "params": { "size": 20 } }
     ]
   }
 }
