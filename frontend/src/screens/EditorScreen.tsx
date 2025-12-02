@@ -108,7 +108,7 @@ export default function EditorScreen({ route, navigation }: Props) {
   const plusButtonScale = useRef(new Animated.Value(1)).current;
   const aiChatBottom = useRef(new Animated.Value(237)).current;
   const floatingAIBottom = useRef(new Animated.Value(110)).current;
-  const timelineBottom = useRef(new Animated.Value(520)).current;
+  const timelineBottom = useRef(new Animated.Value(160)).current;
 
   useEffect(() => {
     // Fade in animation - slow and smooth
@@ -129,7 +129,7 @@ export default function EditorScreen({ route, navigation }: Props) {
 
     const toBottomChat = anyPanelOpen ? 300 : 237; // Move up when any panel active
     const toBottomFloating = anyPanelOpen ? 173 : 110; // Move up when any panel active
-    const toBottomTimeline = anyPanelOpen ? 350 : 520; // Timeline stays close to canvas bottom, moves up when panel opens
+    const toBottomTimeline = anyPanelOpen ? 230 : 160; // Timeline between chat panel and plus button
 
     Animated.parallel([
       Animated.spring(aiChatBottom, {
