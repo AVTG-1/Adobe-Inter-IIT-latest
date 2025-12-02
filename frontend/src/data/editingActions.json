@@ -1,0 +1,157 @@
+{
+  "actions": [
+    {
+      "id": "brightness",
+      "name": "Brightness",
+      "description": "Adjust image brightness",
+      "icon": "sunny-outline",
+      "parameters": {
+        "value": {
+          "type": "number",
+          "default": 0,
+          "min": -100,
+          "max": 100,
+          "unit": "%"
+        }
+      }
+    },
+    {
+      "id": "contrast",
+      "name": "Contrast",
+      "description": "Adjust image contrast",
+      "icon": "contrast-outline",
+      "parameters": {
+        "value": {
+          "type": "number",
+          "default": 0,
+          "min": -100,
+          "max": 100,
+          "unit": "%"
+        }
+      }
+    },
+    {
+      "id": "saturation",
+      "name": "Saturation",
+      "description": "Adjust color saturation",
+      "icon": "color-palette-outline",
+      "parameters": {
+        "value": {
+          "type": "number",
+          "default": 0,
+          "min": -100,
+          "max": 100,
+          "unit": "%"
+        }
+      }
+    },
+    {
+      "id": "crop",
+      "name": "Crop",
+      "description": "Crop image to specified dimensions",
+      "icon": "crop-outline",
+      "parameters": {
+        "aspectRatio": {
+          "type": "string",
+          "default": "1:1",
+          "options": ["1:1", "4:3", "16:9", "free"]
+        }
+      }
+    },
+    {
+      "id": "rotate",
+      "name": "Rotate",
+      "description": "Rotate image by degrees",
+      "icon": "sync-outline",
+      "parameters": {
+        "degrees": {
+          "type": "number",
+          "default": 90,
+          "options": [90, 180, 270, 360]
+        }
+      }
+    },
+    {
+      "id": "filter",
+      "name": "Filter",
+      "description": "Apply artistic filter",
+      "icon": "color-filter-outline",
+      "parameters": {
+        "filterName": {
+          "type": "string",
+          "default": "vivid",
+          "options": ["vivid", "cool", "warm", "dramatic", "mono"]
+        }
+      }
+    },
+    {
+      "id": "sharpness",
+      "name": "Sharpness",
+      "description": "Adjust image sharpness",
+      "icon": "aperture-outline",
+      "parameters": {
+        "value": {
+          "type": "number",
+          "default": 0,
+          "min": -100,
+          "max": 100,
+          "unit": "%"
+        }
+      }
+    },
+    {
+      "id": "overlay",
+      "name": "Overlay",
+      "description": "Add overlay effect",
+      "icon": "layers-outline",
+      "parameters": {
+        "type": {
+          "type": "string",
+          "default": "light-leak",
+          "options": ["light-leak", "vignette", "grain", "dust"]
+        },
+        "opacity": {
+          "type": "number",
+          "default": 50,
+          "min": 0,
+          "max": 100,
+          "unit": "%"
+        }
+      }
+    },
+    {
+      "id": "resize",
+      "name": "Resize",
+      "description": "Resize image dimensions",
+      "icon": "expand-outline",
+      "parameters": {
+        "scale": {
+          "type": "number",
+          "default": 100,
+          "min": 10,
+          "max": 200,
+          "unit": "%"
+        }
+      }
+    }
+  ],
+  "predefinedSequences": {
+    "enhance": [
+      { "action": "brightness", "params": { "value": 15 } },
+      { "action": "contrast", "params": { "value": 20 } },
+      { "action": "saturation", "params": { "value": 10 } }
+    ],
+    "artistic": [
+      { "action": "filter", "params": { "filterName": "vivid" } },
+      { "action": "saturation", "params": { "value": 30 } },
+      { "action": "sharpness", "params": { "value": 15 } }
+    ],
+    "default": [
+      { "action": "brightness", "params": { "value": 10 } },
+      { "action": "contrast", "params": { "value": 15 } },
+      { "action": "saturation", "params": { "value": 5 } },
+      { "action": "crop", "params": { "aspectRatio": "1:1" } },
+      { "action": "filter", "params": { "filterName": "vivid" } }
+    ]
+  }
+}
