@@ -159,7 +159,21 @@ export default function EditorScreen({ route, navigation }: Props) {
       'Any unsaved changes will be lost.',
       [
         { text: 'Cancel', style: 'cancel' },
-        { text: 'Go Home', onPress: () => navigation.goBack() },
+        {
+          text: 'Go Home',
+          onPress: () => {
+            // Navigate back to home screen
+            if (navigation.canGoBack()) {
+              navigation.goBack();
+            } else {
+              // If can't go back, reset to home
+              navigation.reset({
+                index: 0,
+                routes: [{ name: 'Home' as any }],
+              });
+            }
+          }
+        },
       ]
     );
   };
@@ -471,6 +485,9 @@ export default function EditorScreen({ route, navigation }: Props) {
   const handleStepIconTap = (step: any) => {
     // Close any currently open panels first
     closeAllPanels();
+    // Reset edit panel and selected tool to return bottom toolbar to normal state
+    setEditPanelOpen(false);
+    setSelectedTool(null);
 
     // Open the corresponding panel based on action type
     switch (step.actionId) {

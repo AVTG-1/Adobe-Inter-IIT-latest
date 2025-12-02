@@ -111,7 +111,7 @@ const FiltersPanel: React.FC<FiltersPanelProps> = ({
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedFilter, setSelectedFilter] = useState<string | null>(null);
 
-  const snapPoints = useMemo(() => ['50%'], []);
+  const snapPoints = useMemo(() => ['70%'], []);
 
   const animationConfigs = useMemo(
     () => ({
@@ -275,7 +275,7 @@ const styles = StyleSheet.create({
     padding: SPACING.xs,
   },
   categoriesContainer: {
-    maxHeight: 60,
+    maxHeight: 80,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.borderLight,
   },
@@ -310,6 +310,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     padding: SPACING.md,
+    paddingBottom: 40,
     gap: 12,
   },
   filterCard: {
