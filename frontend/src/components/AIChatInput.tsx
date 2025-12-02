@@ -4,14 +4,14 @@
  * Text input interface for AI chat
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
   TextInput,
-  KeyboardAvoidingView,
+  Animated,
   Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -28,6 +28,24 @@ const AIChatInput: React.FC<AIChatInputProps> = ({
   onClose,
 }) => {
   const [message, setMessage] = useState('');
+  const slideAnim = useRef(new Animated.Value(200)).current;
+
+  useEffect(() => {
+    if (visible) {
+      Animated.spring(slideAnim, {
+        toValue: 0,
+        friction: 8,
+        tension: 40,
+        useNativeDriver: true,
+      }).start();
+    } else {
+      Animated.timing(slideAnim, {
+        toValue: 200,
+        duration: 200,
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [visible]);
 
   if (!visible) return null;
 
@@ -39,24 +57,28 @@ const AIChatInput: React.FC<AIChatInputProps> = ({
   };
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={styles.container}
+    <Animated.View
+      style={[
+        styles.container,
+        {
+          transform: [{ translateY: slideAnim }],
+        },
+      ]}
     >
       <View style={styles.inputContainer}>
-        {/* Layers/Back Button */}
+        {/* Close Button */}
         <TouchableOpacity
           style={styles.iconButton}
           onPress={onClose}
           activeOpacity={0.7}
         >
-          <Ionicons name="layers" size={24} color="#FFFFFF" />
+          <Ionicons name="close" size={24} color="#FFFFFF" />
         </TouchableOpacity>
 
         {/* Text Input */}
         <TextInput
           style={styles.input}
-          placeholder="Type something"
+          placeholder="Ask AI anything..."
           placeholderTextColor="#888888"
           value={message}
           onChangeText={setMessage}
@@ -64,6 +86,7 @@ const AIChatInput: React.FC<AIChatInputProps> = ({
           returnKeyType="send"
           multiline
           maxLength={500}
+          autoFocus
         />
 
         {/* Send Button */}
@@ -83,14 +106,14 @@ const AIChatInput: React.FC<AIChatInputProps> = ({
           />
         </TouchableOpacity>
       </View>
-    </KeyboardAvoidingView>
+    </Animated.View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     position: 'absolute',
-    bottom: 0,
+    bottom: 90,
     left: 0,
     right: 0,
     backgroundColor: 'transparent',
@@ -104,6 +127,8 @@ const styles = StyleSheet.create({
     gap: 12,
     borderTopWidth: 1,
     borderTopColor: 'rgba(255, 255, 255, 0.1)',
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255, 255, 255, 0.1)',
   },
   iconButton: {
     width: 44,

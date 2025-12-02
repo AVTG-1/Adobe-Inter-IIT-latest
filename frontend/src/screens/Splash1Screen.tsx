@@ -33,13 +33,15 @@ const Splash1Screen: React.FC<Props> = ({ navigation }) => {
   // Simple fade animations
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const logoScale = useRef(new Animated.Value(0.8)).current;
+  const logoRotate = useRef(new Animated.Value(0)).current;
   const titleSlide = useRef(new Animated.Value(30)).current;
   const subtitleOpacity = useRef(new Animated.Value(0)).current;
+  const dotPulse = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
     // Clean entrance sequence
     Animated.sequence([
-      // Logo appears
+      // Logo appears with rotation
       Animated.parallel([
         Animated.timing(fadeAnim, {
           toValue: 1,
@@ -51,6 +53,12 @@ const Splash1Screen: React.FC<Props> = ({ navigation }) => {
           toValue: 1,
           friction: 8,
           tension: 40,
+          useNativeDriver: true,
+        }),
+        Animated.timing(logoRotate, {
+          toValue: 1,
+          duration: 800,
+          easing: Easing.out(Easing.ease),
           useNativeDriver: true,
         }),
       ]),
@@ -68,6 +76,24 @@ const Splash1Screen: React.FC<Props> = ({ navigation }) => {
         useNativeDriver: true,
       }),
     ]).start();
+
+    // Continuous pulse for accent dots
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(dotPulse, {
+          toValue: 1.2,
+          duration: 1000,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+        Animated.timing(dotPulse, {
+          toValue: 1,
+          duration: 1000,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+      ])
+    ).start();
 
     // Auto-navigate after 2.5 seconds
     const timer = setTimeout(() => {
@@ -88,7 +114,15 @@ const Splash1Screen: React.FC<Props> = ({ navigation }) => {
             styles.logoContainer,
             {
               opacity: fadeAnim,
-              transform: [{ scale: logoScale }],
+              transform: [
+                { scale: logoScale },
+                {
+                  rotate: logoRotate.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: ['0deg', '360deg'],
+                  }),
+                },
+              ],
             },
           ]}
         >
@@ -98,10 +132,10 @@ const Splash1Screen: React.FC<Props> = ({ navigation }) => {
             </View>
           </View>
 
-          {/* Accent Dots */}
-          <View style={styles.accentDot1} />
-          <View style={styles.accentDot2} />
-          <View style={styles.accentDot3} />
+          {/* Accent Dots with pulse animation */}
+          <Animated.View style={[styles.accentDot1, { transform: [{ scale: dotPulse }] }]} />
+          <Animated.View style={[styles.accentDot2, { transform: [{ scale: dotPulse }] }]} />
+          <Animated.View style={[styles.accentDot3, { transform: [{ scale: dotPulse }] }]} />
         </Animated.View>
 
         {/* Title */}

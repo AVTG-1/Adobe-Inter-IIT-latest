@@ -514,10 +514,10 @@ export default function EditorScreen({ route, navigation }: Props) {
             )}
           </View>
 
-          {/* Side Controls (Undo/Redo/Layers) */}
-          <View style={styles.sideControls}>
+          {/* Undo/Redo Controls (Below Canvas) */}
+          <View style={styles.undoRedoControls}>
             <TouchableOpacity
-              style={[styles.sideButton, !history.canUndo && styles.sideButtonDisabled]}
+              style={[styles.undoRedoButton, !history.canUndo && styles.undoRedoButtonDisabled]}
               onPress={handleUndo}
               disabled={!history.canUndo}
               activeOpacity={0.7}
@@ -530,7 +530,7 @@ export default function EditorScreen({ route, navigation }: Props) {
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[styles.sideButton, !history.canRedo && styles.sideButtonDisabled]}
+              style={[styles.undoRedoButton, !history.canRedo && styles.undoRedoButtonDisabled]}
               onPress={handleRedo}
               disabled={!history.canRedo}
               activeOpacity={0.7}
@@ -540,16 +540,6 @@ export default function EditorScreen({ route, navigation }: Props) {
                 size={20}
                 color={history.canRedo ? '#FFFFFF' : '#666666'}
               />
-            </TouchableOpacity>
-
-            <View style={styles.sideSpacer} />
-
-            <TouchableOpacity
-              style={styles.layersButton}
-              onPress={() => handleToolPress('layers')}
-              activeOpacity={0.7}
-            >
-              <Ionicons name="layers" size={20} color="#FFFFFF" />
             </TouchableOpacity>
           </View>
 
@@ -803,9 +793,10 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
   canvasArea: {
-    flex: 1,
+    height: 420,
     margin: 13,
-    marginBottom: 0,
+    marginTop: 13,
+    marginBottom: 8,
     borderRadius: 24,
     backgroundColor: '#242428',
     overflow: 'hidden',
@@ -834,13 +825,13 @@ const styles = StyleSheet.create({
     color: '#666666',
     textAlign: 'center',
   },
-  sideControls: {
-    position: 'absolute',
-    right: 13,
-    top: SCREEN_HEIGHT * 0.55,
+  undoRedoControls: {
+    flexDirection: 'row',
     gap: 12,
+    paddingHorizontal: 13,
+    marginBottom: 12,
   },
-  sideButton: {
+  undoRedoButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
@@ -853,19 +844,8 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 4,
   },
-  sideButtonDisabled: {
+  undoRedoButtonDisabled: {
     opacity: 0.5,
-  },
-  sideSpacer: {
-    height: 8,
-  },
-  layersButton: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: '#242428',
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   floatingAIButton: {
     position: 'absolute',
