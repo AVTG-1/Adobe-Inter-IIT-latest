@@ -907,6 +907,7 @@ export default function EditorScreen({ route, navigation }: Props) {
           onExport={handleExportFormat}
           onClose={() => {
             setExportOpen(false);
+            setSelectedTool(null);
             exportSheetRef.current?.close();
           }}
         />
@@ -916,7 +917,10 @@ export default function EditorScreen({ route, navigation }: Props) {
           visible={addMenuOpen}
           onOpenCamera={handleOpenCamera}
           onImportGallery={handleImportGallery}
-          onClose={() => setAddMenuOpen(false)}
+          onClose={() => {
+            setAddMenuOpen(false);
+            setSelectedTool(null);
+          }}
         />
 
         {/* AI Features Sheet */}
