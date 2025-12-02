@@ -224,11 +224,49 @@ export default function EditorScreen({ route, navigation }: Props) {
       return;
     }
 
-    // Close edit panel when other tools are selected
+    // Handle editing tools (Filter, Draw, Curve, Text, Shape) - keep edit mode active
+    const editingTools = ['filter', 'draw', 'curve', 'text', 'shape'];
+    if (editingTools.includes(toolId) && editPanelOpen) {
+      // Stay in edit mode, just open the respective panel
+      switch (toolId) {
+        case 'filter':
+          setFiltersOpen(true);
+          filtersRef.current?.snapToIndex(0);
+          break;
+        case 'draw':
+          setDrawingToolsOpen(true);
+          drawingToolsRef.current?.snapToIndex(0);
+          break;
+        case 'curve':
+          Toast.show({
+            type: 'info',
+            text1: 'Curve Tool',
+            text2: 'Coming soon!',
+          });
+          break;
+        case 'text':
+          Toast.show({
+            type: 'info',
+            text1: 'Text Tool',
+            text2: 'Coming soon!',
+          });
+          break;
+        case 'shape':
+          Toast.show({
+            type: 'info',
+            text1: 'Shape Tool',
+            text2: 'Coming soon!',
+          });
+          break;
+      }
+      return;
+    }
+
+    // Close edit panel when main tools (Adjust, Layer, AI) are selected
     setEditPanelOpen(false);
     setSelectedTool(toolId);
 
-    // Handle other tool-specific actions
+    // Handle main tool-specific actions
     switch (toolId) {
       case 'adjust':
         setAdjustmentOpen(true);
@@ -241,35 +279,6 @@ export default function EditorScreen({ route, navigation }: Props) {
       case 'ai':
         setAiFeaturesOpen(true);
         aiFeaturesRef.current?.snapToIndex(0);
-        break;
-      case 'filter':
-        setFiltersOpen(true);
-        filtersRef.current?.snapToIndex(0);
-        break;
-      case 'draw':
-        setDrawingToolsOpen(true);
-        drawingToolsRef.current?.snapToIndex(0);
-        break;
-      case 'curve':
-        Toast.show({
-          type: 'info',
-          text1: 'Curve Tool',
-          text2: 'Coming soon!',
-        });
-        break;
-      case 'text':
-        Toast.show({
-          type: 'info',
-          text1: 'Text Tool',
-          text2: 'Coming soon!',
-        });
-        break;
-      case 'shape':
-        Toast.show({
-          type: 'info',
-          text1: 'Shape Tool',
-          text2: 'Coming soon!',
-        });
         break;
       case 'add':
         animatePlusButton();
@@ -607,7 +616,6 @@ export default function EditorScreen({ route, navigation }: Props) {
                 <TouchableOpacity
                   style={styles.editTool}
                   onPress={() => {
-                    setEditPanelOpen(false);
                     Toast.show({
                       type: 'info',
                       text1: 'Overlay Tool',
@@ -622,7 +630,6 @@ export default function EditorScreen({ route, navigation }: Props) {
                 <TouchableOpacity
                   style={styles.editTool}
                   onPress={() => {
-                    setEditPanelOpen(false);
                     Toast.show({
                       type: 'info',
                       text1: 'Style Transfer',
@@ -638,7 +645,6 @@ export default function EditorScreen({ route, navigation }: Props) {
                 <TouchableOpacity
                   style={styles.editTool}
                   onPress={() => {
-                    setEditPanelOpen(false);
                     Toast.show({
                       type: 'info',
                       text1: 'Scene Replacement',
@@ -654,7 +660,6 @@ export default function EditorScreen({ route, navigation }: Props) {
                 <TouchableOpacity
                   style={styles.editTool}
                   onPress={() => {
-                    setEditPanelOpen(false);
                     Toast.show({
                       type: 'info',
                       text1: 'Eraser Tool',
@@ -669,7 +674,6 @@ export default function EditorScreen({ route, navigation }: Props) {
                 <TouchableOpacity
                   style={styles.editTool}
                   onPress={() => {
-                    setEditPanelOpen(false);
                     Toast.show({
                       type: 'info',
                       text1: 'Pose Tool',
@@ -685,7 +689,6 @@ export default function EditorScreen({ route, navigation }: Props) {
                 <TouchableOpacity
                   style={styles.editTool}
                   onPress={() => {
-                    setEditPanelOpen(false);
                     Toast.show({
                       type: 'info',
                       text1: 'Gen AI Expand',
@@ -945,7 +948,10 @@ export default function EditorScreen({ route, navigation }: Props) {
           onFilterSelect={handleFilterSelect}
           onClose={() => {
             setFiltersOpen(false);
-            setSelectedTool(null);
+            // Don't reset selectedTool if in edit mode
+            if (!editPanelOpen) {
+              setSelectedTool(null);
+            }
             filtersRef.current?.close();
           }}
         />
@@ -956,14 +962,20 @@ export default function EditorScreen({ route, navigation }: Props) {
           onToolSelect={(tool: DrawingTool) => {
             console.log('Drawing tool:', tool.name);
             setDrawingToolsOpen(false);
-            setSelectedTool(null);
+            // Don't reset selectedTool if in edit mode
+            if (!editPanelOpen) {
+              setSelectedTool(null);
+            }
             drawingToolsRef.current?.close();
             setCurrentDrawingTool(tool);
             setDrawingModalOpen(true);
           }}
           onClose={() => {
             setDrawingToolsOpen(false);
-            setSelectedTool(null);
+            // Don't reset selectedTool if in edit mode
+            if (!editPanelOpen) {
+              setSelectedTool(null);
+            }
             drawingToolsRef.current?.close();
           }}
         />
