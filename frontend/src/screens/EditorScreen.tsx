@@ -599,65 +599,10 @@ export default function EditorScreen({ route, navigation }: Props) {
             </View>
           )}
 
-          {/* Expandable Edit Panel - Shows editing tools when Edit is tapped */}
+          {/* Expandable Edit Panel - Shows advanced tools when Edit is tapped */}
           {editPanelOpen && selectedTool === 'edit' && (
             <View style={styles.expandableEditPanel}>
               <View style={styles.editToolsRow}>
-                <TouchableOpacity
-                  style={styles.editTool}
-                  onPress={() => {
-                    setEditPanelOpen(false);
-                    handleToolPress('filter');
-                  }}
-                >
-                  <Ionicons name="color-filter-outline" size={24} color="#E0E0E0" />
-                  <Text style={styles.editToolLabel}>Filter</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={styles.editTool}
-                  onPress={() => {
-                    setEditPanelOpen(false);
-                    handleToolPress('draw');
-                  }}
-                >
-                  <Ionicons name="pencil-outline" size={24} color="#E0E0E0" />
-                  <Text style={styles.editToolLabel}>Draw</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={styles.editTool}
-                  onPress={() => {
-                    setEditPanelOpen(false);
-                    handleToolPress('curve');
-                  }}
-                >
-                  <Ionicons name="git-branch-outline" size={24} color="#E0E0E0" />
-                  <Text style={styles.editToolLabel}>Curve</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={styles.editTool}
-                  onPress={() => {
-                    setEditPanelOpen(false);
-                    handleToolPress('text');
-                  }}
-                >
-                  <Ionicons name="text-outline" size={24} color="#E0E0E0" />
-                  <Text style={styles.editToolLabel}>Text</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={styles.editTool}
-                  onPress={() => {
-                    setEditPanelOpen(false);
-                    handleToolPress('shape');
-                  }}
-                >
-                  <Ionicons name="square-outline" size={24} color="#E0E0E0" />
-                  <Text style={styles.editToolLabel}>Shape</Text>
-                </TouchableOpacity>
-
                 <TouchableOpacity
                   style={styles.editTool}
                   onPress={() => {
@@ -671,6 +616,84 @@ export default function EditorScreen({ route, navigation }: Props) {
                 >
                   <Ionicons name="layers-outline" size={24} color="#E0E0E0" />
                   <Text style={styles.editToolLabel}>Overlay</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.editTool}
+                  onPress={() => {
+                    setEditPanelOpen(false);
+                    Toast.show({
+                      type: 'info',
+                      text1: 'Style Transfer',
+                      text2: 'Coming soon!',
+                    });
+                  }}
+                >
+                  <Ionicons name="color-palette-outline" size={24} color="#E0E0E0" />
+                  <Text style={styles.editToolLabel}>Style transfer</Text>
+                  <Text style={styles.asterisk}>*</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.editTool}
+                  onPress={() => {
+                    setEditPanelOpen(false);
+                    Toast.show({
+                      type: 'info',
+                      text1: 'Scene Replacement',
+                      text2: 'Coming soon!',
+                    });
+                  }}
+                >
+                  <Ionicons name="images-outline" size={24} color="#E0E0E0" />
+                  <Text style={styles.editToolLabel}>Scene replacement</Text>
+                  <Text style={styles.asterisk}>*</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.editTool}
+                  onPress={() => {
+                    setEditPanelOpen(false);
+                    Toast.show({
+                      type: 'info',
+                      text1: 'Eraser Tool',
+                      text2: 'Coming soon!',
+                    });
+                  }}
+                >
+                  <Ionicons name="brush-outline" size={24} color="#E0E0E0" />
+                  <Text style={styles.editToolLabel}>Eraser</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.editTool}
+                  onPress={() => {
+                    setEditPanelOpen(false);
+                    Toast.show({
+                      type: 'info',
+                      text1: 'Pose Tool',
+                      text2: 'Coming soon!',
+                    });
+                  }}
+                >
+                  <Ionicons name="body-outline" size={24} color="#E0E0E0" />
+                  <Text style={styles.editToolLabel}>Pose</Text>
+                  <Text style={styles.asterisk}>*</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.editTool}
+                  onPress={() => {
+                    setEditPanelOpen(false);
+                    Toast.show({
+                      type: 'info',
+                      text1: 'Gen AI Expand',
+                      text2: 'Coming soon!',
+                    });
+                  }}
+                >
+                  <Ionicons name="expand-outline" size={24} color="#E0E0E0" />
+                  <Text style={styles.editToolLabel}>Gen AI expand</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -696,10 +719,10 @@ export default function EditorScreen({ route, navigation }: Props) {
             </TouchableOpacity>
           </Animated.View>
 
-          {/* Bottom Toolbar - 5 Main Tools */}
+          {/* Bottom Toolbar - 6 Tools */}
           <View style={styles.bottomToolbar}>
             <View style={styles.toolbarContent}>
-              {/* Edit */}
+              {/* Edit - Always visible */}
               <TouchableOpacity
                 style={styles.toolItem}
                 onPress={() => handleToolPress('edit')}
@@ -714,38 +737,60 @@ export default function EditorScreen({ route, navigation }: Props) {
                 <Text style={styles.toolLabel}>Edit</Text>
               </TouchableOpacity>
 
-              {/* Adjust */}
-              <TouchableOpacity
-                style={styles.toolItem}
-                onPress={() => handleToolPress('adjust')}
-                activeOpacity={0.7}
-              >
-                <Ionicons name="options-outline" size={24} color="#E0E0E0" />
-                <Text style={styles.toolLabel}>Adjust</Text>
-              </TouchableOpacity>
+              {/* Hide other buttons when edit panel is open */}
+              {!editPanelOpen && (
+                <>
+                  {/* Filter */}
+                  <TouchableOpacity
+                    style={styles.toolItem}
+                    onPress={() => handleToolPress('filter')}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons name="color-filter-outline" size={24} color="#E0E0E0" />
+                    <Text style={styles.toolLabel}>Filter</Text>
+                  </TouchableOpacity>
 
-              {/* Spacer for Plus Button */}
-              <View style={{ width: 60 }} />
+                  {/* Draw */}
+                  <TouchableOpacity
+                    style={styles.toolItem}
+                    onPress={() => handleToolPress('draw')}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons name="pencil-outline" size={24} color="#E0E0E0" />
+                    <Text style={styles.toolLabel}>Draw</Text>
+                  </TouchableOpacity>
 
-              {/* Layer */}
-              <TouchableOpacity
-                style={styles.toolItem}
-                onPress={() => handleToolPress('layers')}
-                activeOpacity={0.7}
-              >
-                <Ionicons name="layers-outline" size={24} color="#E0E0E0" />
-                <Text style={styles.toolLabel}>Layer</Text>
-              </TouchableOpacity>
+                  {/* Curve */}
+                  <TouchableOpacity
+                    style={styles.toolItem}
+                    onPress={() => handleToolPress('curve')}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons name="git-branch-outline" size={24} color="#E0E0E0" />
+                    <Text style={styles.toolLabel}>Curve</Text>
+                  </TouchableOpacity>
 
-              {/* AI */}
-              <TouchableOpacity
-                style={styles.toolItem}
-                onPress={() => handleToolPress('ai')}
-                activeOpacity={0.7}
-              >
-                <Ionicons name="rocket-outline" size={24} color="#E0E0E0" />
-                <Text style={styles.toolLabel}>AI</Text>
-              </TouchableOpacity>
+                  {/* Text */}
+                  <TouchableOpacity
+                    style={styles.toolItem}
+                    onPress={() => handleToolPress('text')}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons name="text-outline" size={24} color="#E0E0E0" />
+                    <Text style={styles.toolLabel}>Text</Text>
+                  </TouchableOpacity>
+
+                  {/* Shape */}
+                  <TouchableOpacity
+                    style={styles.toolItem}
+                    onPress={() => handleToolPress('shape')}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons name="square-outline" size={24} color="#E0E0E0" />
+                    <Text style={styles.toolLabel}>Shape</Text>
+                  </TouchableOpacity>
+                </>
+              )}
             </View>
           </View>
 
