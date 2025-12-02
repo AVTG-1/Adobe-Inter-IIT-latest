@@ -218,8 +218,9 @@ export default function EditorScreen({ route, navigation }: Props) {
   const handleToolPress = (toolId: string) => {
     // Toggle edit panel if Edit is pressed
     if (toolId === 'edit') {
-      setSelectedTool(editPanelOpen ? null : toolId);
-      setEditPanelOpen(!editPanelOpen);
+      const willOpen = !editPanelOpen;
+      setSelectedTool(willOpen ? toolId : null);
+      setEditPanelOpen(willOpen);
       return;
     }
 
@@ -719,7 +720,7 @@ export default function EditorScreen({ route, navigation }: Props) {
             </TouchableOpacity>
           </Animated.View>
 
-          {/* Bottom Toolbar - Dynamic: 5 main buttons OR 6 editing tools */}
+          {/* Bottom Toolbar - Dynamic: 5 main buttons OR active button only */}
           <View style={styles.bottomToolbar}>
             <View style={styles.toolbarContent}>
               {editPanelOpen && selectedTool === 'edit' ? (
@@ -787,50 +788,58 @@ export default function EditorScreen({ route, navigation }: Props) {
                   </TouchableOpacity>
                 </>
               ) : (
-                // Normal state: Show 5 main buttons
+                // Normal state OR other panel open: Show all 5 buttons OR only active button
                 <>
-                  {/* Edit */}
-                  <TouchableOpacity
-                    style={styles.toolItem}
-                    onPress={() => handleToolPress('edit')}
-                    activeOpacity={0.7}
-                  >
-                    <Ionicons name="brush-outline" size={24} color="#E0E0E0" />
-                    <Text style={styles.toolLabel}>Edit</Text>
-                  </TouchableOpacity>
+                  {/* Edit - Show always or when not selected */}
+                  {(selectedTool === null || selectedTool === 'edit') && (
+                    <TouchableOpacity
+                      style={styles.toolItem}
+                      onPress={() => handleToolPress('edit')}
+                      activeOpacity={0.7}
+                    >
+                      <Ionicons name="brush-outline" size={24} color="#E0E0E0" />
+                      <Text style={styles.toolLabel}>Edit</Text>
+                    </TouchableOpacity>
+                  )}
 
-                  {/* Adjust */}
-                  <TouchableOpacity
-                    style={styles.toolItem}
-                    onPress={() => handleToolPress('adjust')}
-                    activeOpacity={0.7}
-                  >
-                    <Ionicons name="options-outline" size={24} color="#E0E0E0" />
-                    <Text style={styles.toolLabel}>Adjust</Text>
-                  </TouchableOpacity>
+                  {/* Adjust - Hide when other tool is active */}
+                  {(selectedTool === null || selectedTool === 'adjust') && (
+                    <TouchableOpacity
+                      style={styles.toolItem}
+                      onPress={() => handleToolPress('adjust')}
+                      activeOpacity={0.7}
+                    >
+                      <Ionicons name="options-outline" size={24} color="#E0E0E0" />
+                      <Text style={styles.toolLabel}>Adjust</Text>
+                    </TouchableOpacity>
+                  )}
 
-                  {/* Spacer for Plus Button */}
-                  <View style={{ width: 60 }} />
+                  {/* Spacer for Plus Button - Hide when tool is active */}
+                  {selectedTool === null && <View style={{ width: 60 }} />}
 
-                  {/* Layer */}
-                  <TouchableOpacity
-                    style={styles.toolItem}
-                    onPress={() => handleToolPress('layers')}
-                    activeOpacity={0.7}
-                  >
-                    <Ionicons name="layers-outline" size={24} color="#E0E0E0" />
-                    <Text style={styles.toolLabel}>Layer</Text>
-                  </TouchableOpacity>
+                  {/* Layer - Hide when other tool is active */}
+                  {(selectedTool === null || selectedTool === 'layers') && (
+                    <TouchableOpacity
+                      style={styles.toolItem}
+                      onPress={() => handleToolPress('layers')}
+                      activeOpacity={0.7}
+                    >
+                      <Ionicons name="layers-outline" size={24} color="#E0E0E0" />
+                      <Text style={styles.toolLabel}>Layer</Text>
+                    </TouchableOpacity>
+                  )}
 
-                  {/* AI */}
-                  <TouchableOpacity
-                    style={styles.toolItem}
-                    onPress={() => handleToolPress('ai')}
-                    activeOpacity={0.7}
-                  >
-                    <Ionicons name="rocket-outline" size={24} color="#E0E0E0" />
-                    <Text style={styles.toolLabel}>AI</Text>
-                  </TouchableOpacity>
+                  {/* AI - Hide when other tool is active */}
+                  {(selectedTool === null || selectedTool === 'ai') && (
+                    <TouchableOpacity
+                      style={styles.toolItem}
+                      onPress={() => handleToolPress('ai')}
+                      activeOpacity={0.7}
+                    >
+                      <Ionicons name="rocket-outline" size={24} color="#E0E0E0" />
+                      <Text style={styles.toolLabel}>AI</Text>
+                    </TouchableOpacity>
+                  )}
                 </>
               )}
             </View>
@@ -850,6 +859,7 @@ export default function EditorScreen({ route, navigation }: Props) {
           bottomSheetRef={layersModalRef}
           onClose={() => {
             setLayersOpen(false);
+            setSelectedTool(null);
             layersModalRef.current?.close();
           }}
           layers={layerManager.layers}
@@ -895,6 +905,7 @@ export default function EditorScreen({ route, navigation }: Props) {
           onFeatureSelect={(feature) => {
             console.log('AI feature:', feature);
             setAiFeaturesOpen(false);
+            setSelectedTool(null);
             aiFeaturesRef.current?.close();
             Toast.show({
               type: 'info',
@@ -904,6 +915,7 @@ export default function EditorScreen({ route, navigation }: Props) {
           }}
           onClose={() => {
             setAiFeaturesOpen(false);
+            setSelectedTool(null);
             aiFeaturesRef.current?.close();
           }}
         />
@@ -913,10 +925,12 @@ export default function EditorScreen({ route, navigation }: Props) {
           visible={adjustmentOpen}
           onClose={() => {
             setAdjustmentOpen(false);
+            setSelectedTool(null);
           }}
           onApply={async (values: AdjustmentValues) => {
             console.log('Adjustments:', values);
             setAdjustmentOpen(false);
+            setSelectedTool(null);
             Toast.show({
               type: 'success',
               text1: 'Adjustments Applied',
@@ -931,6 +945,7 @@ export default function EditorScreen({ route, navigation }: Props) {
           onFilterSelect={handleFilterSelect}
           onClose={() => {
             setFiltersOpen(false);
+            setSelectedTool(null);
             filtersRef.current?.close();
           }}
         />
@@ -941,12 +956,14 @@ export default function EditorScreen({ route, navigation }: Props) {
           onToolSelect={(tool: DrawingTool) => {
             console.log('Drawing tool:', tool.name);
             setDrawingToolsOpen(false);
+            setSelectedTool(null);
             drawingToolsRef.current?.close();
             setCurrentDrawingTool(tool);
             setDrawingModalOpen(true);
           }}
           onClose={() => {
             setDrawingToolsOpen(false);
+            setSelectedTool(null);
             drawingToolsRef.current?.close();
           }}
         />
