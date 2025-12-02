@@ -101,16 +101,16 @@ export default function EditorScreen({ route, navigation }: Props) {
   const floatingAIBottom = useRef(new Animated.Value(110)).current;
 
   useEffect(() => {
-    // Fade in animation with iOS-smooth easing
+    // Fade in animation - slow and smooth
     Animated.timing(fadeAnim, {
       toValue: 1,
-      duration: 500,
+      duration: 800,
       easing: Easing.bezier(0.25, 0.1, 0.25, 1), // iOS default easing
       useNativeDriver: true,
     }).start();
   }, []);
 
-  // Animate AI features when Edit panel opens/closes
+  // Animate AI features when Edit panel opens/closes - slow and smooth
   useEffect(() => {
     const toBottomChat = editPanelOpen ? 300 : 237; // Move up when Edit mode active
     const toBottomFloating = editPanelOpen ? 173 : 110; // Move up when Edit mode active
@@ -118,14 +118,14 @@ export default function EditorScreen({ route, navigation }: Props) {
     Animated.parallel([
       Animated.spring(aiChatBottom, {
         toValue: toBottomChat,
-        friction: 8,
-        tension: 40,
+        friction: 12,
+        tension: 30,
         useNativeDriver: false,
       }),
       Animated.spring(floatingAIBottom, {
         toValue: toBottomFloating,
-        friction: 8,
-        tension: 40,
+        friction: 12,
+        tension: 30,
         useNativeDriver: false,
       }),
     ]).start();
@@ -325,15 +325,15 @@ export default function EditorScreen({ route, navigation }: Props) {
   const animatePlusButton = () => {
     Animated.sequence([
       Animated.timing(plusButtonScale, {
-        toValue: 0.85,
-        duration: 100,
+        toValue: 0.88,
+        duration: 200,
         easing: Easing.bezier(0.25, 0.1, 0.25, 1), // iOS smooth easing
         useNativeDriver: true,
       }),
       Animated.spring(plusButtonScale, {
         toValue: 1,
-        friction: 6,
-        tension: 100,
+        friction: 10,
+        tension: 50,
         useNativeDriver: true,
       }),
     ]).start();
