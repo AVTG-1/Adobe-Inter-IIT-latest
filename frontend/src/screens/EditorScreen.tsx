@@ -448,7 +448,7 @@ export default function EditorScreen({ route, navigation }: Props) {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <SafeAreaView style={styles.container} edges={['top']}>
+      <SafeAreaView style={styles.container} edges={[]}>
         <Animated.View style={[styles.content, { opacity: fadeAnim }]}>
           {/* Top Bar */}
           <View style={styles.topBar}>
@@ -549,7 +549,7 @@ export default function EditorScreen({ route, navigation }: Props) {
             onPress={() => setAiChatOpen(true)}
             activeOpacity={0.8}
           >
-            <Ionicons name="chatbubble-ellipses" size={24} color="#FFFFFF" />
+            <Ionicons name="layers" size={24} color="#FFFFFF" />
           </TouchableOpacity>
 
           {/* Bottom Toolbar */}
@@ -849,30 +849,30 @@ const styles = StyleSheet.create({
   },
   floatingAIButton: {
     position: 'absolute',
-    bottom: 100,
+    bottom: 110,
     right: 13,
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: '#4A9EFF',
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: '#242428',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#4A9EFF',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
-    shadowRadius: 8,
-    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.5,
+    shadowRadius: 4,
+    elevation: 4,
     zIndex: 5,
   },
   bottomToolbar: {
-    height: 90,
     backgroundColor: '#242428',
     borderTopLeftRadius: 14,
     borderTopRightRadius: 14,
-    paddingBottom: 10,
+    paddingBottom: 34,
+    paddingTop: 12,
   },
   toolbarContent: {
-    flex: 1,
+    height: 54,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-around',
