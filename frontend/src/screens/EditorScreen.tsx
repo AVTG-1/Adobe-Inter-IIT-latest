@@ -788,6 +788,7 @@ export default function EditorScreen({ route, navigation }: Props) {
       switch (toolId) {
         case 'filter':
           console.log('Filter tool pressed, opening FiltersPanel');
+          closeAllPanels('filters');
           setFiltersOpen(true);
           filtersRef.current?.snapToIndex(0);
           break;
@@ -799,6 +800,8 @@ export default function EditorScreen({ route, navigation }: Props) {
           break;
         case 'eraser':
           // Open drawing with eraser tool selected
+          console.log('Eraser tool pressed');
+          closeAllPanels('drawingOverlay');
           setCurrentDrawingTool({ id: 'eraser', name: 'Eraser', type: 'eraser', icon: 'remove-circle-outline', settings: { color: '#FFFFFF', size: 20, opacity: 1 } });
           setDrawingOverlayOpen(true);
           break;
