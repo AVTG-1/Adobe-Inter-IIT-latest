@@ -58,6 +58,8 @@ import CurveTool, { CurveConfig } from '../components/CurveTool';
 import TreeViewModal from '../components/TreeViewModal';
 import { TreeStructure, TreeNode, buildTreeStructure, createSampleBranchedTree } from '../types/treeNode';
 import { useLayerManager } from '../hooks/useLayerManager';
+import { apiClient } from '../services/api';
+import { EditRequest, EditOperation, EditOperationType } from '../types/api';
 import { useImageHistory } from '../hooks/useImageHistory';
 import { saveProject } from '../services/projects';
 import * as MediaLibrary from 'expo-media-library';
@@ -782,7 +784,7 @@ export default function EditorScreen({ route, navigation }: Props) {
     }
 
     // Handle editing tools (Filter, Draw, Curve, Text, Shape) - keep edit mode active
-    const editingTools = ['filter', 'draw', 'curve', 'text', 'shape', 'eraser'];
+    const editingTools = ['filter', 'draw', 'curve', 'text', 'shape'];
     if (editingTools.includes(toolId) && editPanelOpen) {
       // Stay in edit mode, just open the respective panel
       switch (toolId) {
@@ -797,13 +799,6 @@ export default function EditorScreen({ route, navigation }: Props) {
           console.log('Draw tool pressed, opening DrawingPopup');
           closeAllPanels('drawingPopup');
           setDrawingPopupOpen(true);
-          break;
-        case 'eraser':
-          // Open drawing with eraser tool selected
-          console.log('Eraser tool pressed');
-          closeAllPanels('drawingOverlay');
-          setCurrentDrawingTool({ id: 'eraser', name: 'Eraser', type: 'eraser', icon: 'remove-circle-outline', settings: { color: '#FFFFFF', size: 20, opacity: 1 } });
-          setDrawingOverlayOpen(true);
           break;
         case 'curve':
           console.log('Curve tool pressed');
@@ -922,6 +917,15 @@ export default function EditorScreen({ route, navigation }: Props) {
       }
     }
 
+    // Send executed steps to backend
+    try {
+      await sendEditingWorkflowToBackend(sequence, currentImageUrl);
+      console.log('✅ Successfully sent editing workflow to backend');
+    } catch (error) {
+      console.error('❌ Failed to send workflow to backend:', error);
+      // Don't block the UI, just log the error
+    }
+
     setIsExecutingAI(false);
     setAiPrompt('');
     setAiChatOpen(false); // Close AI chat after completion
@@ -930,6 +934,50 @@ export default function EditorScreen({ route, navigation }: Props) {
       text1: 'AI Editing Complete',
       text2: `Applied ${sequence.length} transformations`,
     });
+  };
+
+  /**
+   * Send editing workflow to backend
+   * Converts executed steps to EditRequest format and posts to API
+   */
+  const sendEditingWorkflowToBackend = async (
+    sequence: Array<{ action: string; params: any }>,
+    imageUrl: string
+  ) => {
+    // Convert sequence steps to EditOperation format
+    const operations: EditOperation[] = sequence.map((step) => {
+      const operation: EditOperation = {
+        type: step.action as EditOperationType,
+        params: step.params,
+      };
+
+      // Handle legacy fields for backward compatibility
+      if (step.params.value !== undefined) {
+        operation.value = step.params.value;
+      }
+      if (step.params.x !== undefined) operation.x = step.params.x;
+      if (step.params.y !== undefined) operation.y = step.params.y;
+      if (step.params.width !== undefined) operation.width = step.params.width;
+      if (step.params.height !== undefined) operation.height = step.params.height;
+      if (step.params.angle !== undefined) operation.angle = step.params.angle;
+
+      return operation;
+    });
+
+    // Create edit request
+    const editRequest: EditRequest = {
+      image_url: imageUrl,
+      operations: operations,
+    };
+
+    console.log('[API] Sending edit workflow:', editRequest);
+
+    // Post to backend
+    const response = await apiClient.submitEditWorkflow(editRequest);
+
+    console.log('[API] Workflow response:', response);
+
+    return response;
   };
 
   const executeAIStep = async (action: string, params: any) => {
@@ -1864,12 +1912,12 @@ export default function EditorScreen({ route, navigation }: Props) {
             </Animated.View>
           )}
 
-          {/* Bottom Toolbar - Dynamic: 5 main buttons OR active button only OR 12 tools grid */}
+          {/* Bottom Toolbar - Dynamic: 5 main buttons OR active button only OR 6 edit tools */}
           <View style={styles.bottomToolbar}>
             {editPanelOpen && selectedTool === 'edit' ? (
-              // When Edit mode is active: Show 12 tools in 2×6 grid
+              // When Edit mode is active: Show 6 tools (Edit + Filter, Draw, Curve, Text, Shape)
               <View style={styles.editGridContainer}>
-                {/* Row 1 - First 6 tools */}
+                {/* Single Row - 6 Essential Edit Tools */}
                 <View style={styles.editGridRow}>
                   <TouchableOpacity style={styles.toolItem} onPress={() => handleToolPress('edit')} activeOpacity={0.7}>
                     <View style={styles.activeIndicator} />
@@ -1900,39 +1948,6 @@ export default function EditorScreen({ route, navigation }: Props) {
                   <TouchableOpacity style={styles.toolItem} onPress={() => handleToolPress('shape')} activeOpacity={0.7}>
                     <Ionicons name="square-outline" size={24} color="#E0E0E0" />
                     <Text style={styles.toolLabel}>Shape</Text>
-                  </TouchableOpacity>
-                </View>
-
-                {/* Row 2 - Transform & More Tools */}
-                <View style={styles.editGridRow}>
-                  <TouchableOpacity style={styles.toolItem} onPress={() => { closeAllPanels('crop'); setCropToolOpen(true); }} activeOpacity={0.7}>
-                    <Ionicons name="crop-outline" size={24} color="#E0E0E0" />
-                    <Text style={styles.toolLabel}>Crop</Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity style={styles.toolItem} onPress={() => { closeAllPanels('resize'); setResizeToolOpen(true); }} activeOpacity={0.7}>
-                    <Ionicons name="resize-outline" size={24} color="#E0E0E0" />
-                    <Text style={styles.toolLabel}>Resize</Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity style={styles.toolItem} onPress={() => { closeAllPanels('rotate'); setRotateToolOpen(true); }} activeOpacity={0.7}>
-                    <Ionicons name="refresh-outline" size={24} color="#E0E0E0" />
-                    <Text style={styles.toolLabel}>Rotate</Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity style={styles.toolItem} onPress={() => { closeAllPanels('flip'); setFlipToolOpen(true); }} activeOpacity={0.7}>
-                    <Ionicons name="swap-horizontal-outline" size={24} color="#E0E0E0" />
-                    <Text style={styles.toolLabel}>Flip</Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity style={styles.toolItem} onPress={() => handleToolPress('eraser')} activeOpacity={0.7}>
-                    <Ionicons name="remove-circle-outline" size={24} color="#E0E0E0" />
-                    <Text style={styles.toolLabel}>Eraser</Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity style={styles.toolItem} onPress={() => { closeAllPanels('blur'); setBlurToolOpen(true); }} activeOpacity={0.7}>
-                    <Ionicons name="water-outline" size={24} color="#E0E0E0" />
-                    <Text style={styles.toolLabel}>Blur</Text>
                   </TouchableOpacity>
                 </View>
               </View>
