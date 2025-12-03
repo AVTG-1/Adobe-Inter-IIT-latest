@@ -55,6 +55,7 @@ import DrawingPopup, { DrawingToolOption, DrawingSettings } from '../components/
 import TextOverlay, { TextLayerConfig } from '../components/TextOverlay';
 import ShapeOverlay, { ShapeConfig } from '../components/ShapeOverlay';
 import CurveTool, { CurveConfig } from '../components/CurveTool';
+import TreeViewModal from '../components/TreeViewModal';
 import { useLayerManager } from '../hooks/useLayerManager';
 import { useImageHistory } from '../hooks/useImageHistory';
 import { saveProject } from '../services/projects';
@@ -173,6 +174,7 @@ export default function EditorScreen({ route, navigation }: Props) {
   const [isExecutingAI, setIsExecutingAI] = useState(false);
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [selectedStepDetail, setSelectedStepDetail] = useState<any | null>(null);
+  const [treeModalOpen, setTreeModalOpen] = useState(false);
 
   // Layer system using hook
   const layerManager = useEnhancedLayerManager(imageUrl);
@@ -886,7 +888,7 @@ export default function EditorScreen({ route, navigation }: Props) {
 
       if (!actionDef) continue;
 
-      // Create step record
+      // Create step record with thumbnail
       const executedStep = {
         id: `step-${Date.now()}-${i}`,
         actionId: step.action,
@@ -895,6 +897,7 @@ export default function EditorScreen({ route, navigation }: Props) {
         icon: actionDef.icon,
         params: step.params,
         timestamp: Date.now(),
+        thumbnailUri: currentImageUrl, // Store current image as thumbnail
       };
 
       // Add step to timeline
@@ -906,6 +909,9 @@ export default function EditorScreen({ route, navigation }: Props) {
         await executeAIStep(step.action, step.params);
         // Wait to show transformation
         await new Promise((resolve) => setTimeout(resolve, 1000));
+
+        // TODO: In real implementation, capture canvas state here and update thumbnailUri
+        // For now, we use the same image for all steps
       } catch (error) {
         console.error(`Failed to execute step ${step.action}:`, error);
       }
@@ -1039,6 +1045,25 @@ export default function EditorScreen({ route, navigation }: Props) {
           text2: step.description,
         });
     }
+  };
+
+  // Handle tree view step tap - loads image and opens corresponding panel
+  const handleTreeViewStepTap = (step: any) => {
+    // Close tree modal first
+    setTreeModalOpen(false);
+
+    // Load the thumbnail image if available
+    if (step.thumbnailUri) {
+      setCurrentImageUrl(step.thumbnailUri);
+      Toast.show({
+        type: 'success',
+        text1: 'Step Loaded',
+        text2: `Loading ${step.name} state`,
+      });
+    }
+
+    // Open the corresponding panel using existing handler
+    handleStepIconTap(step);
   };
 
   // Handle camera
@@ -1707,61 +1732,84 @@ export default function EditorScreen({ route, navigation }: Props) {
           </Animated.View>
 
           {/* Horizontal Step Timeline - Animated position */}
-          {executedSteps.length > 0 && (
-            <Animated.View style={[styles.stepTimelineContainer, { bottom: timelineBottom }]}>
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                style={styles.stepTimeline}
-                contentContainerStyle={styles.stepTimelineContent}
+          <Animated.View style={[styles.stepTimelineContainer, { bottom: timelineBottom }]}>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={styles.stepTimeline}
+              contentContainerStyle={styles.stepTimelineContent}
+            >
+              {/* Tree Icon - Always first */}
+              <Animated.View
+                style={[
+                  styles.stepIcon,
+                  {
+                    opacity: fadeAnim,
+                    transform: [{
+                      scale: fadeAnim.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [0.3, 1],
+                      }),
+                    }],
+                  },
+                ]}
               >
-                {executedSteps.map((step, index) => (
-                  <Animated.View
-                    key={step.id}
-                    style={[
-                      styles.stepIcon,
-                      {
-                        opacity: fadeAnim,
-                        transform: [{
-                          scale: fadeAnim.interpolate({
-                            inputRange: [0, 1],
-                            outputRange: [0.3, 1],
-                          }),
-                        }],
-                      },
-                    ]}
-                  >
-                    <TouchableOpacity
-                      style={[
-                        styles.stepIconButton,
-                        index === currentStepIndex - 1 && isExecutingAI && styles.stepIconActive,
-                      ]}
-                      onPress={() => handleStepIconTap(step)}
-                      activeOpacity={0.7}
-                    >
-                      <Ionicons name={step.icon as any} size={18} color="#E0E0E0" />
-                      {index === currentStepIndex - 1 && isExecutingAI && (
-                        <View style={styles.stepPulse}>
-                          <ActivityIndicator size="small" color="#FFFFFF" />
-                        </View>
-                      )}
-                    </TouchableOpacity>
-                  </Animated.View>
-                ))}
+                <TouchableOpacity
+                  style={[styles.stepIconButton, styles.treeIconButton]}
+                  onPress={() => setTreeModalOpen(true)}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons name="git-branch-outline" size={18} color="#00D9FF" />
+                </TouchableOpacity>
+              </Animated.View>
 
-                {/* Clear Steps Button */}
-                {!isExecutingAI && (
+              {/* Executed Steps */}
+              {executedSteps.map((step, index) => (
+                <Animated.View
+                  key={step.id}
+                  style={[
+                    styles.stepIcon,
+                    {
+                      opacity: fadeAnim,
+                      transform: [{
+                        scale: fadeAnim.interpolate({
+                          inputRange: [0, 1],
+                          outputRange: [0.3, 1],
+                        }),
+                      }],
+                    },
+                  ]}
+                >
                   <TouchableOpacity
-                    style={styles.clearStepsButton}
-                    onPress={() => setExecutedSteps([])}
+                    style={[
+                      styles.stepIconButton,
+                      index === currentStepIndex - 1 && isExecutingAI && styles.stepIconActive,
+                    ]}
+                    onPress={() => handleStepIconTap(step)}
                     activeOpacity={0.7}
                   >
-                    <Ionicons name="close-circle" size={16} color="#666666" />
+                    <Ionicons name={step.icon as any} size={18} color="#E0E0E0" />
+                    {index === currentStepIndex - 1 && isExecutingAI && (
+                      <View style={styles.stepPulse}>
+                        <ActivityIndicator size="small" color="#FFFFFF" />
+                      </View>
+                    )}
                   </TouchableOpacity>
-                )}
-              </ScrollView>
-            </Animated.View>
-          )}
+                </Animated.View>
+              ))}
+
+              {/* Clear Steps Button */}
+              {!isExecutingAI && executedSteps.length > 0 && (
+                <TouchableOpacity
+                  style={styles.clearStepsButton}
+                  onPress={() => setExecutedSteps([])}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons name="close-circle" size={16} color="#666666" />
+                </TouchableOpacity>
+              )}
+            </ScrollView>
+          </Animated.View>
 
           {/* Plus Button (Elevated) - Hide when other tool is active */}
           {(selectedTool === null || selectedTool === 'add') && (
@@ -2766,6 +2814,15 @@ export default function EditorScreen({ route, navigation }: Props) {
           }}
         />
 
+        {/* Tree View Modal - Full-screen step history */}
+        <TreeViewModal
+          visible={treeModalOpen}
+          steps={executedSteps}
+          currentImageUri={currentImageUrl}
+          onClose={() => setTreeModalOpen(false)}
+          onStepTap={handleTreeViewStepTap}
+        />
+
         <Toast />
       </View>
     </GestureHandlerRootView>
@@ -2954,6 +3011,10 @@ const styles = StyleSheet.create({
     borderColor: '#555555',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  treeIconButton: {
+    borderColor: '#00D9FF',
+    backgroundColor: 'rgba(0, 217, 255, 0.15)',
   },
   stepIconActive: {
     borderColor: '#FFFFFF',
