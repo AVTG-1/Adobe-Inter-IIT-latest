@@ -2,6 +2,7 @@ from PIL import Image, ImageEnhance, ImageOps
 import os
 import uuid
 import asyncio
+import httpx
 
 class ImageProcessor:
     def __init__(self, static_dir="static"):
@@ -17,7 +18,7 @@ class ImageProcessor:
     async def process_step(self, input_image_path: str, tool: str, params: dict) -> str:
         """
         Executes a tool on an image and returns the path to the result.
-        input_image_path: relative path like '/static/abc.png'
+        input_image_path: relative path like '/static/abc.png' or 'static/abc.png'
         """
         loop = asyncio.get_running_loop()
         # Run the blocking image processing in a separate thread
@@ -92,6 +93,41 @@ class ImageProcessor:
                         enhancer = ImageEnhance.Brightness(img)
                         img = enhancer.enhance(0.8)
                 
+                elif tool == "relighting":
+                    # Call external relighting API which returns a result image URL.
+                    relight_api = os.getenv("RELIGHT_API_URL", "http://localhost:5000/relight")
+                    image_base = os.getenv("IMAGE_BASE_URL", "http://localhost:8000")
+    
+                    public_input_url = f"{image_base}/{real_input_path}"
+                    payload = {
+                        "image_url": public_input_url,
+                        "x": float(params.get("x", 0.0)),
+                        "y": float(params.get("y", -100.0)),
+                        "z": float(params.get("z", 100.0))
+                    }
+                    try:
+                        resp = httpx.post(relight_api, json=payload, timeout=60.0)
+                        resp.raise_for_status()
+                        data = resp.json()
+                        result_url = data.get("result_url")
+                        if not result_url:
+                            raise RuntimeError("No result_url in relight response")
+    
+                        # Download result image into memory and load as PIL Image
+                        if result_url.startswith("http://") or result_url.startswith("https://"):
+                            from io import BytesIO
+                            r2 = httpx.get(result_url, timeout=30.0)
+                            r2.raise_for_status()
+                            img = Image.open(BytesIO(r2.content)).convert("RGB")
+                        else:
+                            # If service returned a server-relative path, load from disk
+                            local_path = result_url.lstrip("/")
+                            img = Image.open(local_path).convert("RGB")
+                    except Exception as e:
+                        print(f"Relighting service error: {e}")
+                        # fall back to returning input on failure (existing behavior)
+                        img = Image.open(real_input_path).convert("RGB")
+    
                 return self._save_image(img)
                 
         except Exception as e:

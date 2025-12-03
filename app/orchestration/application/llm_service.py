@@ -249,6 +249,18 @@ class LLMService:
                 "image_url": None,
                 "thumbnail_url": None
             })
+
+        # Step 4: relighting (mock) detection
+        if "relight" in prompt.lower() or "relighting" in prompt.lower():
+            steps.append({
+                "id": max(s["id"] for s in steps) + 1,
+                "tool": "relighting",
+                "original_intent": "Adjust scene lighting using given 3D light coordinates",
+                "params": {"x": 0.0, "y": -100.0, "z": 100.0},
+                "status": "pending",
+                "image_url": None,
+                "thumbnail_url": None
+            })
             
         return steps
 
