@@ -17,7 +17,11 @@ class ConnectionManager:
             print(f"Client {client_id} disconnected")
 
     async def send_personal_message(self, message: dict, client_id: str):
+        print(self.active_connections)
+        print(client_id)
+        print(client_id in self.active_connections)
         if client_id in self.active_connections:
+            print(f"Sending message to {client_id}: {message}")
             await self.active_connections[client_id].send_json(message)
 
     async def broadcast(self, message: dict):

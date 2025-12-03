@@ -47,7 +47,9 @@
     "overlay": {
         "description": "Adds an overlay effect to the image.",
         "params": {
-            "type": {"type": "string", "description": "Type of overlay", "options": ["rain", "sun", "snow"], "default": "rain"}
+            "type": {"type": "string", "description": "Type of overlay", "options": ["rain", "sun", "snow"], "default": "rain"},
+            "amount": {"type": "int", "description": "Intensity of the overlay effect", "default": 50}
+
         }
     },
     "resize": {
@@ -55,6 +57,14 @@
         "params": {
             "width": {"type": "int", "description": "Target width", "default": 800},
             "height": {"type": "int", "description": "Target height", "default": 600}
+        }
+    },
+    "relighting": {
+        "description": "Re-light the scene given a light source in 3D (x,y,z). Service takes image_url and x,y,z and returns a processed image.",
+        "params": {
+            "x": {"type": "float", "description": "X coordinate of light source", "default": 0.0},
+            "y": {"type": "float", "description": "Y coordinate of light source", "default": -100.0},
+            "z": {"type": "float", "description": "Z (depth) coordinate of light source", "default": 100.0}
         }
     }
 }

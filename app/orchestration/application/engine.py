@@ -98,6 +98,9 @@ class ExecutionEngine:
                 try:
                     # choose timeout (seconds) — adjust as appropriate
                     step_timeout = 30
+                    # relighting may be slower (external service)
+                    if step.get("tool") == "relighting":
+                        step_timeout = 90
 
                     # If process_step is async, await it directly with timeout.
                     if asyncio.iscoroutinefunction(self.processor.process_step):

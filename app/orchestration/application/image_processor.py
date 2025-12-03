@@ -7,6 +7,8 @@ import httpx
 import io
 from typing import Optional
 from io import BytesIO
+import random
+from PIL import ImageFilter, ImageDraw
 
 from app.core.services.app.storage_service import StorageService
 
@@ -91,7 +93,8 @@ class ImageProcessor:
                 self._process_image_bytes_sync, 
                 image_bytes, 
                 tool, 
-                params
+                params, 
+                input_image_path
             )
             
             # Upload processed image to storage (GCS or local)
@@ -102,12 +105,32 @@ class ImageProcessor:
                 # Fallback if generator is unavailable
                 filename = f"processed_{uuid.uuid4()}.jpg"
 
+            # Attempt primary upload
+            print(f"[ImageProcessor] Uploading processed image. input={input_image_path} filename={filename}")
             url = await self.storage.save_image(
                 result_bytes,
                 filename=filename,
                 content_type="image/jpeg",
                 make_public=True
             )
+            print(f"[ImageProcessor] Storage returned url={url}")
+
+            # If storage returned the same URL as the input (unexpected),
+            # force a unique filename upload as a fallback to ensure a new object is created.
+            if url == input_image_path or not url:
+                fallback_filename = f"processed_{uuid.uuid4()}.jpg"
+                print(f"[ImageProcessor] Detected storage returned input URL or empty. Retrying with fallback filename={fallback_filename}")
+                url2 = await self.storage.save_image(
+                    result_bytes,
+                    filename=fallback_filename,
+                    content_type="image/jpeg",
+                    make_public=True
+                )
+                print(f"[ImageProcessor] Fallback storage returned url={url2}")
+                if url2 and url2 != input_image_path:
+                    return url2
+                # If still same, fail fast so caller can diagnose
+                raise RuntimeError(f"Storage save returned same URL as input after retry: {url2!r}")
             return url
             
         except Exception as e:
@@ -115,7 +138,7 @@ class ImageProcessor:
             # Return original URL as fallback
             return input_image_path
 
-    def _process_image_bytes_sync(self, image_bytes: bytes, tool: str, params: dict) -> bytes:
+    def _process_image_bytes_sync(self, image_bytes: bytes, tool: str, params: dict, input_image_path: str) -> bytes:
         """Process image bytes and return processed bytes (synchronous, runs in executor).
         
         Args:
@@ -187,17 +210,104 @@ class ImageProcessor:
                     
             elif tool == "overlay":
                 otype = params.get("type")
+                # Create an RGBA overlay and composite for visible effects
+                amount = int(params.get("amount", 100))
+                base = img.convert("RGBA")
+                overlay = Image.new("RGBA", base.size, (0, 0, 0, 0))
+                draw = ImageDraw.Draw(overlay)
+
                 if otype == "rain":
-                    # Mock rain: darken the image
-                    enhancer = ImageEnhance.Brightness(img)
-                    img = enhancer.enhance(0.8)
-            
+                    # Draw semi-transparent rain streaks
+                    w, h = base.size
+                    streaks = max(30, int(amount))
+                    for i in range(streaks):
+                        x = random.randint(-w // 4, int(w * 1.25))
+                        y = random.randint(-h // 4, int(h * 1.25))
+                        length = random.randint(int(h * 0.08), int(h * 0.25))
+                        x2 = x + int(length * 0.12)
+                        y2 = y + length
+                        alpha = random.randint(90, 160)
+                        draw.line((x, y, x2, y2), fill=(200, 220, 255, alpha), width=2)
+                    # Slightly darken the base under rain
+                    dark = Image.new("RGBA", base.size, (0, 0, 0, 50))
+                    overlay = Image.alpha_composite(overlay, dark)
+
+                elif otype == "sun":
+                    # Add a warm radial glow (sun flare)
+                    w, h = base.size
+                    # center can be provided or default to top-right
+                    cx = int(params.get("x", int(w * 0.8)))
+                    cy = int(params.get("y", int(h * 0.2)))
+                    max_radius = int(min(w, h) * 0.5)
+                    intensity = float(params.get("intensity", 0.6))
+                    steps = 12
+                    for i in range(steps, 0, -1):
+                        radius = int(max_radius * (i / steps) * intensity)
+                        alpha = int(200 * (i / steps) * intensity)
+                        color = (255, 200, 120, alpha)
+                        bbox = [cx - radius, cy - radius, cx + radius, cy + radius]
+                        draw.ellipse(bbox, fill=color)
+                    # add subtle lens flare highlight
+                    flare = Image.new("RGBA", base.size, (0, 0, 0, 0))
+                    fdraw = ImageDraw.Draw(flare)
+                    fdraw.ellipse([cx - 8, cy - 8, cx + 8, cy + 8], fill=(255, 255, 220, 220))
+                    overlay = Image.alpha_composite(overlay, flare)
+
+                elif otype == "snow":
+                    # Paint falling snow (white dots) with subtle blur
+                    w, h = base.size
+                    flakes = max(50, int(amount))
+                    for i in range(flakes):
+                        x = random.randint(0, w)
+                        y = random.randint(0, h)
+                        size = random.randint(1, max(2, int(min(w, h) * 0.01)))
+                        alpha = random.randint(150, 240)
+                        draw.ellipse((x, y, x + size, y + size), fill=(255, 255, 255, alpha))
+                    # blur overlay to soften snow
+                    overlay = overlay.filter(ImageFilter.GaussianBlur(radius=1))
+
+                else:
+                    # Unknown overlay: no-op
+                    overlay = Image.new("RGBA", base.size, (0, 0, 0, 0))
+            elif tool == "relighting":
+                # Call external relighting API which returns a result image URL.
+                relight_api = os.getenv("RELIGHT_API_URL", "http://localhost:5000/relight")
+                image_base = os.getenv("IMAGE_BASE_URL", "http://localhost:8000")
+
+                public_input_url = input_image_path
+                payload = {
+                    "image_url": public_input_url,
+                    "x": float(params.get("x", 0.0)),
+                    "y": float(params.get("y", -100.0)),
+                    "z": float(params.get("z", 100.0))
+                }
+                try:
+                    resp = httpx.post(relight_api, json=payload, timeout=60.0)
+                    resp.raise_for_status()
+                    data = resp.json()
+                    result_url = data.get("result_url")
+                    if not result_url:
+                        raise RuntimeError("No result_url in relight response")
+
+                    # Download result image into memory and load as PIL Image
+                    if result_url.startswith("http://") or result_url.startswith("https://"):
+                        r2 = httpx.get(result_url, timeout=30.0)
+                        r2.raise_for_status()
+                        img = Image.open(BytesIO(r2.content)).convert("RGB")
+                    else:
+                        # If service returned a server-relative path, load from disk
+                        local_path = result_url.lstrip("/")
+                        img = Image.open(local_path).convert("RGB")
+                except Exception as e:
+                    print(f"Relighting service error: {e}")
+                    # fall back to returning input on failure (existing behavior)
+                    img = Image.open(input_image_path).convert("RGB")
             # Save processed image to BytesIO as JPEG and return as bytes
             output = BytesIO()
             # JPEG requires RGB (no alpha); image already converted to RGB above
             img.save(output, format="JPEG", quality=90, optimize=True)
             return output.getvalue()
-            
+                
         except Exception as e:
             print(f"Error processing image bytes: {e}")
             raise
