@@ -178,6 +178,11 @@ export default function EditorScreen({ route, navigation }: Props) {
   const [treeModalOpen, setTreeModalOpen] = useState(false);
   const [currentNodeId, setCurrentNodeId] = useState<string>('node-root');
 
+  // Step-wise parameter update system
+  const [editingStepId, setEditingStepId] = useState<string | null>(null);
+  const [hasParameterChanges, setHasParameterChanges] = useState(false);
+  const [modifiedParameters, setModifiedParameters] = useState<any>(null);
+
   // Layer system using hook
   const layerManager = useEnhancedLayerManager(imageUrl);
 
@@ -978,6 +983,119 @@ export default function EditorScreen({ route, navigation }: Props) {
     return response;
   };
 
+  /**
+   * Handle parameter changes in adjustment panels
+   * Called when user modifies any parameter
+   */
+  const handleParameterChange = (stepId: string, newParams: any) => {
+    setEditingStepId(stepId);
+    setModifiedParameters(newParams);
+    setHasParameterChanges(true);
+    console.log('[Parameter Change]', { stepId, newParams });
+  };
+
+  /**
+   * Confirm and send updated parameters to backend
+   * Called when user taps the ✅ tick icon
+   */
+  const confirmParameterUpdate = async () => {
+    if (!editingStepId || !modifiedParameters) {
+      Toast.show({
+        type: 'error',
+        text1: 'No Changes',
+        text2: 'No parameter changes to save',
+      });
+      return;
+    }
+
+    try {
+      // Find the step in executedSteps
+      const stepIndex = executedSteps.findIndex(s => s.id === editingStepId);
+      if (stepIndex === -1) {
+        console.error('Step not found:', editingStepId);
+        return;
+      }
+
+      const step = executedSteps[stepIndex];
+
+      // Update the step's parameters locally
+      const updatedSteps = [...executedSteps];
+      updatedSteps[stepIndex] = {
+        ...step,
+        params: modifiedParameters,
+        timestamp: Date.now(), // Update timestamp
+      };
+      setExecutedSteps(updatedSteps);
+
+      // Send to backend
+      await updateStepParametersInBackend(step.actionId, modifiedParameters, editingStepId);
+
+      // Reset state
+      setHasParameterChanges(false);
+      setEditingStepId(null);
+      setModifiedParameters(null);
+
+      Toast.show({
+        type: 'success',
+        text1: '✅ Parameters Updated',
+        text2: `${step.name} parameters saved`,
+      });
+
+      console.log('✅ Step parameters updated successfully');
+    } catch (error) {
+      console.error('❌ Failed to update step parameters:', error);
+      Toast.show({
+        type: 'error',
+        text1: 'Update Failed',
+        text2: 'Could not update parameters',
+      });
+    }
+  };
+
+  /**
+   * Send updated step parameters to backend
+   * POST request for individual step update
+   */
+  const updateStepParametersInBackend = async (
+    toolType: string,
+    params: any,
+    stepId: string
+  ) => {
+    // Convert to EditOperation format
+    const operation: EditOperation = {
+      type: toolType as EditOperationType,
+      params: params,
+    };
+
+    // Add legacy fields
+    if (params.value !== undefined) operation.value = params.value;
+    if (params.x !== undefined) operation.x = params.x;
+    if (params.y !== undefined) operation.y = params.y;
+    if (params.width !== undefined) operation.width = params.width;
+    if (params.height !== undefined) operation.height = params.height;
+    if (params.angle !== undefined) operation.angle = params.angle;
+
+    // Create request for single operation update
+    const editRequest: EditRequest = {
+      image_url: currentImageUrl,
+      operations: [operation], // Single operation update
+    };
+
+    console.log('[API] Updating step parameters:', {
+      stepId,
+      toolType,
+      params,
+      editRequest,
+    });
+
+    // POST to backend
+    const response = await apiClient.submitEditWorkflow(editRequest);
+
+    console.log('[API] Step update response:', response);
+
+    return response;
+  };
+
   const executeAIStep = async (action: string, params: any) => {
     setProcessing(true);
 
@@ -1032,6 +1150,13 @@ export default function EditorScreen({ route, navigation }: Props) {
     // Reset edit panel and selected tool to return bottom toolbar to normal state
     setEditPanelOpen(false);
     setSelectedTool(null);
+
+    // Set the step being edited for parameter tracking
+    setEditingStepId(step.id);
+    setHasParameterChanges(false);
+    setModifiedParameters(step.params); // Start with current params
+
+    console.log('[Step Tapped]', { stepId: step.id, action: step.actionId, params: step.params });
 
     // Open the corresponding panel based on action type
     switch (step.actionId) {
@@ -1814,6 +1939,20 @@ export default function EditorScreen({ route, navigation }: Props) {
               <Ionicons name="sparkles" size={24} color="#FFFFFF" />
             </TouchableOpacity>
           </Animated.View>
+
+          {/* Confirm Parameter Changes Button - Shows when parameters are modified */}
+          {hasParameterChanges && (
+            <Animated.View style={[styles.confirmButton, { bottom: floatingAIBottom }]}>
+              <TouchableOpacity
+                style={styles.confirmButtonInner}
+                onPress={confirmParameterUpdate}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="checkmark-circle" size={28} color="#FFFFFF" />
+                <Text style={styles.confirmButtonText}>Confirm</Text>
+              </TouchableOpacity>
+            </Animated.View>
+          )}
 
           {/* Horizontal Step Timeline - Animated position - Only visible after prompt execution */}
           {executedSteps.length > 0 && (
@@ -3115,6 +3254,30 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.5,
     shadowRadius: 4,
     elevation: 4,
+  },
+  confirmButton: {
+    position: 'absolute',
+    right: 65, // Position to left of AI button
+    zIndex: 5,
+  },
+  confirmButtonInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 25,
+    backgroundColor: '#00D9FF', // Bright cyan for visibility
+    shadowColor: '#00D9FF',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.6,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  confirmButtonText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    marginLeft: 6,
   },
   plusButtonContainer: {
     position: 'absolute',
