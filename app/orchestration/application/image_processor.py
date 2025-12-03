@@ -210,65 +210,74 @@ class ImageProcessor:
                     
             elif tool == "overlay":
                 otype = params.get("type")
-                # Create an RGBA overlay and composite for visible effects
-                amount = int(params.get("amount", 100))
-                base = img.convert("RGBA")
-                overlay = Image.new("RGBA", base.size, (0, 0, 0, 0))
-                draw = ImageDraw.Draw(overlay)
-
+                amount = int(params.get("amount", 100)) / 100.0  # Convert to 0.0-1.0 range
+                w, h = img.size
+                
                 if otype == "rain":
-                    # Draw semi-transparent rain streaks
-                    w, h = base.size
-                    streaks = max(30, int(amount))
-                    for i in range(streaks):
-                        x = random.randint(-w // 4, int(w * 1.25))
-                        y = random.randint(-h // 4, int(h * 1.25))
-                        length = random.randint(int(h * 0.08), int(h * 0.25))
-                        x2 = x + int(length * 0.12)
-                        y2 = y + length
-                        alpha = random.randint(90, 160)
-                        draw.line((x, y, x2, y2), fill=(200, 220, 255, alpha), width=2)
-                    # Slightly darken the base under rain
-                    dark = Image.new("RGBA", base.size, (0, 0, 0, 50))
-                    overlay = Image.alpha_composite(overlay, dark)
-
-                elif otype == "sun":
-                    # Add a warm radial glow (sun flare)
-                    w, h = base.size
-                    # center can be provided or default to top-right
-                    cx = int(params.get("x", int(w * 0.8)))
-                    cy = int(params.get("y", int(h * 0.2)))
-                    max_radius = int(min(w, h) * 0.5)
-                    intensity = float(params.get("intensity", 0.6))
-                    steps = 12
-                    for i in range(steps, 0, -1):
-                        radius = int(max_radius * (i / steps) * intensity)
-                        alpha = int(200 * (i / steps) * intensity)
-                        color = (255, 200, 120, alpha)
-                        bbox = [cx - radius, cy - radius, cx + radius, cy + radius]
-                        draw.ellipse(bbox, fill=color)
-                    # add subtle lens flare highlight
-                    flare = Image.new("RGBA", base.size, (0, 0, 0, 0))
-                    fdraw = ImageDraw.Draw(flare)
-                    fdraw.ellipse([cx - 8, cy - 8, cx + 8, cy + 8], fill=(255, 255, 220, 220))
-                    overlay = Image.alpha_composite(overlay, flare)
-
-                elif otype == "snow":
-                    # Paint falling snow (white dots) with subtle blur
-                    w, h = base.size
-                    flakes = max(50, int(amount))
-                    for i in range(flakes):
+                    # Create a semi-transparent overlay for rain
+                    overlay = Image.new('RGBA', (w, h), (0, 0, 0, 0))
+                    draw = ImageDraw.Draw(overlay)
+                    
+                    # Draw rain drops (simplified)
+                    for _ in range(int(200 * amount)):  # Number of raindrops based on amount
                         x = random.randint(0, w)
                         y = random.randint(0, h)
-                        size = random.randint(1, max(2, int(min(w, h) * 0.01)))
-                        alpha = random.randint(150, 240)
-                        draw.ellipse((x, y, x + size, y + size), fill=(255, 255, 255, alpha))
-                    # blur overlay to soften snow
-                    overlay = overlay.filter(ImageFilter.GaussianBlur(radius=1))
+                        length = random.randint(10, 30)
+                        alpha = int(200 * amount)
+                        draw.line([(x, y), (x + length*0.2, y + length)], 
+                                 fill=(200, 220, 255, alpha), 
+                                 width=2)
+                    
+                    # Add a blue tint
+                    tint = Image.new('RGBA', (w, h), (100, 150, 255, 10))
+                    overlay = Image.alpha_composite(overlay, tint)
+                    
+                    # Apply overlay to original image
+                    img = img.convert('RGBA')
+                    img = Image.alpha_composite(img, overlay)
+                    img = img.convert('RGB')
+                    
+                elif otype == "sun":
+                    overlay = Image.new("RGBA", img.size, (255, 200, 120, 40))  # soft golden tint (alpha=40)
+                    img = img.convert("RGBA")
+                    img = Image.alpha_composite(img, overlay).convert("RGB")
 
-                else:
-                    # Unknown overlay: no-op
-                    overlay = Image.new("RGBA", base.size, (0, 0, 0, 0))
+                elif otype == "snow":
+                    # Enhanced snow effect with perfectly white, crisp flakes
+                    overlay = Image.new('RGBA', (w, h), (0, 0, 0, 0))
+                    draw = ImageDraw.Draw(overlay)
+                    
+                    # Draw snowflakes with perfect white color
+                    for _ in range(int(300 * amount)):  # More flakes for better coverage
+                        x = random.randint(-w//4, w + w//4)
+                        y = random.randint(-h//4, h + h//4)
+                        size = random.randint(1, 4)  # More natural size variation
+                        alpha = random.randint(200, 255)  # More opaque for better visibility
+                        snow_color = (255, 255, 255, alpha)  # Pure white
+                        
+                        # Draw the snowflake
+                        draw.ellipse([x, y, x+size, y+size], fill=snow_color)
+                        
+                        # Add a subtle glow for better visibility
+                        if size > 2:
+                            glow_alpha = min(alpha + 30, 255)
+                            glow_color = (255, 255, 255, glow_alpha)
+                            draw.ellipse([x-1, y-1, x+size+1, y+size+1], fill=glow_color)
+                    
+                    # Apply a very slight blur for natural look
+                    overlay = overlay.filter(ImageFilter.GaussianBlur(0.8))
+                    
+                    # Apply overlay to image
+                    img = img.convert('RGBA')
+                    result = Image.alpha_composite(img, overlay)
+                    
+                    # Add a very subtle blue tint (reduced from before)
+                    tint = Image.new('RGBA', (w, h), (230, 240, 255, 8))
+                    result = Image.alpha_composite(result, tint)
+                    
+                    # Convert back to RGB for saving
+                    img = result.convert('RGB')
+                    
             elif tool == "relighting":
                 # Call external relighting API which returns a result image URL.
                 relight_api = os.getenv("RELIGHT_API_URL", "http://localhost:5000/relight")
@@ -302,6 +311,7 @@ class ImageProcessor:
                     print(f"Relighting service error: {e}")
                     # fall back to returning input on failure (existing behavior)
                     img = Image.open(input_image_path).convert("RGB")
+                    
             # Save processed image to BytesIO as JPEG and return as bytes
             output = BytesIO()
             # JPEG requires RGB (no alpha); image already converted to RGB above
