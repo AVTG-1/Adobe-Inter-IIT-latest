@@ -2108,7 +2108,15 @@ export default function EditorScreen({ route, navigation }: Props) {
               <View style={styles.editGridContainer}>
                 {/* Single Row - 6 Essential Edit Tools */}
                 <View style={styles.editGridRow}>
-                  <TouchableOpacity style={styles.toolItem} onPress={() => handleToolPress('edit')} activeOpacity={0.7}>
+                  <TouchableOpacity
+                    style={styles.toolItem}
+                    // Keep edit panel open when tapping the inner "Edit" button
+                    onPress={() => {
+                      setSelectedTool('edit');
+                      setEditPanelOpen(true);
+                    }}
+                    activeOpacity={0.7}
+                  >
                     <View style={styles.activeIndicator} />
                     <Ionicons name="brush-outline" size={24} color="#000000" />
                     <Text style={styles.toolLabel}>Edit</Text>
@@ -3087,9 +3095,17 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     zIndex: 0,
   },
+  // Overlay that dismisses panels when tapping the canvas area.
+  // Keep it from covering the bottom toolbar by adding a bottom inset
+  // so footer buttons remain tappable.
   dismissOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    zIndex: 5, // Above background, below bottom toolbar
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    // Leave space at the bottom so the toolbar remains interactive
+    bottom: 120,
+    zIndex: 5,
     backgroundColor: 'transparent',
   },
   topBar: {
@@ -3342,6 +3358,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
+    zIndex: 10, // Ensure toolbar is above dismiss overlay for touch events
     backgroundColor: '#242428',
     borderTopLeftRadius: 14,
     borderTopRightRadius: 14,
