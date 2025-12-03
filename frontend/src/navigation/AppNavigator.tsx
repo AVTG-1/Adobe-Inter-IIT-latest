@@ -15,6 +15,8 @@ export type RootStackParamList = {
     isBlankCanvas?: boolean;
     canvasWidth?: number;
     canvasHeight?: number;
+    projectId?: string;      // Unique project ID
+    isNewProject?: boolean;  // True when coming from HomeScreen import
   };
   Layers: undefined;
   Effects: undefined;

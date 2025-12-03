@@ -19,6 +19,7 @@ import {
 } from 'react-native';
 import BottomSheet, { BottomSheetBackdrop, BottomSheetFlatList } from '@gorhom/bottom-sheet';
 import { Ionicons } from '@expo/vector-icons';
+import Slider from '@react-native-community/slider';
 import { COLORS, SPACING, BORDER_RADIUS, FONT_SIZES } from '../config/theme';
 import { Layer } from './InteractiveCanvas';
 
@@ -63,6 +64,7 @@ const LayersModal: React.FC<LayersModalProps> = ({
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState('');
+  const [expandedLayerId, setExpandedLayerId] = useState<string | null>(null);
 
   const renderBackdrop = (props: any) => null;
 
@@ -112,6 +114,8 @@ const LayersModal: React.FC<LayersModalProps> = ({
 
   const handleLayerPress = (layerId: string) => {
     onSelectLayer(layerId);
+    // Toggle expanded state for opacity slider
+    setExpandedLayerId(expandedLayerId === layerId ? null : layerId);
   };
 
   const handleDuplicateLayer = (layerId: string) => {
@@ -120,84 +124,136 @@ const LayersModal: React.FC<LayersModalProps> = ({
 
   const renderLayer = ({ item }: { item: Layer }) => {
     const isSelected = item.id === selectedLayerId;
+    const isExpanded = item.id === expandedLayerId;
 
     return (
-      <TouchableOpacity
-        style={[
-          styles.layerCard,
-          isSelected && styles.layerCardSelected,
-        ]}
-        onPress={() => handleLayerPress(item.id)}
-        activeOpacity={0.7}
-      >
-        <View style={styles.layerLeft}>
-          {/* Thumbnail */}
-          {item.imageUri && (
-            <View style={styles.thumbnailContainer}>
-              <Image
-                source={{ uri: item.imageUri }}
-                style={styles.thumbnail}
-                resizeMode="cover"
+      <View style={styles.layerWrapper}>
+        <TouchableOpacity
+          style={[
+            styles.layerCard,
+            isSelected && styles.layerCardSelected,
+          ]}
+          onPress={() => handleLayerPress(item.id)}
+          activeOpacity={0.7}
+        >
+          <View style={styles.layerLeft}>
+            {/* Thumbnail */}
+            {item.imageUri && (
+              <View style={styles.thumbnailContainer}>
+                <Image
+                  source={{ uri: item.imageUri }}
+                  style={styles.thumbnail}
+                  resizeMode="cover"
+                />
+              </View>
+            )}
+
+            {/* Layer Name */}
+            {editingId === item.id ? (
+              <TextInput
+                style={styles.layerNameInput}
+                value={editingName}
+                onChangeText={setEditingName}
+                onBlur={handleFinishRename}
+                onSubmitEditing={handleFinishRename}
+                autoFocus
+                selectTextOnFocus
+                placeholderTextColor={COLORS.textTertiary}
               />
-            </View>
-          )}
+            ) : (
+              <View style={styles.layerNameContainer}>
+                <Text style={[styles.layerName, isSelected && styles.layerNameSelected]}>
+                  {item.name}
+                </Text>
+                <Text style={styles.layerType}>
+                  {item.type} • {Math.round(item.opacity * 100)}%
+                </Text>
+              </View>
+            )}
+          </View>
 
-          {/* Layer Name */}
-          {editingId === item.id ? (
-            <TextInput
-              style={styles.layerNameInput}
-              value={editingName}
-              onChangeText={setEditingName}
-              onBlur={handleFinishRename}
-              onSubmitEditing={handleFinishRename}
-              autoFocus
-              selectTextOnFocus
-              placeholderTextColor={COLORS.textTertiary}
-            />
-          ) : (
-            <View style={styles.layerNameContainer}>
-              <Text style={[styles.layerName, isSelected && styles.layerNameSelected]}>
-                {item.name}
-              </Text>
-              <Text style={styles.layerType}>
-                {item.type} • {Math.round(item.opacity * 100)}%
-              </Text>
-            </View>
-          )}
-        </View>
-
-        <View style={styles.layerRight}>
-          {/* Edit Icon (Pen) */}
-          <TouchableOpacity
-            onPress={() => handleStartRename(item)}
-            style={styles.iconButton}
-          >
-            <Ionicons name="create-outline" size={18} color={COLORS.textSecondary} />
-          </TouchableOpacity>
-
-          {/* Eye Toggle */}
-          <TouchableOpacity
-            onPress={() => handleToggleVisibility(item.id)}
-            style={styles.iconButton}
-          >
-            <Ionicons
-              name={item.visible ? 'eye' : 'eye-off'}
-              size={18}
-              color={item.visible ? COLORS.primary : COLORS.textTertiary}
-            />
-          </TouchableOpacity>
-
-          {/* Delete (only if not base layer) */}
-          {item.id !== 'base-layer' && (
+          <View style={styles.layerRight}>
+            {/* Edit Icon (Pen) */}
             <TouchableOpacity
-              onPress={() => handleDeleteLayer(item.id)}
+              onPress={() => handleStartRename(item)}
               style={styles.iconButton}
             >
-              <Ionicons name="trash-outline" size={18} color="#FF6B6B" />
+              <Ionicons name="create-outline" size={18} color={COLORS.textSecondary} />
             </TouchableOpacity>
-          )}
-        </View>
-      </TouchableOpacity>
+
+            {/* Eye Toggle */}
+            <TouchableOpacity
+              onPress={() => handleToggleVisibility(item.id)}
+              style={styles.iconButton}
+            >
+              <Ionicons
+                name={item.visible ? 'eye' : 'eye-off'}
+                size={18}
+                color={item.visible ? COLORS.primary : COLORS.textTertiary}
+              />
+            </TouchableOpacity>
+
+            {/* Delete (only if not base layer) */}
+            {item.id !== 'base-layer' && (
+              <TouchableOpacity
+                onPress={() => handleDeleteLayer(item.id)}
+                style={styles.iconButton}
+              >
+                <Ionicons name="trash-outline" size={18} color="#FF6B6B" />
+              </TouchableOpacity>
+            )}
+            
+            {/* Expand/Collapse indicator */}
+            <Ionicons 
+              name={isExpanded ? 'chevron-up' : 'chevron-down'} 
+              size={16} 
+              color={COLORS.textTertiary} 
+            />
+          </View>
+        </TouchableOpacity>
+
+        {/* Expanded Section with Opacity Slider */}
+        {isExpanded && (
+          <View style={styles.expandedSection}>
+            {/* Opacity Slider */}
+            <View style={styles.opacityRow}>
+              <Text style={styles.opacityLabel}>Opacity</Text>
+              <Slider
+                style={styles.opacitySlider}
+                minimumValue={0}
+                maximumValue={1}
+                value={item.opacity}
+                onValueChange={(value) => onSetOpacity(item.id, value)}
+                minimumTrackTintColor="#FFCC00"
+                maximumTrackTintColor="#444"
+                thumbTintColor="#FFCC00"
+              />
+              <Text style={styles.opacityValue}>{Math.round(item.opacity * 100)}%</Text>
+            </View>
+
+            {/* Quick Actions */}
+            <View style={styles.quickActions}>
+              <TouchableOpacity 
+                style={styles.quickActionBtn}
+                onPress={() => handleDuplicateLayer(item.id)}
+              >
+                <Ionicons name="copy-outline" size={18} color="#007AFF" />
+                <Text style={styles.quickActionText}>Duplicate</Text>
+              </TouchableOpacity>
+
+              {item.id !== 'base-layer' && (
+                <TouchableOpacity 
+                  style={styles.quickActionBtn}
+                  onPress={() => handleDeleteLayer(item.id)}
+                >
+                  <Ionicons name="trash-outline" size={18} color="#FF3B30" />
+                  <Text style={[styles.quickActionText, { color: '#FF3B30' }]}>Delete</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          </View>
+        )}
+      </View>
     );
   };
 
@@ -230,9 +286,9 @@ const LayersModal: React.FC<LayersModalProps> = ({
           </View>
         </View>
 
-        {/* Layers List */}
+        {/* Layers List - Reversed to show topmost layer at top (like Photoshop) */}
         <BottomSheetFlatList
-          data={layers}
+          data={[...layers].reverse()}
           renderItem={renderLayer}
           keyExtractor={item => item.id}
           contentContainerStyle={styles.listContainer}
@@ -369,6 +425,59 @@ const styles = StyleSheet.create({
     marginTop: 12,
     fontSize: FONT_SIZES.md,
     color: COLORS.textSecondary,
+  },
+  // New styles for expanded section
+  layerWrapper: {
+    marginBottom: SPACING.xs,
+  },
+  expandedSection: {
+    backgroundColor: '#1A1A1A',
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: SPACING.sm,
+    borderRadius: BORDER_RADIUS.sm,
+    marginTop: -4,
+    borderTopLeftRadius: 0,
+    borderTopRightRadius: 0,
+  },
+  opacityRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: SPACING.xs,
+  },
+  opacityLabel: {
+    fontSize: 12,
+    color: COLORS.textSecondary,
+    width: 55,
+  },
+  opacitySlider: {
+    flex: 1,
+    height: 30,
+  },
+  opacityValue: {
+    fontSize: 12,
+    color: '#FFCC00',
+    width: 40,
+    textAlign: 'right',
+    fontFamily: 'monospace',
+  },
+  quickActions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: SPACING.md,
+    marginTop: SPACING.xs,
+  },
+  quickActionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 6,
+    backgroundColor: '#2C2C2E',
+  },
+  quickActionText: {
+    fontSize: 12,
+    color: '#007AFF',
   },
 });
 

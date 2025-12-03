@@ -1,18 +1,19 @@
 /**
- * Simplified Adjustments Panel - Auralite Design
- *
- * 5 adjustment buttons at bottom with slider control above
- * Now with Apply/Cancel buttons that actually work!
+ * Real-Time Adjustment Panel - Auralite Design
+ * 
+ * SAME UI as SimplifiedAdjustmentsPanel but with:
+ * - Real-time CSS filter preview (instant)
+ * - Applies ONLY to selected layer
+ * - No destructive edits
  */
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
   Dimensions,
-  Animated,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Slider from '@react-native-community/slider';
@@ -29,12 +30,24 @@ export interface AdjustmentValues {
 
 type AdjustmentType = keyof AdjustmentValues;
 
-interface SimplifiedAdjustmentsPanelProps {
-  visible: boolean;
-  onApply: (values: AdjustmentValues) => void;
-  onClose: () => void;
-  onPreview?: (values: AdjustmentValues) => void;
-}
+// Convert our values to CSS filter string for instant preview
+export const valuesToCSSFilter = (values: AdjustmentValues): string => {
+  const brightness = 1 + (values.brightness / 100) * 0.5;
+  const contrast = 1 + (values.contrast / 100) * 0.5;
+  const saturate = 1 + (values.saturation / 100);
+  const hueRotate = values.hue;
+  const exposureBright = 1 + (values.exposure / 100) * 0.3;
+  
+  return `brightness(${brightness * exposureBright}) contrast(${contrast}) saturate(${saturate}) hue-rotate(${hueRotate}deg)`;
+};
+
+// Convert to FilterPreview format for InteractiveCanvas
+export const valuesToFilterPreview = (values: AdjustmentValues) => ({
+  brightness: values.brightness,
+  contrast: values.contrast,
+  saturation: values.saturation,
+  hue: values.hue,
+});
 
 const ADJUSTMENTS: Array<{ key: AdjustmentType; label: string; icon: any }> = [
   { key: 'hue', label: 'Hue', icon: 'color-palette' },
@@ -52,47 +65,76 @@ const DEFAULT_VALUES: AdjustmentValues = {
   contrast: 0,
 };
 
-const SimplifiedAdjustmentsPanel: React.FC<SimplifiedAdjustmentsPanelProps> = ({
+interface RealTimeAdjustPanelProps {
+  visible: boolean;
+  onClose: () => void;
+  onFilterChange: (filter: ReturnType<typeof valuesToFilterPreview>) => void;
+  onCommit?: () => void;
+  selectedLayerId?: string | null;
+  selectedLayerName?: string;
+  initialValues?: AdjustmentValues;  // Load existing values from layer
+}
+
+const RealTimeAdjustPanel: React.FC<RealTimeAdjustPanelProps> = ({
   visible,
-  onApply,
   onClose,
-  onPreview,
+  onFilterChange,
+  onCommit,
+  selectedLayerId,
+  selectedLayerName,
+  initialValues,
 }) => {
   const [values, setValues] = useState<AdjustmentValues>({ ...DEFAULT_VALUES });
   const [activeAdjustment, setActiveAdjustment] = useState<AdjustmentType>('brightness');
 
-  // All hooks MUST be called before any early returns
+  // Load initial values from layer when panel opens
+  useEffect(() => {
+    if (visible) {
+      // Use initial values if provided, otherwise reset to default
+      if (initialValues) {
+        setValues({ ...DEFAULT_VALUES, ...initialValues });
+        // Apply initial filter preview
+        requestAnimationFrame(() => {
+          onFilterChange(valuesToFilterPreview({ ...DEFAULT_VALUES, ...initialValues }));
+        });
+      } else {
+        setValues({ ...DEFAULT_VALUES });
+      }
+    }
+  }, [visible, initialValues]);
+
+  // REAL-TIME: Update filter preview as slider moves
   const handleSliderChange = useCallback((value: number) => {
-    setValues(prev => {
-      const newValues = { ...prev, [activeAdjustment]: value };
-      onPreview?.(newValues);
-      return newValues;
+    const newValues = { ...values, [activeAdjustment]: value };
+    setValues(newValues);
+    // Call onFilterChange AFTER state update to avoid setState during render
+    requestAnimationFrame(() => {
+      onFilterChange(valuesToFilterPreview(newValues));
     });
-  }, [activeAdjustment, onPreview]);
+  }, [activeAdjustment, onFilterChange, values]);
 
   const handleAdjustmentSelect = useCallback((key: AdjustmentType) => {
     setActiveAdjustment(key);
   }, []);
 
-  const handleApply = useCallback(() => {
-    console.log('Applying adjustments:', values);
-    onApply(values);
-    // Reset values after apply
-    setValues({ ...DEFAULT_VALUES });
-  }, [values, onApply]);
+  const handleDone = useCallback(() => {
+    // Commit to history when closing
+    onCommit?.();
+    onClose();
+  }, [onCommit, onClose]);
 
   const handleCancel = useCallback(() => {
-    // Reset values
+    // Reset and clear filter
     setValues({ ...DEFAULT_VALUES });
+    onFilterChange(valuesToFilterPreview(DEFAULT_VALUES));
     onClose();
-  }, [onClose]);
+  }, [onClose, onFilterChange]);
 
   const handleReset = useCallback(() => {
     setValues({ ...DEFAULT_VALUES });
-    onPreview?.({ ...DEFAULT_VALUES });
-  }, [onPreview]);
+    onFilterChange(valuesToFilterPreview(DEFAULT_VALUES));
+  }, [onFilterChange]);
 
-  // Early return AFTER all hooks
   if (!visible) return null;
 
   const currentValue = values[activeAdjustment];
@@ -111,17 +153,27 @@ const SimplifiedAdjustmentsPanel: React.FC<SimplifiedAdjustmentsPanelProps> = ({
           <Text style={styles.cancelText}>Cancel</Text>
         </TouchableOpacity>
         
-        <Text style={styles.headerTitle}>Adjustments</Text>
+        <View style={styles.titleContainer}>
+          <Text style={styles.headerTitle}>Adjustments</Text>
+          {selectedLayerName && (
+            <Text style={styles.layerIndicator}>→ {selectedLayerName}</Text>
+          )}
+        </View>
         
         <TouchableOpacity 
           style={[styles.headerButton, !hasChanges && styles.disabledButton]} 
-          onPress={handleApply}
+          onPress={handleDone}
           activeOpacity={0.7}
-          disabled={!hasChanges}
         >
-          <Ionicons name="checkmark" size={22} color={hasChanges ? "#34C759" : "#666"} />
-          <Text style={[styles.applyText, !hasChanges && styles.disabledText]}>Apply</Text>
+          <Ionicons name="checkmark" size={22} color={hasChanges ? "#34C759" : "#888"} />
+          <Text style={[styles.applyText, !hasChanges && styles.disabledText]}>Done</Text>
         </TouchableOpacity>
+      </View>
+
+      {/* Real-time indicator */}
+      <View style={styles.realtimeIndicator}>
+        <Ionicons name="flash" size={12} color="#007AFF" />
+        <Text style={styles.realtimeText}>Real-time preview • Changes apply instantly</Text>
       </View>
 
       {/* Reset button */}
@@ -150,6 +202,7 @@ const SimplifiedAdjustmentsPanel: React.FC<SimplifiedAdjustmentsPanelProps> = ({
             maximumValue={100}
             value={currentValue}
             onValueChange={handleSliderChange}
+            onSlidingComplete={() => onCommit?.()}
             minimumTrackTintColor="#007AFF"
             maximumTrackTintColor="#666666"
             thumbTintColor="#FFFFFF"
@@ -223,12 +276,20 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 16,
-    marginBottom: 8,
+    marginBottom: 4,
+  },
+  titleContainer: {
+    alignItems: 'center',
   },
   headerTitle: {
     fontSize: 16,
     fontWeight: '600',
     color: '#FFFFFF',
+  },
+  layerIndicator: {
+    fontSize: 10,
+    color: '#007AFF',
+    marginTop: 2,
   },
   headerButton: {
     flexDirection: 'row',
@@ -251,6 +312,21 @@ const styles = StyleSheet.create({
   },
   disabledText: {
     color: '#666',
+  },
+  realtimeIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 6,
+    backgroundColor: 'rgba(0, 122, 255, 0.1)',
+    marginHorizontal: 16,
+    borderRadius: 8,
+    marginBottom: 8,
+  },
+  realtimeText: {
+    fontSize: 11,
+    color: '#007AFF',
   },
   resetButton: {
     flexDirection: 'row',
@@ -358,4 +434,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default SimplifiedAdjustmentsPanel;
+export default RealTimeAdjustPanel;
