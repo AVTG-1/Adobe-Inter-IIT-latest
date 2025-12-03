@@ -21,6 +21,73 @@ export interface TreeStructure {
 }
 
 /**
+ * Get the appropriate icon for a tool based on its name
+ */
+export function getIconForTool(tool: string): string {
+  const iconMap: { [key: string]: string } = {
+    // Root/Input
+    'input': 'image-outline',
+
+    // Basic Adjustments
+    'brightness': 'bulb-outline',
+    'contrast': 'contrast-outline',
+    'exposure': 'sunny-outline',
+
+    // Color Adjustments
+    'saturation': 'water-outline',
+    'vibrance': 'color-palette-outline',
+    'temperature': 'thermometer-outline',
+    'tint': 'color-filter-outline',
+    'hue': 'prism-outline',
+
+    // Tone Adjustments
+    'shadows': 'moon-outline',
+    'highlights': 'sunny-outline',
+    'whites': 'ellipse-outline',
+    'blacks': 'square-outline',
+
+    // Detail Adjustments
+    'sharpness': 'diamond-outline',
+    'clarity': 'eye-outline',
+    'dehaze': 'cloud-outline',
+    'grain': 'apps-outline',
+
+    // Effects
+    'vignette': 'scan-outline',
+    'fade': 'layers-outline',
+    'blur': 'water-outline',
+    'sharpen': 'diamond-outline',
+
+    // Tools
+    'crop': 'crop-outline',
+    'rotate': 'refresh-outline',
+    'resize': 'resize-outline',
+    'flip': 'swap-horizontal-outline',
+
+    // Drawing & Text
+    'draw': 'pencil-outline',
+    'brush': 'brush-outline',
+    'text': 'text-outline',
+    'shape': 'square-outline',
+    'eraser': 'remove-circle-outline',
+
+    // Filters & Effects
+    'filter': 'color-filter-outline',
+    'curve': 'options-outline',
+
+    // AI Features
+    'ai': 'sparkles-outline',
+    'remove-background': 'cut-outline',
+    'enhance': 'star-outline',
+
+    // Default
+    'default': 'ellipse-outline',
+  };
+
+  return iconMap[tool.toLowerCase()] || iconMap['default'];
+}
+
+/**
  * Convert flat executed steps array to tree structure
  */
 export function buildTreeStructure(executedSteps: any[], rootImageUrl: string): TreeStructure {
@@ -34,7 +101,7 @@ export function buildTreeStructure(executedSteps: any[], rootImageUrl: string): 
     parent_id: null,
     children_ids: executedSteps.length > 0 ? [`node-${executedSteps[0].id}`] : [],
     intent: 'Original image',
-    icon: 'image-outline',
+    icon: getIconForTool('input'),
     params: {},
     timestamp: Date.now(),
   };
@@ -54,7 +121,7 @@ export function buildTreeStructure(executedSteps: any[], rootImageUrl: string): 
       parent_id: parentId,
       children_ids: childrenIds,
       intent: step.description,
-      icon: step.icon,
+      icon: getIconForTool(step.actionId),  // Use tool-based icon mapping
       params: step.params,
       timestamp: step.timestamp,
     };
@@ -79,7 +146,7 @@ export function createSampleBranchedTree(rootImageUrl: string): TreeStructure {
       parent_id: null,
       children_ids: ['node-1', 'node-2', 'node-3'],
       intent: 'Original image',
-      icon: 'image-outline',
+      icon: getIconForTool('input'),
       params: {},
       timestamp: now,
     },
@@ -91,7 +158,7 @@ export function createSampleBranchedTree(rootImageUrl: string): TreeStructure {
       parent_id: 'node-root',
       children_ids: ['node-4', 'node-5'],
       intent: 'Increased brightness',
-      icon: 'sunny-outline',
+      icon: getIconForTool('brightness'),
       params: { value: 20 },
       timestamp: now + 1000,
     },
@@ -102,7 +169,7 @@ export function createSampleBranchedTree(rootImageUrl: string): TreeStructure {
       parent_id: 'node-1',
       children_ids: ['node-8'],
       intent: 'Enhanced contrast',
-      icon: 'contrast-outline',
+      icon: getIconForTool('contrast'),
       params: { value: 15 },
       timestamp: now + 2000,
     },
@@ -113,7 +180,7 @@ export function createSampleBranchedTree(rootImageUrl: string): TreeStructure {
       parent_id: 'node-4',
       children_ids: [],
       intent: 'Boosted saturation',
-      icon: 'color-palette-outline',
+      icon: getIconForTool('saturation'),
       params: { value: 10 },
       timestamp: now + 3000,
     },
@@ -124,7 +191,7 @@ export function createSampleBranchedTree(rootImageUrl: string): TreeStructure {
       parent_id: 'node-1',
       children_ids: ['node-9'],
       intent: 'Applied vintage filter',
-      icon: 'color-filter-outline',
+      icon: getIconForTool('filter'),
       params: { filter: 'vintage' },
       timestamp: now + 2500,
     },
@@ -135,7 +202,7 @@ export function createSampleBranchedTree(rootImageUrl: string): TreeStructure {
       parent_id: 'node-5',
       children_ids: [],
       intent: 'Added drawing',
-      icon: 'pencil-outline',
+      icon: getIconForTool('draw'),
       params: { tool: 'brush', color: '#FF0000' },
       timestamp: now + 3500,
     },
@@ -147,7 +214,7 @@ export function createSampleBranchedTree(rootImageUrl: string): TreeStructure {
       parent_id: 'node-root',
       children_ids: ['node-6'],
       intent: 'Cropped to focus',
-      icon: 'crop-outline',
+      icon: getIconForTool('crop'),
       params: { x: 0, y: 0, width: 800, height: 600 },
       timestamp: now + 1200,
     },
@@ -158,7 +225,7 @@ export function createSampleBranchedTree(rootImageUrl: string): TreeStructure {
       parent_id: 'node-2',
       children_ids: ['node-10'],
       intent: 'Rotated 90 degrees',
-      icon: 'reload-outline',
+      icon: getIconForTool('rotate'),
       params: { degrees: 90 },
       timestamp: now + 2200,
     },
@@ -169,7 +236,7 @@ export function createSampleBranchedTree(rootImageUrl: string): TreeStructure {
       parent_id: 'node-6',
       children_ids: [],
       intent: 'Adjusted hue',
-      icon: 'color-wand-outline',
+      icon: getIconForTool('hue'),
       params: { value: 30 },
       timestamp: now + 3200,
     },
@@ -181,7 +248,7 @@ export function createSampleBranchedTree(rootImageUrl: string): TreeStructure {
       parent_id: 'node-root',
       children_ids: ['node-7'],
       intent: 'Applied dramatic filter',
-      icon: 'color-filter-outline',
+      icon: getIconForTool('filter'),
       params: { filter: 'dramatic' },
       timestamp: now + 1500,
     },
@@ -192,7 +259,7 @@ export function createSampleBranchedTree(rootImageUrl: string): TreeStructure {
       parent_id: 'node-3',
       children_ids: [],
       intent: 'Applied background blur',
-      icon: 'ellipse-outline',
+      icon: getIconForTool('blur'),
       params: { radius: 10 },
       timestamp: now + 2500,
     },
