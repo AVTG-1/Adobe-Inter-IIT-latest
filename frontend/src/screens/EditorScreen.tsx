@@ -929,6 +929,13 @@ export default function EditorScreen({ route, navigation }: Props) {
       // Don't block the UI, just log the error
     }
 
+    // Set current node to the last executed step
+    if (sequence.length > 0) {
+      const lastStepId = `node-${Date.now()}-${sequence.length - 1}`;
+      setCurrentNodeId(lastStepId);
+      console.log('[AI Complete] Set current node to last step:', lastStepId);
+    }
+
     setIsExecutingAI(false);
     setAiPrompt('');
     setAiChatOpen(false); // Close AI chat after completion
@@ -1156,7 +1163,11 @@ export default function EditorScreen({ route, navigation }: Props) {
     setHasParameterChanges(false);
     setModifiedParameters(step.params); // Start with current params
 
-    console.log('[Step Tapped]', { stepId: step.id, action: step.actionId, params: step.params });
+    // Update current node for timeline filtering
+    const nodeId = `node-${step.id}`;
+    setCurrentNodeId(nodeId);
+
+    console.log('[Step Tapped]', { stepId: step.id, nodeId, action: step.actionId, params: step.params });
 
     // Open the corresponding panel based on action type
     switch (step.actionId) {
@@ -1232,6 +1243,51 @@ export default function EditorScreen({ route, navigation }: Props) {
     }
     return buildTreeStructure(executedSteps, currentImageUrl);
   }, [executedSteps, currentImageUrl]);
+
+  /**
+   * Get path from root to current node
+   * Returns array of node IDs representing the path
+   */
+  const getPathToCurrentNode = React.useMemo(() => {
+    const path: string[] = [];
+    let currentId: string | null = currentNodeId;
+
+    // Traverse from current node up to root
+    while (currentId) {
+      path.unshift(currentId); // Add to beginning of array
+      const node: TreeNode | undefined = editingTree[currentId];
+      if (!node || node.parent_id === null) break;
+      currentId = node.parent_id;
+    }
+
+    return path;
+  }, [currentNodeId, editingTree]);
+
+  /**
+   * Get steps to display in timeline (only path from root to current node)
+   * Filters executedSteps to show only steps in the current path
+   */
+  const timelineSteps = React.useMemo(() => {
+    if (executedSteps.length === 0) return [];
+
+    // Get node IDs in the current path
+    const pathNodeIds = new Set(getPathToCurrentNode);
+
+    // Filter executed steps to only include those in the path
+    const stepsInPath = executedSteps.filter(step => {
+      const nodeId = `node-${step.id}`;
+      return pathNodeIds.has(nodeId);
+    });
+
+    console.log('[Timeline Filter]', {
+      totalSteps: executedSteps.length,
+      pathLength: getPathToCurrentNode.length,
+      stepsInPath: stepsInPath.length,
+      pathNodeIds: Array.from(pathNodeIds),
+    });
+
+    return stepsInPath;
+  }, [executedSteps, getPathToCurrentNode]);
 
   // Handle tree view node tap - loads image and opens corresponding panel
   const handleTreeViewNodeTap = (node: TreeNode) => {
@@ -1987,8 +2043,8 @@ export default function EditorScreen({ route, navigation }: Props) {
                   </TouchableOpacity>
                 </Animated.View>
 
-              {/* Executed Steps */}
-              {executedSteps.map((step, index) => (
+              {/* Executed Steps - Only showing path from root to current node */}
+              {timelineSteps.map((step, index) => (
                 <Animated.View
                   key={step.id}
                   style={[
