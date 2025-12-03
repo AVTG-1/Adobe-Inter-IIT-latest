@@ -13,7 +13,6 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-
 class GeneralEditOrchestrator:
     """Handles general editing workflow using Imaginary or OpenCV backends."""
 

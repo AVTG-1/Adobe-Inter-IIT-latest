@@ -484,4 +484,3 @@ class StorageService:
             True if GCS is enabled, False if using local storage
         """
         return self._gcs_bucket is not None
-

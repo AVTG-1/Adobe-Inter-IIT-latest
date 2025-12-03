@@ -5,10 +5,15 @@ import google.generativeai as genai
 from dotenv import load_dotenv
 
 load_dotenv()
+from io import BytesIO
+
+from app.core.services.app.storage_service import StorageService
+from PIL import Image
 
 class LLMService:
     def __init__(self):
         api_key = os.getenv("GEMINI_API_KEY")
+        # print(api_key)
         if not api_key or api_key == "your_api_key_here":
             print("Warning: GEMINI_API_KEY not found in .env. Using mock mode.")
             self.model = None
@@ -90,48 +95,67 @@ class LLMService:
         
         for attempt in range(3):
             try:
-                if not os.path.exists(real_path):
-                     print(f"Image not found at {real_path}, falling back to text-only")
-                     response = self.model.generate_content(full_prompt)
+                # Attempt to load the image from local path, GCS (gs://), or HTTP(S).
+                img = None
+                content_parts = None
+
+                # Remote URLs (GCS or public storage.googleapis.com) or HTTP(S)
+                if real_path.startswith("gs://") or "storage.googleapis.com" in real_path or real_path.startswith(("http://", "https://")):
+                    storage = StorageService()
+                    image_bytes = None
+                    try:
+                        if real_path.startswith("gs://") or "storage.googleapis.com" in real_path:
+                            # StorageService will handle gs:// and public https urls conversion
+                            image_bytes = await storage.get_image(real_path)
+                        else:
+                            # plain HTTP/HTTPS
+                            import httpx
+                            async with httpx.AsyncClient(timeout=30.0) as client:
+                                r = await client.get(real_path)
+                                r.raise_for_status()
+                                image_bytes = r.content
+
+                        if image_bytes:
+                            img = Image.open(BytesIO(image_bytes))
+                            width, height = img.size
+                            content_parts = [full_prompt, f"Image to Edit (Resolution: {width}x{height})", img]
+                    except Exception as e:
+                        print(f"Remote image fetch failed for {real_path}: {e}")
+                        img = None
                 else:
-                    import PIL.Image
-                    img = PIL.Image.open(real_path)
-                    width, height = img.size
-                    
-                    content_parts = [full_prompt, f"Image to Edit (Resolution: {width}x{height})", img]
-                    
-                    if reference_image_path:
-                        ref_real_path = reference_image_path.lstrip("/")
-                        if os.path.exists(ref_real_path):
-                            ref_img = PIL.Image.open(ref_real_path)
-                            content_parts.append("Reference/Prompt Image (Use this for style/content context):")
-                            content_parts.append(ref_img)
-                    
-                    # Send text + image(s) to Gemini
-                    # Configure safety settings to be permissive
-                    safety_settings = [
-                        {
-                            "category": "HARM_CATEGORY_HARASSMENT",
-                            "threshold": "BLOCK_NONE"
-                        },
-                        {
-                            "category": "HARM_CATEGORY_HATE_SPEECH",
-                            "threshold": "BLOCK_NONE"
-                        },
-                        {
-                            "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
-                            "threshold": "BLOCK_NONE"
-                        },
-                        {
-                            "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
-                            "threshold": "BLOCK_NONE"
-                        },
-                    ]
-                    response = self.model.generate_content(
-                        content_parts,
-                        safety_settings=safety_settings
-                    )
-                break # Success
+                    # Local path
+                    if not os.path.exists(real_path):
+                        print(f"Image not found at {real_path}, falling back to text-only")
+                    else:
+                        import PIL.Image
+                        img = PIL.Image.open(real_path)
+                        width, height = img.size
+                        content_parts = [full_prompt, f"Image to Edit (Resolution: {width}x{height})", img]
+
+                # Attach reference image if available and image loaded
+                if reference_image_path and img is not None:
+                    ref_real_path = reference_image_path.lstrip("/")
+                    if os.path.exists(ref_real_path):
+                        import PIL.Image
+                        ref_img = PIL.Image.open(ref_real_path)
+                        content_parts.append("Reference/Prompt Image (Use this for style/content context):")
+                        content_parts.append(ref_img)
+
+                # Configure safety settings
+                safety_settings = [
+                    {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
+                    {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
+                    {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"},
+                    {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"},
+                ]
+
+                if img is not None and content_parts is not None:
+                    response = self.model.generate_content(content_parts, safety_settings=safety_settings)
+                else:
+                    print(f"Proceeding without image (image not available or fetch failed): {real_path}")
+                    response = self.model.generate_content(full_prompt)
+
+                break  # Success
             except Exception as e:
                 print(f"Attempt {attempt+1} failed: {e}")
                 last_error = e
@@ -154,7 +178,7 @@ class LLMService:
                 print(f"Candidate Safety Ratings: {response.candidates[0].safety_ratings}")
             raise Exception(f"Gemini refused to generate text. Reason: {response.candidates[0].finish_reason if response.candidates else 'Unknown'}")
 
-        print(f"Gemini Raw Response: {text}") # Debug print
+        # print(f"Gemini Raw Response: {text}") # Debug print
 
         # JSON Parsing with Self-Correction
         for json_attempt in range(3):
