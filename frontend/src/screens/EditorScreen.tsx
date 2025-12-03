@@ -68,8 +68,6 @@ import * as ImagePicker from 'expo-image-picker';
 import * as Sharing from 'expo-sharing';
 import * as FileSystem from 'expo-file-system';
 import Toast from 'react-native-toast-message';
-import { apiClient } from '../services/api';
-import { EditOperation } from '../types/api';
 import { applyFilter, applyAdjustments } from '../utils/canvasFilters';
 import { useEnhancedLayerManager } from '../hooks/useEnhancedLayerManager';
 import { fitAndCenter, getImageDimensions } from '../utils/imageFit';
