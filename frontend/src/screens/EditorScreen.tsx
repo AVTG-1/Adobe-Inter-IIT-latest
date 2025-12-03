@@ -1235,12 +1235,8 @@ export default function EditorScreen({ route, navigation }: Props) {
   };
 
   // Build tree structure from executed steps
-  // Use sample branched tree for demonstration if steps exist, otherwise build from steps
+  // Always use actual executed steps to build the tree
   const editingTree: TreeStructure = React.useMemo(() => {
-    if (executedSteps.length > 0) {
-      // Use sample branched tree to demonstrate multi-branch capability
-      return createSampleBranchedTree(currentImageUrl);
-    }
     return buildTreeStructure(executedSteps, currentImageUrl);
   }, [executedSteps, currentImageUrl]);
 
