@@ -56,6 +56,7 @@ import TextOverlay, { TextLayerConfig } from '../components/TextOverlay';
 import ShapeOverlay, { ShapeConfig } from '../components/ShapeOverlay';
 import CurveTool, { CurveConfig } from '../components/CurveTool';
 import TreeViewModal from '../components/TreeViewModal';
+import { TreeStructure, TreeNode, buildTreeStructure } from '../types/treeNode';
 import { useLayerManager } from '../hooks/useLayerManager';
 import { useImageHistory } from '../hooks/useImageHistory';
 import { saveProject } from '../services/projects';
@@ -1047,23 +1048,48 @@ export default function EditorScreen({ route, navigation }: Props) {
     }
   };
 
-  // Handle tree view step tap - loads image and opens corresponding panel
-  const handleTreeViewStepTap = (step: any) => {
+  // Build tree structure from executed steps
+  const editingTree: TreeStructure = React.useMemo(() => {
+    return buildTreeStructure(executedSteps, currentImageUrl);
+  }, [executedSteps, currentImageUrl]);
+
+  // Handle tree view node tap - loads image and opens corresponding panel
+  const handleTreeViewNodeTap = (node: TreeNode) => {
     // Close tree modal first
     setTreeModalOpen(false);
 
-    // Load the thumbnail image if available
-    if (step.thumbnailUri) {
-      setCurrentImageUrl(step.thumbnailUri);
+    // Skip if root node (original image)
+    if (node.tool === 'input') {
+      setCurrentImageUrl(node.image_url);
+      Toast.show({
+        type: 'info',
+        text1: 'Original Image',
+        text2: 'Loaded original state',
+      });
+      return;
+    }
+
+    // Load the node's image if available
+    if (node.image_url) {
+      setCurrentImageUrl(node.image_url);
       Toast.show({
         type: 'success',
-        text1: 'Step Loaded',
-        text2: `Loading ${step.name} state`,
+        text1: 'State Loaded',
+        text2: `Loading ${node.intent}`,
       });
     }
 
+    // Create a step object compatible with handleStepIconTap
+    const stepForHandler = {
+      actionId: node.tool,
+      name: node.tool,
+      description: node.intent,
+      icon: node.icon,
+      params: node.params,
+    };
+
     // Open the corresponding panel using existing handler
-    handleStepIconTap(step);
+    handleStepIconTap(stepForHandler);
   };
 
   // Handle camera
@@ -1731,37 +1757,38 @@ export default function EditorScreen({ route, navigation }: Props) {
             </TouchableOpacity>
           </Animated.View>
 
-          {/* Horizontal Step Timeline - Animated position */}
-          <Animated.View style={[styles.stepTimelineContainer, { bottom: timelineBottom }]}>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              style={styles.stepTimeline}
-              contentContainerStyle={styles.stepTimelineContent}
-            >
-              {/* Tree Icon - Always first */}
-              <Animated.View
-                style={[
-                  styles.stepIcon,
-                  {
-                    opacity: fadeAnim,
-                    transform: [{
-                      scale: fadeAnim.interpolate({
-                        inputRange: [0, 1],
-                        outputRange: [0.3, 1],
-                      }),
-                    }],
-                  },
-                ]}
+          {/* Horizontal Step Timeline - Animated position - Only visible after prompt execution */}
+          {executedSteps.length > 0 && (
+            <Animated.View style={[styles.stepTimelineContainer, { bottom: timelineBottom }]}>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                style={styles.stepTimeline}
+                contentContainerStyle={styles.stepTimelineContent}
               >
-                <TouchableOpacity
-                  style={[styles.stepIconButton, styles.treeIconButton]}
-                  onPress={() => setTreeModalOpen(true)}
-                  activeOpacity={0.7}
+                {/* Tree Icon - First icon */}
+                <Animated.View
+                  style={[
+                    styles.stepIcon,
+                    {
+                      opacity: fadeAnim,
+                      transform: [{
+                        scale: fadeAnim.interpolate({
+                          inputRange: [0, 1],
+                          outputRange: [0.3, 1],
+                        }),
+                      }],
+                    },
+                  ]}
                 >
-                  <Ionicons name="git-branch-outline" size={18} color="#00D9FF" />
-                </TouchableOpacity>
-              </Animated.View>
+                  <TouchableOpacity
+                    style={[styles.stepIconButton, styles.treeIconButton]}
+                    onPress={() => setTreeModalOpen(true)}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons name="git-branch-outline" size={18} color="#00D9FF" />
+                  </TouchableOpacity>
+                </Animated.View>
 
               {/* Executed Steps */}
               {executedSteps.map((step, index) => (
@@ -1799,7 +1826,7 @@ export default function EditorScreen({ route, navigation }: Props) {
               ))}
 
               {/* Clear Steps Button */}
-              {!isExecutingAI && executedSteps.length > 0 && (
+              {!isExecutingAI && (
                 <TouchableOpacity
                   style={styles.clearStepsButton}
                   onPress={() => setExecutedSteps([])}
@@ -1810,6 +1837,7 @@ export default function EditorScreen({ route, navigation }: Props) {
               )}
             </ScrollView>
           </Animated.View>
+          )}
 
           {/* Plus Button (Elevated) - Hide when other tool is active */}
           {(selectedTool === null || selectedTool === 'add') && (
@@ -2814,13 +2842,13 @@ export default function EditorScreen({ route, navigation }: Props) {
           }}
         />
 
-        {/* Tree View Modal - Full-screen step history */}
+        {/* Tree View Modal - Visual tree structure */}
         <TreeViewModal
           visible={treeModalOpen}
-          steps={executedSteps}
+          tree={editingTree}
           currentImageUri={currentImageUrl}
           onClose={() => setTreeModalOpen(false)}
-          onStepTap={handleTreeViewStepTap}
+          onNodeTap={handleTreeViewNodeTap}
         />
 
         <Toast />
