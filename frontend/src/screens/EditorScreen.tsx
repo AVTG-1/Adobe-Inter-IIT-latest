@@ -56,7 +56,7 @@ import TextOverlay, { TextLayerConfig } from '../components/TextOverlay';
 import ShapeOverlay, { ShapeConfig } from '../components/ShapeOverlay';
 import CurveTool, { CurveConfig } from '../components/CurveTool';
 import TreeViewModal from '../components/TreeViewModal';
-import { TreeStructure, TreeNode, buildTreeStructure, createSampleBranchedTree } from '../types/treeNode';
+import { TreeStructure, TreeNode, buildTreeStructure, createSampleBranchedTree, getIconForTool } from '../types/treeNode';
 import { useLayerManager } from '../hooks/useLayerManager';
 import { apiClient } from '../services/api';
 import { EditRequest, EditOperation, EditOperationType } from '../types/api';
@@ -897,7 +897,7 @@ export default function EditorScreen({ route, navigation }: Props) {
         actionId: step.action,
         name: actionDef.name,
         description: actionDef.description,
-        icon: actionDef.icon,
+        icon: getIconForTool(step.action), // Use icon mapping based on tool type
         params: step.params,
         timestamp: Date.now(),
         thumbnailUri: currentImageUrl, // Store current image as thumbnail
