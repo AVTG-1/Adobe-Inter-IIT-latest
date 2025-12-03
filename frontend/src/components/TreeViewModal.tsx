@@ -1,11 +1,11 @@
 /**
- * Tree View Modal - Horizontal Multi-Branch Tree Visualization
+ * Tree View Modal - Vertical Multi-Branch Tree Visualization
  *
- * Shows editing history as a horizontal tree with multiple branches
- * Scrollable in both directions, attached to top
+ * Shows editing history as a vertical tree with root at top
+ * Scrollable in both directions
  */
 
-import React, { useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import {
   View,
   Modal,
@@ -23,10 +23,10 @@ import { TreeStructure, TreeNode, getRootNode, getChildren } from '../types/tree
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
-const NODE_WIDTH = 180;
-const NODE_HEIGHT = 100;
-const HORIZONTAL_SPACING = 120;
-const VERTICAL_SPACING = 40;
+const NODE_WIDTH = 160;
+const NODE_HEIGHT = 90;
+const HORIZONTAL_SPACING = 30;
+const VERTICAL_SPACING = 80;
 
 interface TreeViewModalProps {
   visible: boolean;
@@ -44,42 +44,73 @@ interface NodePosition {
 }
 
 /**
- * Calculate positions for all nodes in the tree
+ * Calculate positions for all nodes in vertical tree layout
+ * Root at top, children spread horizontally below
  */
-function calculateNodePositions(tree: TreeStructure, rootNode: TreeNode): NodePosition[] {
+function calculateVerticalNodePositions(tree: TreeStructure, rootNode: TreeNode): NodePosition[] {
   const positions: NodePosition[] = [];
-  const levelHeights: Map<number, number> = new Map();
 
-  function traverse(node: TreeNode, level: number, startY: number): number {
+  // Calculate subtree width for each node
+  function getSubtreeWidth(node: TreeNode): number {
     const children = getChildren(tree, node.id);
-    const x = level * (NODE_WIDTH + HORIZONTAL_SPACING);
-
     if (children.length === 0) {
-      // Leaf node
-      positions.push({ x, y: startY, node });
-      return startY + NODE_HEIGHT + VERTICAL_SPACING;
+      return NODE_WIDTH;
     }
 
-    // Calculate positions for all children first
-    let childY = startY;
-    const childPositions: number[] = [];
-    children.forEach((child) => {
-      const childStartY = childY;
-      childPositions.push(childStartY);
-      childY = traverse(child, level + 1, childStartY);
-    });
+    const childWidths = children.map(child => getSubtreeWidth(child));
+    const totalChildWidth = childWidths.reduce((sum, w) => sum + w, 0);
+    const spacingWidth = (children.length - 1) * HORIZONTAL_SPACING;
 
-    // Position parent node at the center of its children
-    const firstChildY = childPositions[0];
-    const lastChildY = childY - NODE_HEIGHT - VERTICAL_SPACING;
-    const parentY = (firstChildY + lastChildY) / 2;
-
-    positions.push({ x, y: parentY, node });
-
-    return childY;
+    return Math.max(NODE_WIDTH, totalChildWidth + spacingWidth);
   }
 
-  traverse(rootNode, 0, 0);
+  // Position nodes recursively
+  function positionNode(node: TreeNode, x: number, y: number): void {
+    const children = getChildren(tree, node.id);
+
+    if (children.length === 0) {
+      // Leaf node - position at given x
+      positions.push({ x, y, node });
+      return;
+    }
+
+    // Calculate children positions
+    const childWidths = children.map(child => getSubtreeWidth(child));
+    const totalChildWidth = childWidths.reduce((sum, w) => sum + w, 0);
+    const spacingWidth = (children.length - 1) * HORIZONTAL_SPACING;
+    const totalWidth = totalChildWidth + spacingWidth;
+
+    // Start x position for first child
+    let childX = x - totalWidth / 2 + childWidths[0] / 2;
+    const childY = y + NODE_HEIGHT + VERTICAL_SPACING;
+
+    children.forEach((child, index) => {
+      positionNode(child, childX, childY);
+
+      if (index < children.length - 1) {
+        childX += childWidths[index] / 2 + HORIZONTAL_SPACING + childWidths[index + 1] / 2;
+      }
+    });
+
+    // Position parent at center above children
+    const firstChildPos = positions.find(p => p.node.id === children[0].id);
+    const lastChildPos = positions.find(p => p.node.id === children[children.length - 1].id);
+
+    if (firstChildPos && lastChildPos) {
+      const parentX = (firstChildPos.x + lastChildPos.x) / 2;
+      positions.push({ x: parentX, y, node });
+    } else {
+      positions.push({ x, y, node });
+    }
+  }
+
+  // Start from root at top center
+  const rootWidth = getSubtreeWidth(rootNode);
+  const startX = rootWidth / 2;
+  const startY = 50;
+
+  positionNode(rootNode, startX, startY);
+
   return positions;
 }
 
@@ -93,7 +124,6 @@ const TreeNodeCard: React.FC<{
   isOnPath: boolean;
   onTap: (node: TreeNode) => void;
 }> = ({ node, position, isRoot, isOnPath, onTap }) => {
-  // Format timestamp as time elapsed
   const formatTime = (timestamp: number) => {
     const now = Date.now();
     const diff = Math.abs(now - timestamp);
@@ -111,7 +141,7 @@ const TreeNodeCard: React.FC<{
       style={[
         styles.nodeCard,
         {
-          left: position.x,
+          left: position.x - NODE_WIDTH / 2,
           top: position.y,
         },
         isRoot && styles.rootNodeCard,
@@ -128,22 +158,21 @@ const TreeNodeCard: React.FC<{
       ]}>
         <Ionicons
           name={node.icon as any}
-          size={isRoot ? 32 : 24}
+          size={isRoot ? 28 : 22}
           color={isRoot ? COLORS.primary : isOnPath ? COLORS.primary : COLORS.textPrimary}
         />
       </View>
 
       {/* Content */}
-      <View style={styles.nodeContent}>
-        <Text style={[styles.nodeIntent, isRoot && styles.rootNodeText]} numberOfLines={2}>
-          {node.intent}
+      <Text style={[styles.nodeIntent, isRoot && styles.rootNodeText]} numberOfLines={2}>
+        {node.intent}
+      </Text>
+
+      <View style={styles.nodeFooter}>
+        <Text style={styles.nodeTool}>
+          {node.tool === 'input' ? 'Original' : node.tool}
         </Text>
-        <View style={styles.nodeFooter}>
-          <Text style={styles.nodeTool}>
-            {node.tool === 'input' ? 'Original' : node.tool}
-          </Text>
-          <Text style={styles.nodeTime}>{formatTime(node.timestamp)}</Text>
-        </View>
+        <Text style={styles.nodeTime}>{formatTime(node.timestamp)}</Text>
       </View>
 
       {/* Thumbnail */}
@@ -155,10 +184,10 @@ const TreeNodeCard: React.FC<{
         />
       )}
 
-      {/* Highlight indicator for root */}
+      {/* Root indicator */}
       {isRoot && (
         <View style={styles.rootIndicator}>
-          <Ionicons name="star" size={16} color={COLORS.primary} />
+          <Ionicons name="star" size={14} color={COLORS.primary} />
         </View>
       )}
     </TouchableOpacity>
@@ -166,59 +195,59 @@ const TreeNodeCard: React.FC<{
 };
 
 /**
- * Connection line component
+ * Connection line component - vertical tree connections
  */
 const ConnectionLine: React.FC<{
   from: NodePosition;
   to: NodePosition;
   isOnPath: boolean;
 }> = ({ from, to, isOnPath }) => {
-  const startX = from.x + NODE_WIDTH;
-  const startY = from.y + NODE_HEIGHT / 2;
+  const startX = from.x;
+  const startY = from.y + NODE_HEIGHT;
   const endX = to.x;
-  const endY = to.y + NODE_HEIGHT / 2;
+  const endY = to.y;
 
-  const horizontalLineWidth = endX - startX;
-  const verticalLineHeight = Math.abs(endY - startY);
+  const verticalLineHeight = endY - startY;
+  const horizontalLineWidth = Math.abs(endX - startX);
 
   return (
     <View style={styles.connectionContainer}>
-      {/* Horizontal line from parent */}
+      {/* Vertical line from parent down */}
       <View
         style={[
-          styles.horizontalConnection,
+          styles.verticalConnection,
           {
             left: startX,
             top: startY,
-            width: horizontalLineWidth / 2,
+            height: verticalLineHeight / 2,
           },
           isOnPath && styles.pathConnection,
         ]}
       />
 
-      {/* Vertical line */}
-      {verticalLineHeight > 0 && (
+      {/* Horizontal line */}
+      {horizontalLineWidth > 0 && (
         <View
           style={[
-            styles.verticalConnection,
+            styles.horizontalConnection,
             {
-              left: startX + horizontalLineWidth / 2,
-              top: Math.min(startY, endY),
-              height: verticalLineHeight,
+              left: Math.min(startX, endX),
+              top: startY + verticalLineHeight / 2,
+              width: horizontalLineWidth,
             },
             isOnPath && styles.pathConnection,
           ]}
         />
       )}
 
-      {/* Horizontal line to child */}
+      {/* Vertical line to child */}
       <View
         style={[
-          styles.horizontalConnection,
+          styles.verticalConnection,
           {
-            left: startX + horizontalLineWidth / 2,
-            top: endY,
-            width: horizontalLineWidth / 2,
+            left: endX,
+            top: startY + verticalLineHeight / 2,
+            height: verticalLineHeight / 2,
           },
           isOnPath && styles.pathConnection,
         ]}
@@ -241,14 +270,15 @@ const TreeViewModal: React.FC<TreeViewModalProps> = ({
   // Calculate all node positions
   const nodePositions = useMemo(() => {
     if (!rootNode) return [];
-    return calculateNodePositions(tree, rootNode);
+    return calculateVerticalNodePositions(tree, rootNode);
   }, [tree, rootNode]);
 
   // Calculate content dimensions
   const contentWidth = useMemo(() => {
     if (nodePositions.length === 0) return SCREEN_WIDTH;
-    const maxX = Math.max(...nodePositions.map(p => p.x));
-    return maxX + NODE_WIDTH + 100;
+    const minX = Math.min(...nodePositions.map(p => p.x - NODE_WIDTH / 2));
+    const maxX = Math.max(...nodePositions.map(p => p.x + NODE_WIDTH / 2));
+    return Math.max(maxX - minX + 100, SCREEN_WIDTH);
   }, [nodePositions]);
 
   const contentHeight = useMemo(() => {
@@ -323,7 +353,7 @@ const TreeViewModal: React.FC<TreeViewModalProps> = ({
 
           <View style={styles.headerCenter}>
             <Text style={styles.headerTitle}>Edit Tree</Text>
-            <Text style={styles.headerSubtitle}>{totalNodes} nodes • Multi-branch</Text>
+            <Text style={styles.headerSubtitle}>{totalNodes} nodes • Vertical</Text>
           </View>
 
           <View style={styles.closeButton} />
@@ -489,13 +519,14 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 217, 255, 0.05)',
   },
   nodeIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: COLORS.card,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: SPACING.xs,
+    alignSelf: 'center',
   },
   rootNodeIcon: {
     backgroundColor: 'rgba(0, 217, 255, 0.2)',
@@ -503,17 +534,15 @@ const styles = StyleSheet.create({
   pathNodeIcon: {
     backgroundColor: 'rgba(0, 217, 255, 0.15)',
   },
-  nodeContent: {
-    flex: 1,
-  },
   nodeIntent: {
-    fontSize: FONT_SIZES.sm,
+    fontSize: FONT_SIZES.xs,
     fontWeight: '600',
     color: COLORS.textPrimary,
     marginBottom: SPACING.xs,
+    textAlign: 'center',
   },
   rootNodeText: {
-    fontSize: FONT_SIZES.md,
+    fontSize: FONT_SIZES.sm,
     fontWeight: '700',
     color: COLORS.primary,
   },
@@ -523,31 +552,31 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   nodeTool: {
-    fontSize: FONT_SIZES.xs,
+    fontSize: 10,
     color: COLORS.textSecondary,
     textTransform: 'capitalize',
   },
   nodeTime: {
-    fontSize: FONT_SIZES.xs,
+    fontSize: 10,
     color: COLORS.textTertiary,
   },
   nodeThumbnail: {
     position: 'absolute',
     top: SPACING.xs,
     right: SPACING.xs,
-    width: 32,
-    height: 32,
+    width: 28,
+    height: 28,
     borderRadius: BORDER_RADIUS.sm,
     borderWidth: 1,
     borderColor: COLORS.border,
   },
   rootIndicator: {
     position: 'absolute',
-    top: -8,
-    right: -8,
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    top: -6,
+    right: -6,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
     backgroundColor: COLORS.background,
     alignItems: 'center',
     justifyContent: 'center',
