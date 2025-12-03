@@ -66,6 +66,140 @@ export function buildTreeStructure(executedSteps: any[], rootImageUrl: string): 
 }
 
 /**
+ * Create a sample tree with multiple branches for demonstration
+ */
+export function createSampleBranchedTree(rootImageUrl: string): TreeStructure {
+  const now = Date.now();
+
+  return {
+    'node-root': {
+      id: 'node-root',
+      tool: 'input',
+      image_url: rootImageUrl,
+      parent_id: null,
+      children_ids: ['node-1', 'node-2', 'node-3'],
+      intent: 'Original image',
+      icon: 'image-outline',
+      params: {},
+      timestamp: now,
+    },
+    // Branch 1: Brightness path
+    'node-1': {
+      id: 'node-1',
+      tool: 'brightness',
+      image_url: rootImageUrl,
+      parent_id: 'node-root',
+      children_ids: ['node-4', 'node-5'],
+      intent: 'Increased brightness',
+      icon: 'sunny-outline',
+      params: { value: 20 },
+      timestamp: now + 1000,
+    },
+    'node-4': {
+      id: 'node-4',
+      tool: 'contrast',
+      image_url: rootImageUrl,
+      parent_id: 'node-1',
+      children_ids: ['node-8'],
+      intent: 'Enhanced contrast',
+      icon: 'contrast-outline',
+      params: { value: 15 },
+      timestamp: now + 2000,
+    },
+    'node-8': {
+      id: 'node-8',
+      tool: 'saturation',
+      image_url: rootImageUrl,
+      parent_id: 'node-4',
+      children_ids: [],
+      intent: 'Boosted saturation',
+      icon: 'color-palette-outline',
+      params: { value: 10 },
+      timestamp: now + 3000,
+    },
+    'node-5': {
+      id: 'node-5',
+      tool: 'filter',
+      image_url: rootImageUrl,
+      parent_id: 'node-1',
+      children_ids: ['node-9'],
+      intent: 'Applied vintage filter',
+      icon: 'color-filter-outline',
+      params: { filter: 'vintage' },
+      timestamp: now + 2500,
+    },
+    'node-9': {
+      id: 'node-9',
+      tool: 'draw',
+      image_url: rootImageUrl,
+      parent_id: 'node-5',
+      children_ids: [],
+      intent: 'Added drawing',
+      icon: 'pencil-outline',
+      params: { tool: 'brush', color: '#FF0000' },
+      timestamp: now + 3500,
+    },
+    // Branch 2: Crop path
+    'node-2': {
+      id: 'node-2',
+      tool: 'crop',
+      image_url: rootImageUrl,
+      parent_id: 'node-root',
+      children_ids: ['node-6'],
+      intent: 'Cropped to focus',
+      icon: 'crop-outline',
+      params: { x: 0, y: 0, width: 800, height: 600 },
+      timestamp: now + 1200,
+    },
+    'node-6': {
+      id: 'node-6',
+      tool: 'rotate',
+      image_url: rootImageUrl,
+      parent_id: 'node-2',
+      children_ids: ['node-10'],
+      intent: 'Rotated 90 degrees',
+      icon: 'reload-outline',
+      params: { degrees: 90 },
+      timestamp: now + 2200,
+    },
+    'node-10': {
+      id: 'node-10',
+      tool: 'hue',
+      image_url: rootImageUrl,
+      parent_id: 'node-6',
+      children_ids: [],
+      intent: 'Adjusted hue',
+      icon: 'color-wand-outline',
+      params: { value: 30 },
+      timestamp: now + 3200,
+    },
+    // Branch 3: Filter path
+    'node-3': {
+      id: 'node-3',
+      tool: 'filter',
+      image_url: rootImageUrl,
+      parent_id: 'node-root',
+      children_ids: ['node-7'],
+      intent: 'Applied dramatic filter',
+      icon: 'color-filter-outline',
+      params: { filter: 'dramatic' },
+      timestamp: now + 1500,
+    },
+    'node-7': {
+      id: 'node-7',
+      tool: 'blur',
+      image_url: rootImageUrl,
+      parent_id: 'node-3',
+      children_ids: [],
+      intent: 'Applied background blur',
+      icon: 'ellipse-outline',
+      params: { radius: 10 },
+      timestamp: now + 2500,
+    },
+  };
+}
+
+/**
  * Get root node from tree structure
  */
 export function getRootNode(tree: TreeStructure): TreeNode | null {

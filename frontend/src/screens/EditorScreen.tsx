@@ -56,7 +56,7 @@ import TextOverlay, { TextLayerConfig } from '../components/TextOverlay';
 import ShapeOverlay, { ShapeConfig } from '../components/ShapeOverlay';
 import CurveTool, { CurveConfig } from '../components/CurveTool';
 import TreeViewModal from '../components/TreeViewModal';
-import { TreeStructure, TreeNode, buildTreeStructure } from '../types/treeNode';
+import { TreeStructure, TreeNode, buildTreeStructure, createSampleBranchedTree } from '../types/treeNode';
 import { useLayerManager } from '../hooks/useLayerManager';
 import { useImageHistory } from '../hooks/useImageHistory';
 import { saveProject } from '../services/projects';
@@ -176,6 +176,7 @@ export default function EditorScreen({ route, navigation }: Props) {
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [selectedStepDetail, setSelectedStepDetail] = useState<any | null>(null);
   const [treeModalOpen, setTreeModalOpen] = useState(false);
+  const [currentNodeId, setCurrentNodeId] = useState<string>('node-root');
 
   // Layer system using hook
   const layerManager = useEnhancedLayerManager(imageUrl);
@@ -1049,7 +1050,12 @@ export default function EditorScreen({ route, navigation }: Props) {
   };
 
   // Build tree structure from executed steps
+  // Use sample branched tree for demonstration if steps exist, otherwise build from steps
   const editingTree: TreeStructure = React.useMemo(() => {
+    if (executedSteps.length > 0) {
+      // Use sample branched tree to demonstrate multi-branch capability
+      return createSampleBranchedTree(currentImageUrl);
+    }
     return buildTreeStructure(executedSteps, currentImageUrl);
   }, [executedSteps, currentImageUrl]);
 
@@ -1057,6 +1063,9 @@ export default function EditorScreen({ route, navigation }: Props) {
   const handleTreeViewNodeTap = (node: TreeNode) => {
     // Close tree modal first
     setTreeModalOpen(false);
+
+    // Set current node for path highlighting
+    setCurrentNodeId(node.id);
 
     // Skip if root node (original image)
     if (node.tool === 'input') {
@@ -2842,11 +2851,12 @@ export default function EditorScreen({ route, navigation }: Props) {
           }}
         />
 
-        {/* Tree View Modal - Visual tree structure */}
+        {/* Tree View Modal - Visual tree structure with multi-branch support */}
         <TreeViewModal
           visible={treeModalOpen}
           tree={editingTree}
           currentImageUri={currentImageUrl}
+          currentNodeId={currentNodeId}
           onClose={() => setTreeModalOpen(false)}
           onNodeTap={handleTreeViewNodeTap}
         />
