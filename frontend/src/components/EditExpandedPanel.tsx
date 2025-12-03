@@ -1,7 +1,7 @@
 /**
- * Edit Expanded Panel - 35% Height Bottom Sheet
+ * Edit Expanded Panel - 25% Height Bottom Sheet
  *
- * Displays 9 editing tools in 2×5 grid layout
+ * Displays 5 essential editing tools: Filter, Draw, Curve, Text, Shape
  */
 
 import React, { useMemo, useEffect, useRef } from 'react';
@@ -26,17 +26,13 @@ interface EditExpandedPanelProps {
 
 const { width } = Dimensions.get('window');
 
-// 9 Editing Tools - exactly these tools in this order
+// 5 Editing Tools - Only essential editing features
 const EDIT_TOOLS = [
-  { id: 'rotate', icon: 'reload-outline', label: 'Rotate' },
-  { id: 'flip', icon: 'swap-horizontal-outline', label: 'Flip' },
-  { id: 'resize', icon: 'resize-outline', label: 'Resize' },
-  { id: 'perspective', icon: 'cube-outline', label: 'Perspective' },
+  { id: 'filter', icon: 'color-filter-outline', label: 'Filter' },
   { id: 'draw', icon: 'pencil-outline', label: 'Draw' },
-  { id: 'brush', icon: 'brush-outline', label: 'Brush' },
-  { id: 'eraser', icon: 'trash-outline', label: 'Eraser' },
-  { id: 'shape', icon: 'shapes-outline', label: 'Shape' },
+  { id: 'curve', icon: 'options-outline', label: 'Curve' },
   { id: 'text', icon: 'text-outline', label: 'Text' },
+  { id: 'shape', icon: 'shapes-outline', label: 'Shape' },
 ];
 
 const EditExpandedPanel: React.FC<EditExpandedPanelProps> = ({
