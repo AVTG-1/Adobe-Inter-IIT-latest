@@ -130,6 +130,8 @@ interface InteractiveCanvasProps {
   // Layer selection
   selectedLayerId?: string | null;
   onLayerSelect?: (layerId: string | null) => void;
+  // Called while a layer is dragged: (layerId, deltaX, deltaY)
+  onLayerMove?: (layerId: string, dx: number, dy: number) => void;
 }
 
 const InteractiveCanvas: React.FC<InteractiveCanvasProps> = ({
@@ -145,6 +147,7 @@ const InteractiveCanvas: React.FC<InteractiveCanvasProps> = ({
   canvasHeight = SCREEN_HEIGHT * 0.7, // 70% of screen for canvas
   selectedLayerId,
   onLayerSelect,
+  onLayerMove,
 }) => {
   // Gesture values
   const scale = useSharedValue(1);
@@ -265,6 +268,9 @@ const InteractiveCanvas: React.FC<InteractiveCanvasProps> = ({
       ],
     };
   });
+
+  // Track incremental translation per-layer for pan gestures
+  const translationRefs = useRef<Record<string, { x: number; y: number }>>({});
 
   // Find background layer adjustments for persistent filter
   const backgroundLayer = useMemo(() => {
@@ -631,28 +637,54 @@ const InteractiveCanvas: React.FC<InteractiveCanvasProps> = ({
                 // Start at 10 to ensure all layers are above background (z-index 1)
                 const layerZIndex = index + 10;
                 
+                if (isSelected) {
+                  // Debug: show transform for selected layer
+                  // eslint-disable-next-line no-console
+                  console.log('🧭 Selected layer transform:', layer.id, layer.transform);
+                }
+
                 return (
-                <Pressable
-                  key={layer.id}
-                  onPress={() => {
-                    console.log('🔵 Layer tapped:', layer.id, layer.name, 'zIndex:', layerZIndex);
-                    onLayerSelect?.(layer.id);
-                  }}
-                  style={({ pressed }) => [
-                    styles.layerOverlay,
-                    {
-                      opacity: pressed ? (layer.opacity * 0.8) : layer.opacity,
-                      transform: [
-                        { translateX: layer.transform?.x || 0 },
-                        { translateY: layer.transform?.y || 0 },
-                        { scale: layer.transform?.scale || 1 },
-                        { rotate: `${layer.transform?.rotation || layer.transform?.rotate || 0}deg` },
-                      ],
-                      zIndex: layerZIndex, // Newer layers (higher index) are on top
-                    },
-                  ]}
-                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                >
+                  <GestureDetector
+                    key={layer.id}
+                    gesture={Gesture.Pan()
+                      .minPointers(1)
+                      .onBegin(() => {
+                        runOnJS(onLayerSelect)?.(layer.id);
+                      })
+                      .onUpdate((event) => {
+                        const prev = translationRefs.current[layer.id] || { x: 0, y: 0 };
+                        const dx = event.translationX - prev.x;
+                        const dy = event.translationY - prev.y;
+                        translationRefs.current[layer.id] = { x: event.translationX, y: event.translationY };
+                        if ((dx !== 0 || dy !== 0) && onLayerMove) {
+                          runOnJS(onLayerMove)(layer.id, dx, dy);
+                        }
+                      })
+                      .onEnd(() => {
+                        translationRefs.current[layer.id] = { x: 0, y: 0 };
+                      })
+                    }
+                  >
+                    <Pressable
+                      onPress={() => {
+                        console.log('🔵 Layer tapped:', layer.id, layer.name, 'zIndex:', layerZIndex);
+                        onLayerSelect?.(layer.id);
+                      }}
+                      style={({ pressed }) => [
+                        styles.layerOverlay,
+                        {
+                          opacity: pressed ? (layer.opacity * 0.8) : layer.opacity,
+                          transform: [
+                            { translateX: layer.transform?.x || 0 },
+                            { translateY: layer.transform?.y || 0 },
+                            { scale: layer.transform?.scale || 1 },
+                            { rotate: `${layer.transform?.rotation || layer.transform?.rotate || 0}deg` },
+                          ],
+                          zIndex: layerZIndex, // Newer layers (higher index) are on top
+                        },
+                      ]}
+                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                    >
                   {/* Selection bounding box - different style for locked layers */}
                   {isSelected && (
                     <View style={[
@@ -749,6 +781,7 @@ const InteractiveCanvas: React.FC<InteractiveCanvasProps> = ({
                     </Svg>
                   )}
                 </Pressable>
+                </GestureDetector>
               );
               })}
 

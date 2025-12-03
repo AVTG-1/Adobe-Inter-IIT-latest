@@ -1470,7 +1470,9 @@ export default function EditorScreen({ route, navigation }: Props) {
   // Check if we have a valid image to work with
   const hasValidImage = useCallback(() => {
     const selectedLayer = layerManager.getSelectedLayer();
-    return !!(selectedLayer?.imageUri || currentImageUrl);
+    // Some layer objects store the image in `source` and some in `imageUri`.
+    // Check both so newly added layers (which may have `source`) are recognized.
+    return !!(selectedLayer?.imageUri || selectedLayer?.source || currentImageUrl);
   }, [layerManager, currentImageUrl]);
 
   // Check if a layer is selected (required for most tools)
@@ -1833,6 +1835,10 @@ export default function EditorScreen({ route, navigation }: Props) {
                     onLayerSelect={(layerId) => {
                       console.log('🎯 Layer selected:', layerId);
                       layerManager.selectLayer(layerId);
+                    }}
+                    onLayerMove={(layerId, dx, dy) => {
+                      // Forward drag deltas from canvas to the layer manager
+                      layerManager.moveLayer(layerId, dx, dy);
                     }}
                     onImageLoad={() => setImageLoaded(true)}
                     onImageError={(error: any) => {

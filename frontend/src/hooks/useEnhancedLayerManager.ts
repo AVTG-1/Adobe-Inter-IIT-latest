@@ -62,6 +62,8 @@ export interface EnhancedLayer {
   
   // Source image
   source: string | null;    // image URI
+  // Compatibility alias for other parts of the codebase that expect `imageUri`
+  imageUri?: string | null;
   thumbnailUri?: string;
   
   // Per-layer transform
@@ -407,7 +409,17 @@ export function useEnhancedLayerManager(
       opacity: 1,
       blendMode: 'normal',
       source: imageUri,
-      transform: { ...DEFAULT_TRANSFORM },
+      // Provide `imageUri` alias for compatibility with UI components
+      // that expect `imageUri` on layer objects.
+      // This keeps both fields in sync.
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore
+      imageUri: imageUri,
+      // Also include `rotation` to be compatible with components
+      // that read `transform.rotation` instead of `transform.rotate`.
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore
+      transform: { ...DEFAULT_TRANSFORM, rotation: DEFAULT_TRANSFORM.rotate },
       createdAt: Date.now(),
       updatedAt: Date.now(),
     };
@@ -468,7 +480,15 @@ export function useEnhancedLayerManager(
       opacity: 1,
       blendMode: 'normal',
       source: imageUri,
-      transform,
+      // Also set `imageUri` for compatibility
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore
+      imageUri: imageUri,
+      // Ensure both `rotate` and `rotation` exist on the transform so
+      // downstream consumers (some expect `rotation`) pick up changes.
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore
+      transform: { ...transform, rotation: transform.rotate },
       createdAt: Date.now(),
       updatedAt: Date.now(),
     };
@@ -726,18 +746,22 @@ export function useEnhancedLayerManager(
     }
     
     addToHistory(selectedLayerId, { transform: { ...layer.transform } }, 'rotate');
-    
+
+    // Update both `rotate` and `rotation` to be robust to consumers
+    // that use either naming convention.
     setLayers(prev => prev.map(l => 
       l.id === selectedLayerId 
         ? {
             ...l,
-            transform: { ...l.transform, rotate: angle },
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+            // @ts-ignore
+            transform: { ...l.transform, rotate: angle, rotation: angle },
             updatedAt: Date.now(),
           }
         : l
     ));
-    
-    console.log('🔄 Rotated layer:', layer.name, 'to', angle, 'degrees');
+
+    console.log('🔄 Rotated layer:', layer.name, 'to', angle, 'degrees', 'prevTransform:', layer.transform);
   }, [selectedLayerId, layers, addToHistory]);
   
   // Crop SELECTED layer
