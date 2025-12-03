@@ -11,11 +11,13 @@ torch>=2.0.0
 transformers>=4.35.0
 diffusers>=0.25.0
 pillow>=10.0.0
+google-generativeai>=0.3.0
 
 # Storage & HTTP
 httpx==0.25.2
 python-multipart==0.0.6
 google-cloud-storage>=2.10.0
+websockets>=12.0
 
 # Utilities
 python-dotenv==1.0.0

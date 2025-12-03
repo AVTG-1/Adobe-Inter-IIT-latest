@@ -28,6 +28,7 @@ class ImaginaryClient:
         self.storage_service = storage_service
 
     async def apply(self, image_url: str, operations: List[EditOperation]) -> bytes:
+        print(f"Starting ImaginaryClient.apply with image_url: {image_url} and {len(operations)} operations")
         """Apply operations sequentially to the image and return final bytes.
         
         Args:
@@ -51,22 +52,42 @@ class ImaginaryClient:
         current_image_url = image_url
         current_image_bytes = None
 
-        async with httpx.AsyncClient(timeout=self.timeout) as client:
+        async with httpx.AsyncClient(timeout=httpx.Timeout(self.timeout)) as client:
             for i, op in enumerate(operations):
+                print("check 1")
+                print(op)
                 endpoint = ImaginaryOperationMapper.map_operation(op, current_image_url)
+                print("check 2")
                 full_url = self.base_url + endpoint
 
+                # Debug: show full_url summary and length to catch huge data-URL cases
+                print(f"Full URL length: {len(full_url)}")
+                if len(full_url) > 2000:
+                    # Very likely a data URL or too-long query string; avoid sending it.
+                    raise ImaginaryAPIError(
+                        f"Generated URL is too long ({len(full_url)} chars). "
+                        "This likely indicates a data URL was embedded into the query string. "
+                        "Enable cloud storage for intermediate images or use flattened URLs."
+                    )
+
+                # Print truncated URL for debugging (avoid logging entire base64 blobs)
+                print(f"Applying operation {op.type} (step {i+1}/{len(operations)}): {full_url[:100]}{'...' if len(full_url) > 100 else ''}")
+
                 try:
+                    print("trying")
                     resp = await client.get(full_url)
+                    print("client get")
                     resp.raise_for_status()
-                except httpx.HTTPStatusError as e:
+                    print("response received")
+                except Exception as e:
+                    import traceback
+                    tb = traceback.format_exc()
+                    print("Error during client.get():", str(e))
+                    print("Traceback:\n", tb)
+                    print("Full URL (truncated):", full_url[:500])
+                    # Wrap and raise known ImaginaryAPIError for upstream handling
                     raise ImaginaryAPIError(
-                        f"Error applying operation {op.type} (step {i+1}/{len(operations)}): "
-                        f"HTTP {e.response.status_code} - {e.response.text}"
-                    ) from e
-                except httpx.RequestError as e:
-                    raise ImaginaryAPIError(
-                        f"Network error applying operation {op.type}: {str(e)}"
+                        f"Network/error applying operation {op.type} (step {i+1}/{len(operations)}): {e}"
                     ) from e
 
                 # Save new image bytes

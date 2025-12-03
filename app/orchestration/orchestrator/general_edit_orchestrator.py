@@ -2,19 +2,30 @@ import base64
 import httpx
 import logging
 import uuid
-from typing import List
+from typing import List, Optional, Tuple, TYPE_CHECKING
+
+from app.core.models.schemas import EditService
 from app.core.services.third_party.imaginary import ImaginaryClient, EditOperation
 from app.core.services.app.storage_service import StorageService
+
+if TYPE_CHECKING:
+    from app.core.services.third_party.opencv import OpenCVClient
 
 logger = logging.getLogger(__name__)
 
 
 class GeneralEditOrchestrator:
-    """Handles general editing workflow using Imaginary."""
+    """Handles general editing workflow using Imaginary or OpenCV backends."""
 
-    def __init__(self, imaginary_client: ImaginaryClient):
+    def __init__(
+        self,
+        imaginary_client: ImaginaryClient,
+        storage_service: Optional[StorageService] = None,
+        opencv_client: Optional["OpenCVClient"] = None,
+    ):
         self.imaginary_client = imaginary_client
-        self.storage_service = StorageService()
+        self.storage_service = storage_service or StorageService()
+        self.opencv_client = opencv_client
         # Log which storage is being used
         if self.storage_service.is_gcs_enabled():
             logger.info("📦 Orchestrator using: Google Cloud Storage (GCS)")
@@ -73,32 +84,31 @@ class GeneralEditOrchestrator:
             return f"data:{mime_type};base64,{img_base64}"
         return url
 
-    async def run(self, image_url: str, operations: List[EditOperation]):
+    async def run(
+        self,
+        image_url: str,
+        operations: List[Tuple[EditService, EditOperation]],
+    ):
+        print("Starting general edit orchestrator run method")
+        # 1. Download source image bytes (used by both backends)
+        img_bytes = await self._download_image(image_url)
 
-        # 1. Download source image
-        async with httpx.AsyncClient(timeout=30, follow_redirects=True) as client:
-            response = await client.get(image_url)
-            response.raise_for_status()
-            img_bytes = response.content
+        # 2. Apply operations sequentially based on selected service
+        grouped = self._group_operations(operations)
+        current_bytes = img_bytes
+        for service, ops in grouped:
+            if service == EditService.OPENCV:
+                current_bytes = await self._apply_opencv(current_bytes, ops)
+            else:
+                print("Applying Imaginary operations:", ops)
+                current_bytes = await self._apply_imaginary(current_bytes, ops)
 
-        # 2. Save temp image
-        logger.debug(f"Saving temporary image ({len(img_bytes)} bytes)")
-        temp_image_url = await self.storage_service.save_image(img_bytes)
-        logger.debug(f"Temporary image saved: {temp_image_url}")
-
-        # 3. Ensure URL is accessible by Imaginary (convert file:// to data: if needed)
-        accessible_url = await self._ensure_accessible_url(temp_image_url, img_bytes)
-        logger.debug(f"Accessible URL for Imaginary: {accessible_url[:100]}..." if len(accessible_url) > 100 else f"Accessible URL for Imaginary: {accessible_url}")
-
-        # 4. Apply operations via Imaginary
-        output_bytes = await self.imaginary_client.apply(accessible_url, operations)
-
-        # 5. Save final image
-        logger.debug(f"Saving final processed image ({len(output_bytes)} bytes)")
-        final_image_url = await self.storage_service.save_image(output_bytes)
+        # 3. Save final image
+        logger.debug(f"Saving final processed image ({len(current_bytes)} bytes)")
+        final_image_url = await self.storage_service.save_image(current_bytes)
         logger.info(f"✅ Final image saved: {final_image_url}")
 
-        # 6. Generate job ID for response
+        # 4. Generate job ID for response
         job_id = str(uuid.uuid4())
 
         return {
@@ -107,3 +117,49 @@ class GeneralEditOrchestrator:
             "result_url": final_image_url,
             "reasoning": "General edit workflow completed successfully",
         }
+
+    async def _download_image(self, image_url: str) -> bytes:
+        async with httpx.AsyncClient(timeout=30, follow_redirects=True) as client:
+            response = await client.get(image_url)
+            response.raise_for_status()
+            return response.content
+
+    async def _apply_imaginary(self, input_bytes: bytes, operations: List[EditOperation]) -> bytes:
+        logger.debug(f"Saving temporary image ({len(input_bytes)} bytes)")
+        temp_image_url = await self.storage_service.save_image(input_bytes)
+        logger.debug(f"Temporary image saved: {temp_image_url}")
+
+        accessible_url = await self._ensure_accessible_url(temp_image_url, input_bytes)
+        if len(accessible_url) > 100:
+            logger.debug(f"Accessible URL for Imaginary: {accessible_url[:100]}...")
+        else:
+            logger.debug(f"Accessible URL for Imaginary: {accessible_url}")
+
+        return await self.imaginary_client.apply(accessible_url, operations)
+
+    async def _apply_opencv(self, img_bytes: bytes, operations: List[EditOperation]) -> bytes:
+        if not self.opencv_client:
+            raise ValueError(
+                "OpenCV backend requested but no OpenCV client was configured."
+            )
+        return await self.opencv_client.apply(img_bytes, operations)
+
+    def _group_operations(
+        self, operations: List[Tuple[EditService, EditOperation]]
+    ) -> List[Tuple[EditService, List[EditOperation]]]:
+        grouped: List[Tuple[EditService, List[EditOperation]]] = []
+        current_service: Optional[EditService] = None
+        current_ops: List[EditOperation] = []
+
+        for service, operation in operations:
+            if current_service != service:
+                if current_ops:
+                    grouped.append((current_service, current_ops))
+                    current_ops = []
+                current_service = service
+            current_ops.append(operation)
+
+        if current_ops and current_service:
+            grouped.append((current_service, current_ops))
+
+        return grouped

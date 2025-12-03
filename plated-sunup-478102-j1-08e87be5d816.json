@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "plated-sunup-478102-j1",
+  "private_key_id": "08e87be5d816a383b681065251c35f07b5aab3bf",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQCfiITIvThyfBcp\nZgqfcqOWR1eGIH7Y523otRK1ZOVPWQlr7CqBXylZI2oBxZtOHQwYgjRq3DpciNnC\ny8n/RckEVQb/MoLLYGT+hN3C8HPvusbL2kgogWhwHU5/oBKiyQ9/gh54GkXh/wLD\nL2KDHSE1BpwKDXBMzkoQBo9HHG2/WQjrc0TiIvycGwaDpC0fdmn3JEHAaS12Hdx2\nNbAEbmW2MK7IFSKRFAoEp0Xab+vICnv7qR2f/9OXeuVdgduNOt2FYoQXJpFVSJ6l\nzIJEGX9JAx9/FYoA0+Dd1K36XXjTz3kFJ0EW7evjox2ZOW/0lVZoXBFM+tzM0nvC\nBqTGj/0RAgMBAAECggEAAz+x2Y8t6znu9FE/SeI5Jd4v0HvQrXzgCn9GgWJrv48L\n/7JEZtRP6KBtoBncuO1jQcwEAoGX4CrKyXpiM5RBnNiY7wFBs9/TirHcvMOuDr2e\nXwgj1ExXWsIkBzoUqxM+YS2+jlpVnj212hD41/vzwUtQSe2eYfgI/tTNXei8rOr8\nYjKP6YPsLHo9oasWOVvcXcpRjYPcA+q09x4DHh4j/BE5dSrM8iTTp42yY9+VJMWs\n6KkL4N0ZwdbAzseM+26UDvyGoyLuOjkMDrNW/kIXTq2CyBp1G3APUKz+OzpTHGnL\n9XDmHF2IDXAVZ4vRJMymrzSY0MNJxLvhB+e83DB/aQKBgQDWlzJpO5aKgaM+74F1\nbrCvDba83Cbiy1sVBwQ7m6cdOgTVxDLlsRXY7gSHWOeW59BkzSlzxRIE/ua7QNgA\nLuWXW7wh1hCeMatUa+PpDcSJ48plMuBfMSP+blALf4n1lgbPvah0buXBjTcGjUr8\nKCxCyobhBWXIJjyuqscY/eRtiQKBgQC+UXuCFRz9SKO7anhV0+fzIeGxVBp8AZYJ\neeQh7aHV9MIhHDHRqVh0fHIVBlI2dAfM7t93nfvn+ZxcQ95jRaxiLdqIlf+bBN8Z\nspp4DrrlLvkZ5ShY5AkHlBJOqZ4+QzJBagyWj+JMPyN+oBbjggahkAQhj5CRKGpB\nqMieSK95SQKBgBxr2hll8wJVOTHUtui+yFfnERTic6QGGwIl88GRVAji7lEBs1wI\noEQjAiaK9+FcwpUXNy5GI6TVvel/JRyhGXd6huhUWc8Z9P8xavYrBKTerqfInT7+\nWy4PnjpnofYM8MoC7JS/O17vPSJ5BD1xdKtD96lF9b0Uk2Tu6X+94MtBAoGAVLEV\n8TFMETp+AizDGA6QrZVqRetTTdO23MitSJvi5L9ilDFjyhU+E7g9XDXP6AOCZSP3\ntddL/lMJzdU15Z9fsuEM2rNFZ8qnLVxZeQu1B7/7ghaD+eqgSgsOiorYrIRinNGA\ngI/O+HcwaGz9QojeQo9AB19HyhDeGBHwFN/rlmECgYBrxdDnaczgj849/GxqIfcY\n2I5w0ksvSOPESCSHMebJU51izciOddIVvdhz3+OGdkU0p7LHKm3GMSqW9k/4eFcf\nc3p9rI3DB0f/1RriTofS6lLh4w1my2EE1tzDB9l99EBbZUmov64TqG7t60mlmGLM\nEpQii84Po+wy2qILoGb+Rg==\n-----END PRIVATE KEY-----\n",
+  "client_email": "gcs-access@plated-sunup-478102-j1.iam.gserviceaccount.com",
+  "client_id": "100595542501718681676",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/gcs-access%40plated-sunup-478102-j1.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}
