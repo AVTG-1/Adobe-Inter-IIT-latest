@@ -175,16 +175,6 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
     }
   };
 
-  const handleMenuPress = () => {
-    console.log('Menu pressed');
-    Toast.show({
-      type: 'info',
-      text1: '☰ Menu',
-      text2: 'Menu feature coming soon!',
-      position: 'top',
-      visibilityTime: 2000,
-    });
-  };
 
   const handleProfilePress = () => {
     console.log('Profile pressed');
@@ -328,19 +318,6 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
       <Animated.View style={[styles.content, { opacity: fadeAnim }]}>
         {/* Header */}
         <View style={styles.header}>
-          {/* Menu Button */}
-          <TouchableOpacity
-            onPress={handleMenuPress}
-            style={styles.menuButton}
-            activeOpacity={0.7}
-          >
-            <View style={styles.menuLines}>
-              <View style={styles.menuLine} />
-              <View style={styles.menuLine} />
-              <View style={styles.menuLine} />
-            </View>
-          </TouchableOpacity>
-
           {/* Title */}
           <Text style={styles.headerTitle}>Auralite</Text>
 
@@ -640,19 +617,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 27,
     paddingBottom: 20,
-  },
-  menuButton: {
-    width: 30,
-    height: 20,
-    justifyContent: 'space-between',
-  },
-  menuLines: {
-    gap: 9,
-  },
-  menuLine: {
-    width: 30,
-    height: 1,
-    backgroundColor: '#FFFFFF',
   },
   headerTitle: {
     fontFamily: 'System',
