@@ -1328,6 +1328,7 @@ export default function EditorScreen({ route, navigation }: Props) {
 
     // --- NORMALIZE / UPLOAD IMAGE PATH (replace old normalization) ---
     let imagePath = currentImageUrl || '';
+    console.log("This is image Path : ", imagePath);
 
     try {
       // If imagePath is a blob or file URL -> upload it
