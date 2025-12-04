@@ -2593,16 +2593,12 @@ export default function EditorScreen({ route, navigation }: Props) {
               <View style={styles.aiActionRow}>
                 {/* Send button */}
                 <TouchableOpacity
-                  style={[styles.aiSendButton, !aiPrompt.trim() && styles.aiSendButtonDisabled]}
+                  style={[styles.aiSendButton, (!aiPrompt.trim() || isExecutingAI) && styles.aiSendButtonDisabled]}
                   onPress={handleAIPromptSubmit}
                   disabled={!aiPrompt.trim() || isExecutingAI}
                   activeOpacity={0.7}
                 >
-                  {isExecutingAI ? (
-                    <ActivityIndicator size="small" color="#FFFFFF" />
-                  ) : (
-                    <Ionicons name="send" size={20} color="#FFFFFF" />
-                  )}
+                  <Ionicons name="send" size={20} color="#FFFFFF" />
                 </TouchableOpacity>
 
                 {/* Stop button - only while executing */}
@@ -2688,7 +2684,7 @@ export default function EditorScreen({ route, navigation }: Props) {
                 </Animated.View>
 
                 {/* Executed Steps - Only showing path from root to current node */}
-                {timelineSteps.map((step, index) => (
+                {/* {timelineSteps.map((step, index) => (
                   <Animated.View
                     key={step.id}
                     style={[
@@ -2713,14 +2709,9 @@ export default function EditorScreen({ route, navigation }: Props) {
                       activeOpacity={0.7}
                     >
                       <Ionicons name={step.icon as any} size={18} color="#E0E0E0" />
-                      {index === currentStepIndex - 1 && isExecutingAI && (
-                        <View style={styles.stepPulse}>
-                          <ActivityIndicator size="small" color="#FFFFFF" />
-                        </View>
-                      )}
                     </TouchableOpacity>
                   </Animated.View>
-                ))}
+                ))} */}
 
                 {/* Clear Steps Button */}
                 {!isExecutingAI && (
@@ -4022,10 +4013,10 @@ const styles = StyleSheet.create({
     marginLeft: 6,
   },
   plusButtonContainer: {
-    position: 'absolute',
-    bottom: 84,
+    position:'absolute',
+    bottom:30,
     left: SCREEN_WIDTH / 2 - 30,
-    zIndex: 4,
+    zIndex: 20, // Above toolbar (zIndex: 10) and all other footer elements
   },
   bottomToolbar: {
     position: 'absolute',
@@ -4074,10 +4065,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.5,
+    shadowRadius: 12,
+    elevation: 12, // Higher elevation for Android
+    borderWidth: 2,
+    borderColor: 'rgba(255, 255, 255, 0.2)', // Subtle border for depth
   },
   processingOverlay: {
     position: 'absolute',

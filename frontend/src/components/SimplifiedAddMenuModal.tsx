@@ -103,6 +103,7 @@ const SimplifiedAddMenuModal: React.FC<SimplifiedAddMenuModalProps> = ({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
+    zIndex:1000,
     backgroundColor: 'rgba(0, 0, 0, 0.7)',
     justifyContent: 'flex-end',
   },
