@@ -94,7 +94,7 @@ USE_QUANTIZATION=true
 ### Run Server
 
 ```bash
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+uvicorn app.orchestration.application.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
 API will be available at `http://localhost:8000`

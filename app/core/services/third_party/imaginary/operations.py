@@ -1,23 +1,34 @@
-from pydantic import BaseModel
-from typing import Literal, Optional
+from typing import Any, Dict, Literal
+
+from pydantic import BaseModel, Field
 
 
 class EditOperation(BaseModel):
+    """Internal representation of a single Imaginary edit operation."""
+
     type: Literal[
         "brightness",
         "contrast",
         "sharpness",
         "saturation",
-        "crop",
-        "resize",
-        "rotate",
-        "blur",
         "exposure",
+        "info",
+        "crop",
+        "smartcrop",
+        "resize",
+        "enlarge",
+        "extract",
+        "zoom",
+        "thumbnail",
+        "fit",
+        "rotate",
+        "autorotate",
+        "flip",
+        "flop",
+        "convert",
+        "pipeline",
+        "watermark",
+        "watermarkimage",
+        "blur",
     ]
-
-    value: Optional[float] = None
-    x: Optional[int] = None
-    y: Optional[int] = None
-    width: Optional[int] = None
-    height: Optional[int] = None
-    angle: Optional[int] = None
+    params: Dict[str, Any] = Field(default_factory=dict)

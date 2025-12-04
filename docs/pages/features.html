@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Features Overview - Adobe Image Editor Documentation</title>
+    <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <div class="logo">
+                <span class="logo-icon">📸</span>
+                <div>
+                    <h1>Adobe Image Editor</h1>
+                    <p style="margin: 0; opacity: 0.9; font-size: 0.9rem;">Technical Documentation</p>
+                </div>
+            </div>
+            <nav class="header-nav">
+                <a href="../index.html">Home</a>
+                <a href="architecture.html">Architecture</a>
+                <a href="api.html">API Reference</a>
+                <a href="setup.html">Setup Guide</a>
+            </nav>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="docs-layout">
+            <aside class="sidebar">
+                <div class="search-bar">
+                    <input type="text" placeholder="Search documentation...">
+                </div>
+                <nav>
+                    <div class="nav-section">
+                        <h3>Getting Started</h3>
+                        <ul>
+                            <li><a href="../index.html">Overview</a></li>
+                            <li><a href="setup.html">Setup & Installation</a></li>
+                        </ul>
+                    </div>
+                    <div class="nav-section">
+                        <h3>Features</h3>
+                        <ul>
+                            <li><a href="features.html" class="active">Features Overview</a></li>
+                            <li><a href="editing-tools.html">Editing Tools</a></li>
+                            <li><a href="filters.html">Filters & Effects</a></li>
+                            <li><a href="ai-features.html">AI Features</a></li>
+                        </ul>
+                    </div>
+                </nav>
+            </aside>
+
+            <main class="main-content auto-toc">
+                <div class="breadcrumbs">
+                    <a href="../index.html">Home</a>
+                    <span>/</span>
+                    <span>Features</span>
+                </div>
+
+                <div class="page-header">
+                    <h1>Features Overview</h1>
+                    <p class="subtitle">Comprehensive guide to all editing capabilities</p>
+                </div>
+
+                <h2 id="editor-core">Editor Core Features</h2>
+                
+                <div class="card-grid">
+                    <div class="feature-card">
+                        <div class="icon">🎨</div>
+                        <h3>50+ Filters</h3>
+                        <p>Professional filters across 7 categories including artistic, vintage, blur, and edge detection effects.</p>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="icon">🎛️</div>
+                        <h3>11 Adjustments</h3>
+                        <p>Brightness, contrast, saturation, exposure, temperature, tint, vibrance, highlights, shadows, sharpness, and grain.</p>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="icon">✏️</div>
+                        <h3>13 Drawing Tools</h3>
+                        <p>Pen, brush, highlighter, marker, plus 7 shapes (rectangle, circle, triangle, arrow, line, star, heart).</p>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="icon">🤖</div>
+                        <h3>AI-Powered Editing</h3>
+                        <p>Natural language prompts with Gemini AI for intelligent multi-step editing workflows.</p>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="icon">🌳</div>
+                        <h3>Tree-Based History</h3>
+                        <p>Non-linear editing with branching versions and macro recording for complex workflows.</p>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="icon">📐</div>
+                        <h3>Geometric Transforms</h3>
+                        <p>Crop (with aspect ratios), rotate, flip, resize, and shape crop tools.</p>
+                    </div>
+                </div>
+
+                <h2 id="filters">50+ Filters & Effects</h2>
+
+                <h3>Filter Categories</h3>
+                
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Category</th>
+                            <th>Count</th>
+                            <th>Filters</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Basic</strong></td>
+                            <td>8</td>
+                            <td>Grayscale, Sepia, Invert, Brighten, Darken, Warm, Cool, Contrast</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Artistic</strong></td>
+                            <td>8</td>
+                            <td>Oil Paint, Watercolor, Sketch, Cartoon, Pop Art, Comic, Pencil, Charcoal</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Blur</strong></td>
+                            <td>6</td>
+                            <td>Gaussian, Motion, Radial, Tilt-Shift, Bokeh, Zoom</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Color</strong></td>
+                            <td>6</td>
+                            <td>Vivid, Dramatic, Cool, Warm, HDR, Technicolor</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Vintage</strong></td>
+                            <td>4</td>
+                            <td>Vintage, Polaroid, Retro, Faded</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Edge Detection</strong></td>
+                            <td>4</td>
+                            <td>Sobel, Canny, Emboss, Outline</td>
+                        </tr>
+                        <tr>
+                            <td><strong>FX</strong></td>
+                            <td>6</td>
+                            <td>Swirl, Bulge, Pinch, Fisheye, Ripple, Vignette</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h2 id="adjustments">Professional Adjustments</h2>
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Adjustment</th>
+                            <th>Range</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Brightness</td>
+                            <td>-100 to +100</td>
+                            <td>Adjust overall image brightness</td>
+                        </tr>
+                        <tr>
+                            <td>Contrast</td>
+                            <td>-100 to +100</td>
+                            <td>Adjust difference between light and dark</td>
+                        </tr>
+                        <tr>
+                            <td>Saturation</td>
+                            <td>-100 to +100</td>
+                            <td>Adjust color intensity</td>
+                        </tr>
+                        <tr>
+                            <td>Exposure</td>
+                            <td>-2.0 to +2.0</td>
+                            <td>Simulate camera exposure adjustment</td>
+                        </tr>
+                        <tr>
+                            <td>Vibrance</td>
+                            <td>-100 to +100</td>
+                            <td>Smart saturation that protects skin tones</td>
+                        </tr>
+                        <tr>
+                            <td>Temperature</td>
+                            <td>-100 to +100</td>
+                            <td>Adjust warm/cool tones</td>
+                        </tr>
+                        <tr>
+                            <td>Tint</td>
+                            <td>-100 to +100</td>
+                            <td>Adjust green/magenta balance</td>
+                        </tr>
+                        <tr>
+                            <td>Highlights</td>
+                            <td>-100 to +100</td>
+                            <td>Recover or enhance bright areas</td>
+                        </tr>
+                        <tr>
+                            <td>Shadows</td>
+                            <td>-100 to +100</td>
+                            <td>Recover or deepen dark areas</td>
+                        </tr>
+                        <tr>
+                            <td>Sharpness</td>
+                            <td>0 to 100</td>
+                            <td>Enhance edge definition</td>
+                        </tr>
+                        <tr>
+                            <td>Grain</td>
+                            <td>0 to 100</td>
+                            <td>Add film grain texture</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h2 id="drawing-tools">Drawing & Annotation</h2>
+
+                <h3>Drawing Tools (13 Total)</h3>
+                <ul>
+                    <li><strong>Pen</strong> - Smooth drawing with pressure sensitivity</li>
+                    <li><strong>Brush</strong> - Soft artistic brush</li>
+                    <li><strong>Highlighter</strong> - Semi-transparent marker</li>
+                    <li><strong>Marker</strong> - Bold, opaque strokes</li>
+                    <li><strong>Eraser</strong> - Remove drawn elements</li>
+                    <li><strong>Rectangle</strong> - Draw rectangular shapes</li>
+                    <li><strong>Circle</strong> - Perfect circles and ellipses</li>
+                    <li><strong>Triangle</strong> - Triangular shapes</li>
+                    <li><strong>Arrow</strong> - Directional arrows</li>
+                    <li><strong>Line</strong> - Straight lines</li>
+                    <li><strong>Star</strong> - Star shapes</li>
+                    <li><strong>Heart</strong> - Heart shapes</li>
+                    <li><strong>Text</strong> - Add text annotations</li>
+                </ul>
+
+                <h3>Drawing Features</h3>
+                <ul>
+                    <li>10 preset colors + color picker</li>
+                    <li>Size control (2-50px)</li>
+                    <li>Opacity control (0-100%)</li>
+                    <li>Undo/redo for drawing</li>
+                    <li>Clear all drawings</li>
+                    <li>Layer-based drawing system</li>
+                </ul>
+
+                <h2 id="geometric">Geometric Transformations</h2>
+
+                <h3>Crop Tool</h3>
+                <ul>
+                    <li><strong>Aspect Ratios:</strong> Free, 1:1, 4:3, 3:4, 16:9, 9:16</li>
+                    <li><strong>Shape Crop:</strong> Circle, heart, star shapes</li>
+                    <li><strong>Interactive Handles:</strong> Drag corners to adjust</li>
+                    <li><strong>Grid Overlay:</strong> Rule of thirds guide</li>
+                    <li><strong>Reset Button:</strong> Restore original</li>
+                </ul>
+
+                <h3>Rotate & Flip</h3>
+                <ul>
+                    <li>Rotate 90°, 180°, 270°</li>
+                    <li>Free rotation with angle slider</li>
+                    <li>Flip horizontal</li>
+                    <li>Flip vertical</li>
+                </ul>
+
+                <h3>Resize Tool</h3>
+                <ul>
+                    <li>Preset dimensions (Instagram, YouTube, etc.)</li>
+                    <li>Custom width × height</li>
+                    <li>Maintain aspect ratio option</li>
+                    <li>Percentage-based scaling</li>
+                </ul>
+
+                <h2 id="ai-features">AI-Powered Features</h2>
+
+                <h3>Natural Language Editing</h3>
+                <pre><code>User: "Make this photo more vibrant and add a warm filter"
+
+AI Plans:
+1. Increase saturation +30%
+2. Increase vibrance +20%
+3. Apply warm color filter
+4. Adjust temperature +15
+
+Executes automatically with WebSocket updates</code></pre>
+
+                <h3>Intelligent Workflows</h3>
+                <ul>
+                    <li><strong>Multi-Step Planning:</strong> LLM generates editing sequences</li>
+                    <li><strong>Context-Aware:</strong> Analyzes image content</li>
+                    <li><strong>Self-Healing:</strong> Automatic error recovery</li>
+                    <li><strong>Real-Time Feedback:</strong> Step-by-step progress</li>
+                </ul>
+
+                <h3>Tree-Based History</h3>
+                <ul>
+                    <li>Non-linear editing with branching</li>
+                    <li>Switch between versions instantly</li>
+                    <li>Refine any step to create new branch</li>
+                    <li>Visual tree navigation</li>
+                    <li>Macro recording from paths</li>
+                </ul>
+
+                <h2 id="layers">Layer System</h2>
+
+                <ul>
+                    <li><strong>Multiple Layers:</strong> Add unlimited layers</li>
+                    <li><strong>Layer Types:</strong> Image, drawing, text, shape</li>
+                    <li><strong>Layer Controls:</strong> Visibility, opacity, delete, duplicate</li>
+                    <li><strong>Reordering:</strong> Drag to reorder (planned)</li>
+                    <li><strong>Blending:</strong> Layer blend modes (planned)</li>
+                    <li><strong>Merge:</strong> Flatten layers</li>
+                </ul>
+
+                <h2 id="export">Export Options</h2>
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Format</th>
+                            <th>Quality</th>
+                            <th>Use Case</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>JPEG</td>
+                            <td>0-100%</td>
+                            <td>General photos, smaller file size</td>
+                        </tr>
+                        <tr>
+                            <td>PNG</td>
+                            <td>Lossless</td>
+                            <td>Graphics with transparency</td>
+                        </tr>
+                        <tr>
+                            <td>WebP</td>
+                            <td>0-100%</td>
+                            <td>Modern format, best compression</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h2 id="ui-features">UI/UX Features</h2>
+
+                <ul>
+                    <li><strong>Pinch-to-Zoom:</strong> Smooth canvas zooming</li>
+                    <li><strong>Pan Gestures:</strong> Navigate zoomed canvas</li>
+                    <li><strong>Before/After:</strong> Slider comparison view</li>
+                    <li><strong>Undo/Redo:</strong> Complete edit history</li>
+                    <li><strong>Bottom Sheets:</strong> Smooth panel animations</li>
+                    <li><strong>Toast Notifications:</strong> User feedback</li>
+                    <li><strong>Loading Indicators:</strong> Processing feedback</li>
+                    <li><strong>Histogram:</strong> Real-time RGB analysis</li>
+                </ul>
+
+                <div class="alert alert-success">
+                    <strong>✓ Ready to explore?</strong> Check out the <a href="api.html">API Reference</a> for backend integration or <a href="components.html">Component Documentation</a> for frontend development.
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2025 Adobe Image Editor Documentation. Built with ❤️ for Inter IIT Tech Meet.</p>
+        </div>
+    </footer>
+
+    <script src="../assets/script.js"></script>
+</body>
+</html>

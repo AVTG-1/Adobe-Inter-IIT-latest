@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Reference - Adobe Image Editor Documentation</title>
+    <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <div class="logo">
+                <span class="logo-icon">📸</span>
+                <div>
+                    <h1>Adobe Image Editor</h1>
+                    <p style="margin: 0; opacity: 0.9; font-size: 0.9rem;">Technical Documentation</p>
+                </div>
+            </div>
+            <nav class="header-nav">
+                <a href="../index.html">Home</a>
+                <a href="architecture.html">Architecture</a>
+                <a href="api.html">API Reference</a>
+                <a href="setup.html">Setup Guide</a>
+                <a href="https://github.com" target="_blank">GitHub</a>
+            </nav>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="docs-layout">
+            <!-- Sidebar (same as architecture.html) -->
+            <aside class="sidebar">
+                <div class="search-bar">
+                    <input type="text" placeholder="Search documentation...">
+                </div>
+
+                <nav>
+                    <div class="nav-section">
+                        <h3>Getting Started</h3>
+                        <ul>
+                            <li><a href="../index.html">Overview</a></li>
+                            <li><a href="setup.html">Setup & Installation</a></li>
+                            <li><a href="quickstart.html">Quick Start Guide</a></li>
+                        </ul>
+                    </div>
+
+                    <div class="nav-section">
+                        <h3>Architecture</h3>
+                        <ul>
+                            <li><a href="architecture.html">System Architecture</a></li>
+                            <li><a href="tech-stack.html">Technology Stack</a></li>
+                            <li><a href="data-flow.html">Data Flow</a></li>
+                        </ul>
+                    </div>
+
+                    <div class="nav-section">
+                        <h3>Backend</h3>
+                        <ul>
+                            <li><a href="api.html" class="active">API Reference</a></li>
+                            <li><a href="backend-structure.html">Backend Structure</a></li>
+                            <li><a href="ai-llm.html">AI & LLM Integration</a></li>
+                            <li><a href="image-processing.html">Image Processing</a></li>
+                        </ul>
+                    </div>
+
+                    <div class="nav-section">
+                        <h3>Frontend</h3>
+                        <ul>
+                            <li><a href="frontend-overview.html">Frontend Overview</a></li>
+                            <li><a href="components.html">Components</a></li>
+                            <li><a href="screens.html">Screens</a></li>
+                            <li><a href="state-management.html">State Management</a></li>
+                        </ul>
+                    </div>
+
+                    <div class="nav-section">
+                        <h3>Features</h3>
+                        <ul>
+                            <li><a href="features.html">Features Overview</a></li>
+                            <li><a href="editing-tools.html">Editing Tools</a></li>
+                            <li><a href="filters.html">Filters & Effects</a></li>
+                            <li><a href="ai-features.html">AI Features</a></li>
+                        </ul>
+                    </div>
+
+                    <div class="nav-section">
+                        <h3>Developer Guide</h3>
+                        <ul>
+                            <li><a href="development.html">Development Workflow</a></li>
+                            <li><a href="testing.html">Testing</a></li>
+                            <li><a href="deployment.html">Deployment</a></li>
+                            <li><a href="contributing.html">Contributing</a></li>
+                        </ul>
+                    </div>
+                </nav>
+            </aside>
+
+            <!-- Main Content -->
+            <main class="main-content auto-toc">
+                <div class="breadcrumbs">
+                    <a href="../index.html">Home</a>
+                    <span>/</span>
+                    <span>API Reference</span>
+                </div>
+
+                <div class="page-header">
+                    <h1>API Reference</h1>
+                    <p class="subtitle">Complete REST and WebSocket API documentation</p>
+                </div>
+
+                <div class="alert alert-info">
+                    <strong>📡 Base URL:</strong> <code>http://localhost:8000/api/v1</code><br>
+                    <strong>🔌 WebSocket URL:</strong> <code>ws://localhost:8000/ws/{client_id}</code>
+                </div>
+
+                <h2 id="rest-endpoints">REST API Endpoints</h2>
+
+                <!-- Health Check -->
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method method-get">GET</span>
+                        <span class="endpoint-path">/health</span>
+                    </div>
+                    <p class="endpoint-description">Health check endpoint to verify API status</p>
+
+                    <h4>Response</h4>
+                    <pre><code>{
+  "status": "healthy",
+  "version": "1.0.0",
+  "timestamp": "2025-12-04T10:30:00Z"
+}</code></pre>
+
+                    <h4>Example Request</h4>
+                    <pre><code>curl http://localhost:8000/api/v1/health</code></pre>
+                </div>
+
+                <!-- General Edit -->
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method method-post">POST</span>
+                        <span class="endpoint-path">/edit/general</span>
+                    </div>
+                    <p class="endpoint-description">Execute a series of image editing operations</p>
+
+                    <h4>Request Body</h4>
+                    <pre><code>{
+  "image_url": "https://storage.googleapis.com/bucket/image.jpg",
+  "operations": [
+    {
+      "type": "crop",
+      "x": 100,
+      "y": 100,
+      "width": 800,
+      "height": 600
+    },
+    {
+      "type": "brightness",
+      "value": 1.2
+    },
+    {
+      "type": "filter",
+      "params": {
+        "name": "sepia"
+      },
+      "useService": "imaginary"
+    }
+  ]
+}</code></pre>
+
+                    <h4>Parameters</h4>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Field</th>
+                                <th>Type</th>
+                                <th>Required</th>
+                                <th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>image_url</code></td>
+                                <td>string</td>
+                                <td>Yes</td>
+                                <td>HTTP/HTTPS URL of the image to edit</td>
+                            </tr>
+                            <tr>
+                                <td><code>operations</code></td>
+                                <td>array</td>
+                                <td>Yes</td>
+                                <td>List of editing operations to apply</td>
+                            </tr>
+                            <tr>
+                                <td><code>operations[].type</code></td>
+                                <td>string</td>
+                                <td>Yes</td>
+                                <td>Operation type (see below)</td>
+                            </tr>
+                            <tr>
+                                <td><code>operations[].value</code></td>
+                                <td>number</td>
+                                <td>No</td>
+                                <td>Value for simple adjustments</td>
+                            </tr>
+                            <tr>
+                                <td><code>operations[].params</code></td>
+                                <td>object</td>
+                                <td>No</td>
+                                <td>Additional parameters</td>
+                            </tr>
+                            <tr>
+                                <td><code>operations[].useService</code></td>
+                                <td>string</td>
+                                <td>No</td>
+                                <td>"imaginary" or "opencv"</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <h4>Response</h4>
+                    <pre><code>{
+  "job_id": "550e8400-e29b-41d4-a716-446655440000",
+  "status": "completed",
+  "result_url": "https://storage.googleapis.com/bucket/result.jpg",
+  "agent_thoughts": [
+    "Applied crop operation",
+    "Adjusted brightness to 1.2",
+    "Applied sepia filter"
+  ],
+  "processing_time_ms": 1234
+}</code></pre>
+
+                    <h4>Status Codes</h4>
+                    <ul>
+                        <li><span class="badge badge-success">200</span> - Success</li>
+                        <li><span class="badge badge-danger">400</span> - Invalid request</li>
+                        <li><span class="badge badge-danger">500</span> - Processing error</li>
+                    </ul>
+
+                    <h4>Example Request</h4>
+                    <pre><code>curl -X POST http://localhost:8000/api/v1/edit/general \
+  -H "Content-Type: application/json" \
+  -d '{
+    "image_url": "https://example.com/image.jpg",
+    "operations": [
+      {"type": "brightness", "value": 1.3},
+      {"type": "contrast", "value": 1.1}
+    ]
+  }'</code></pre>
+                </div>
+
+                <h2 id="operation-types">Operation Types</h2>
+
+                <h3>Basic Adjustments</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Type</th>
+                            <th>Parameters</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>brightness</code></td>
+                            <td><code>value</code>: 0.0 - 2.0</td>
+                            <td>Adjust image brightness (1.0 = original)</td>
+                        </tr>
+                        <tr>
+                            <td><code>contrast</code></td>
+                            <td><code>value</code>: 0.0 - 2.0</td>
+                            <td>Adjust image contrast (1.0 = original)</td>
+                        </tr>
+                        <tr>
+                            <td><code>saturation</code></td>
+                            <td><code>value</code>: 0.0 - 2.0</td>
+                            <td>Adjust color saturation (1.0 = original)</td>
+                        </tr>
+                        <tr>
+                            <td><code>sharpness</code></td>
+                            <td><code>value</code>: 0.0 - 2.0</td>
+                            <td>Adjust image sharpness (1.0 = original)</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3>Geometric Transformations</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Type</th>
+                            <th>Parameters</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>crop</code></td>
+                            <td><code>x, y, width, height</code></td>
+                            <td>Crop image to specified region</td>
+                        </tr>
+                        <tr>
+                            <td><code>rotate</code></td>
+                            <td><code>angle</code>: degrees</td>
+                            <td>Rotate image by angle</td>
+                        </tr>
+                        <tr>
+                            <td><code>resize</code></td>
+                            <td><code>width, height</code></td>
+                            <td>Resize image to dimensions</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3>Filters & Effects</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Type</th>
+                            <th>Parameters</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>filter</code></td>
+                            <td><code>params.name</code>: filter name</td>
+                            <td>Apply stylistic filter (sepia, cyberpunk, grayscale, contrast)</td>
+                        </tr>
+                        <tr>
+                            <td><code>overlay</code></td>
+                            <td><code>params.type</code>: overlay type</td>
+                            <td>Add weather effects (rain, sun, snow)</td>
+                        </tr>
+                        <tr>
+                            <td><code>relighting</code></td>
+                            <td><code>x, y, z</code>: light position</td>
+                            <td>3D light source repositioning</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h4>Example: Crop Operation</h4>
+                <pre><code>{
+  "type": "crop",
+  "x": 100,
+  "y": 50,
+  "width": 800,
+  "height": 600
+}</code></pre>
+
+                <h4>Example: Filter Operation</h4>
+                <pre><code>{
+  "type": "filter",
+  "params": {
+    "name": "sepia"
+  },
+  "useService": "imaginary"
+}</code></pre>
+
+                <h4>Example: Relighting Operation</h4>
+                <pre><code>{
+  "type": "relighting",
+  "x": 0.5,
+  "y": 0.3,
+  "z": 1.0
+}</code></pre>
+
+                <h2 id="websocket-api">WebSocket API</h2>
+
+                <p>
+                    The WebSocket API enables real-time AI-powered editing workflows with step-by-step progress updates.
+                </p>
+
+                <h3>Connection</h3>
+                <pre><code>// Connect to WebSocket
+const ws = new WebSocket('ws://localhost:8000/ws/client_123');
+
+ws.onopen = () => {
+  console.log('Connected to WebSocket');
+};
+
+ws.onmessage = (event) => {
+  const data = JSON.parse(event.data);
+  console.log('Received:', data);
+};
+
+ws.onerror = (error) => {
+  console.error('WebSocket error:', error);
+};
+
+ws.onclose = () => {
+  console.log('WebSocket closed');
+};</code></pre>
+
+                <h3>Client Actions</h3>
+
+                <div class="endpoint">
+                    <h4><code>start_processing</code></h4>
+                    <p>Begin a new AI-powered editing session</p>
+                    <pre><code>{
+  "action": "start_processing",
+  "data": {
+    "prompt": "Make this photo more vibrant and crop to square",
+    "image_url": "https://storage.googleapis.com/bucket/image.jpg",
+    "reference_image_url": null,
+    "session_id": "session_456"
+  }
+}</code></pre>
+                </div>
+
+                <div class="endpoint">
+                    <h4><code>continue_processing</code></h4>
+                    <p>Add steps to existing branch</p>
+                    <pre><code>{
+  "action": "continue_processing",
+  "data": {
+    "prompt": "Now add a vintage filter",
+    "session_id": "session_456",
+    "node_id": "node_789"
+  }
+}</code></pre>
+                </div>
+
+                <div class="endpoint">
+                    <h4><code>stop_processing</code></h4>
+                    <p>Cancel current processing</p>
+                    <pre><code>{
+  "action": "stop_processing",
+  "data": {
+    "session_id": "session_456"
+  }
+}</code></pre>
+                </div>
+
+                <div class="endpoint">
+                    <h4><code>switch_node</code></h4>
+                    <p>Change active version in tree</p>
+                    <pre><code>{
+  "action": "switch_node",
+  "data": {
+    "session_id": "session_456",
+    "node_id": "node_123"
+  }
+}</code></pre>
+                </div>
+
+                <div class="endpoint">
+                    <h4><code>save_macro</code></h4>
+                    <p>Save editing sequence as macro</p>
+                    <pre><code>{
+  "action": "save_macro",
+  "data": {
+    "session_id": "session_456",
+    "node_id": "node_789",
+    "macro_name": "Vibrant Portrait Edit"
+  }
+}</code></pre>
+                </div>
+
+                <h3>Server Events</h3>
+
+                <div class="endpoint">
+                    <h4><code>step_start</code></h4>
+                    <p>Processing step begins</p>
+                    <pre><code>{
+  "type": "step_start",
+  "step_index": 0,
+  "tool": "crop",
+  "params": {
+    "x": 0,
+    "y": 0,
+    "width": 1000,
+    "height": 1000
+  },
+  "intent": "Crop image to square format"
+}</code></pre>
+                </div>
+
+                <div class="endpoint">
+                    <h4><code>path_update</code></h4>
+                    <p>New node added to tree</p>
+                    <pre><code>{
+  "type": "path_update",
+  "session_id": "session_456",
+  "node": {
+    "id": "node_123",
+    "parent_id": "node_root",
+    "tool": "crop",
+    "params": {...},
+    "intent": "Crop to square",
+    "image_url": "https://...",
+    "thumbnail_url": "https://...",
+    "children_ids": []
+  },
+  "tree": {
+    "root_id": "node_root",
+    "current_node_id": "node_123",
+    "nodes": {...}
+  }
+}</code></pre>
+                </div>
+
+                <div class="endpoint">
+                    <h4><code>error</code></h4>
+                    <p>Error occurred during processing</p>
+                    <pre><code>{
+  "type": "error",
+  "message": "Failed to process image",
+  "error_type": "ProcessingError",
+  "step_index": 2,
+  "recovery_suggestion": "retry"
+}</code></pre>
+                </div>
+
+                <div class="endpoint">
+                    <h4><code>macro_saved</code></h4>
+                    <p>Macro saved successfully</p>
+                    <pre><code>{
+  "type": "macro_saved",
+  "macro_name": "Vibrant Portrait Edit",
+  "macro_id": "macro_456",
+  "steps": [...]
+}</code></pre>
+                </div>
+
+                <h2 id="error-handling">Error Handling</h2>
+
+                <h3>HTTP Error Responses</h3>
+                <pre><code>{
+  "error": "Invalid operation type",
+  "detail": "Operation type 'unknown' is not supported",
+  "status_code": 400
+}</code></pre>
+
+                <h3>Common Error Codes</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Code</th>
+                            <th>Description</th>
+                            <th>Resolution</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><span class="badge badge-danger">400</span></td>
+                            <td>Bad Request</td>
+                            <td>Check request body format and parameters</td>
+                        </tr>
+                        <tr>
+                            <td><span class="badge badge-danger">404</span></td>
+                            <td>Not Found</td>
+                            <td>Verify endpoint URL and image URL</td>
+                        </tr>
+                        <tr>
+                            <td><span class="badge badge-danger">500</span></td>
+                            <td>Internal Server Error</td>
+                            <td>Check server logs for details</td>
+                        </tr>
+                        <tr>
+                            <td><span class="badge badge-danger">503</span></td>
+                            <td>Service Unavailable</td>
+                            <td>External service (Imaginary/Gemini) may be down</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h2 id="rate-limiting">Rate Limiting</h2>
+
+                <div class="alert alert-warning">
+                    <strong>⚠️ Note:</strong> Rate limiting is not currently implemented. For production deployments,
+                    consider adding rate limiting middleware to prevent abuse.
+                </div>
+
+                <p>Recommended rate limits for production:</p>
+                <ul>
+                    <li><strong>REST API:</strong> 100 requests per minute per IP</li>
+                    <li><strong>WebSocket:</strong> 10 concurrent connections per IP</li>
+                    <li><strong>Image Processing:</strong> 20 operations per hour per user</li>
+                </ul>
+
+                <h2 id="examples">Complete Examples</h2>
+
+                <h3>JavaScript/TypeScript Example</h3>
+                <pre><code>import axios from 'axios';
+
+const API_BASE_URL = 'http://localhost:8000/api/v1';
+
+async function editImage(imageUrl, operations) {
+  try {
+    const response = await axios.post(`${API_BASE_URL}/edit/general`, {
+      image_url: imageUrl,
+      operations: operations
+    });
+
+    return response.data;
+  } catch (error) {
+    console.error('Error editing image:', error.response?.data || error.message);
+    throw error;
+  }
+}
+
+// Usage
+const result = await editImage(
+  'https://example.com/photo.jpg',
+  [
+    { type: 'brightness', value: 1.2 },
+    { type: 'crop', x: 0, y: 0, width: 800, height: 600 },
+    { type: 'filter', params: { name: 'sepia' } }
+  ]
+);
+
+console.log('Result URL:', result.result_url);</code></pre>
+
+                <h3>Python Example</h3>
+                <pre><code>import requests
+import json
+
+API_BASE_URL = 'http://localhost:8000/api/v1'
+
+def edit_image(image_url, operations):
+    response = requests.post(
+        f'{API_BASE_URL}/edit/general',
+        json={
+            'image_url': image_url,
+            'operations': operations
+        }
+    )
+    response.raise_for_status()
+    return response.json()
+
+# Usage
+result = edit_image(
+    'https://example.com/photo.jpg',
+    [
+        {'type': 'brightness', 'value': 1.2},
+        {'type': 'contrast', 'value': 1.1}
+    ]
+)
+
+print(f"Result URL: {result['result_url']}")</code></pre>
+
+                <h3>WebSocket Example (React Native)</h3>
+                <pre><code>import { useEffect, useRef } from 'react';
+
+function useWebSocketEditor(clientId) {
+  const ws = useRef(null);
+
+  useEffect(() => {
+    ws.current = new WebSocket(`ws://localhost:8000/ws/${clientId}`);
+
+    ws.current.onopen = () => {
+      console.log('WebSocket connected');
+    };
+
+    ws.current.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+
+      switch (data.type) {
+        case 'step_start':
+          console.log('Step started:', data.tool);
+          break;
+        case 'path_update':
+          console.log('New image:', data.node.image_url);
+          break;
+        case 'error':
+          console.error('Error:', data.message);
+          break;
+      }
+    };
+
+    return () => {
+      ws.current?.close();
+    };
+  }, [clientId]);
+
+  const startProcessing = (prompt, imageUrl, sessionId) => {
+    ws.current?.send(JSON.stringify({
+      action: 'start_processing',
+      data: { prompt, image_url: imageUrl, session_id: sessionId }
+    }));
+  };
+
+  return { startProcessing };
+}</code></pre>
+
+                <div class="alert alert-success">
+                    <strong>✓ Next Steps:</strong> Check out the <a href="features.html">Features Documentation</a> to see
+                    all available editing operations, or explore <a href="ai-llm.html">AI & LLM Integration</a> for details
+                    on the intelligent workflow system.
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2025 Adobe Image Editor Documentation. Built with ❤️ for Inter IIT Tech Meet.</p>
+        </div>
+    </footer>
+
+    <script src="../assets/script.js"></script>
+</body>
+</html>

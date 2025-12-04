@@ -54,3 +54,15 @@ logs/
 # OS
 .DS_Store
 Thumbs.db
+
+# Ignore everything in spatial_light_realign
+spatial_light_realign/**
+
+spatial_light_realign/**/.git
+spatial_light_realign/**/.git/*
+
+app/core/services/third_party/relighting/spatial_light_realign/**
+app/core/services/third_party/relighting/spatial_light_realign/**/.git
+app/core/services/third_party/relighting/spatial_light_realign/**/.git/*
+
+!app/core/services/third_party/relighting/spatial_light_realign/relighting_model/src/relight/preprocessing/final_relighting_feature/scripts/**

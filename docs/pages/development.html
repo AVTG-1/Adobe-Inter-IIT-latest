@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Development Workflow - Adobe Image Editor Documentation</title>
+    <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <div class="logo">
+                <span class="logo-icon">📸</span>
+                <div><h1>Adobe Image Editor</h1></div>
+            </div>
+            <nav class="header-nav">
+                <a href="../index.html">Home</a>
+                <a href="architecture.html">Architecture</a>
+                <a href="api.html">API</a>
+                <a href="setup.html">Setup</a>
+            </nav>
+        </div>
+    </header>
+    <div class="container"><div class="docs-layout">
+        <aside class="sidebar"><nav>
+            <div class="nav-section"><h3>Developer Guide</h3><ul>
+                <li><a href="development.html" class="active">Development</a></li>
+                <li><a href="deployment.html">Deployment</a></li>
+            </ul></div>
+        </nav></aside>
+        <main class="main-content">
+            <div class="page-header">
+                <h1>Development Workflow</h1>
+                <p class="subtitle">Best practices and development guidelines</p>
+            </div>
+            <h2>Development Process</h2>
+            <h3>Backend Development</h3>
+            <pre><code># Start backend with hot reload
+uvicorn app.orchestration.application.main:app --reload
+
+# Run tests
+pytest tests/
+
+# Format code
+black app/
+ruff check app/</code></pre>
+            <h3>Frontend Development</h3>
+            <pre><code># Start Expo dev server
+npm start
+
+# Run on Android
+npm run android
+
+# Run on iOS
+npm run ios
+
+# Type checking
+npx tsc --noEmit</code></pre>
+            <h2>Code Organization</h2>
+            <ul>
+                <li><strong>Backend:</strong> 3-layer architecture (Orchestration, Core, Experts)</li>
+                <li><strong>Frontend:</strong> Component-based with service layer</li>
+                <li><strong>Types:</strong> Full TypeScript coverage on frontend</li>
+                <li><strong>API:</strong> RESTful + WebSocket protocols</li>
+            </ul>
+        </main>
+    </div></div>
+    <footer><div class="container"><p>&copy; 2025 Adobe Image Editor Documentation</p></div></footer>
+    <script src="../assets/script.js"></script>
+</body>
+</html>

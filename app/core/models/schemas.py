@@ -1,10 +1,10 @@
 """Pydantic models for API request/response validation."""
 
 from datetime import datetime
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 from enum import Enum
 
-from pydantic import BaseModel, Field, HttpUrl
+from pydantic import BaseModel, Field, HttpUrl, ConfigDict
 
 
 class JobStatus(str, Enum):
@@ -12,6 +12,12 @@ class JobStatus(str, Enum):
     PROCESSING = "processing"
     COMPLETED = "completed"
     FAILED = "failed"
+
+
+class EditService(str, Enum):
+    """Available image processing backends."""
+    IMAGINARY = "imaginary"
+    OPENCV = "opencv"
 
 
 class MaskCoordinates(BaseModel):
@@ -45,6 +51,17 @@ class EditOperationSchema(BaseModel):
     width: Optional[int] = Field(None, description="Width")
     height: Optional[int] = Field(None, description="Height")
     angle: Optional[int] = Field(None, description="Angle")
+    params: Dict[str, Any] = Field(
+        default_factory=dict,
+        description="Additional Imaginary parameters (will be merged with legacy fields)",
+    )
+    use_service: EditService = Field(
+        default=EditService.IMAGINARY,
+        alias="useService",
+        description="Processing backend to use for this operation",
+    )
+
+    model_config = ConfigDict(populate_by_name=True)
 
 
 class EditRequest(BaseModel):

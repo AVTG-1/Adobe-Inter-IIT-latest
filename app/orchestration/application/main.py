@@ -3,11 +3,23 @@
 import logging
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+import os
+import shutil
+import uuid
+import json
+from typing import List
+from fastapi import Request
+
 
 from .config import get_settings
 from app.orchestration.application.resources import health_router, edit_router
+
+from app.orchestration.application.manager import ConnectionManager
+from app.orchestration.application.engine import ExecutionEngine
+from app.orchestration.application.state_store import StateStore
 
 # Configure logging
 logging.basicConfig(
@@ -62,6 +74,13 @@ app.add_middleware(
 app.include_router(health_router, prefix=settings.api_v1_prefix)
 app.include_router(edit_router, prefix=settings.api_v1_prefix)
 
+os.makedirs("static", exist_ok=True)
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
+# Global instances
+manager = ConnectionManager()
+state_store = StateStore()
+engine = ExecutionEngine(manager, state_store)
 
 @app.get("/")
 async def root():
@@ -72,3 +91,131 @@ async def root():
         "docs": "/docs",
         "health": f"{settings.api_v1_prefix}/health",
     }
+
+@app.websocket("/ws/{client_id}")
+async def websocket_endpoint(websocket: WebSocket, client_id: str):
+    await manager.connect(websocket, client_id)
+    try:
+        while True:
+            data = await websocket.receive_text()
+            message = json.loads(data)
+            await handle_websocket_message(client_id, message)
+    except WebSocketDisconnect:
+        manager.disconnect(client_id)
+    except Exception as e:
+        print(f"Error in websocket: {e}")
+        # manager.disconnect(client_id) # Optional: disconnect on error
+
+async def handle_websocket_message(client_id: str, message: dict):
+    action = message.get("action")
+    
+    try:
+        if action == "start_processing":
+            session_id = message.get("session_id")
+            prompt = message.get("prompt")
+            image_path = message.get("image_path") # Relative path in static/
+            reference_image_path = message.get("reference_image_path") # Optional
+            if session_id and prompt and image_path:
+                await engine.start_processing(session_id, prompt, image_path, reference_image_path)
+                
+        elif action == "continue_processing":
+            session_id = message.get("session_id")
+            parent_node_id = message.get("parent_node_id")
+            prompt = message.get("prompt")
+            reference_image_path = message.get("reference_image_path") # Optional
+            if session_id and parent_node_id and prompt:
+                await engine.continue_processing(session_id, parent_node_id, prompt, reference_image_path)
+                
+        elif action == "stop_processing":
+            session_id = message.get("session_id")
+            if session_id:
+                await engine.stop_processing(session_id)
+                
+        elif action == "update_step":
+            # Renamed to refine/update logic
+            session_id = message.get("session_id")
+            step_index = message.get("step_index")
+            new_params = message.get("params")
+            if session_id and step_index is not None:
+                await engine.update_step_and_ripple(session_id, step_index, new_params)
+        
+        elif action == "refine_step":
+            session_id = message.get("session_id")
+            node_id = message.get("node_id")
+            prompt = message.get("prompt")
+            global_goal = message.get("global_goal", "")
+            mode = message.get("mode", "branch")
+            reference_image_path = message.get("reference_image_path") # Optional
+            if session_id and node_id and prompt:
+                await engine.refine_step(session_id, node_id, prompt, global_goal, mode, reference_image_path)
+                
+        elif action == "switch_node":
+            session_id = message.get("session_id")
+            node_id = message.get("node_id")
+            if session_id and node_id:
+                await engine.switch_to_node(session_id, node_id)
+
+        elif action == "rename_node":
+            session_id = message.get("session_id")
+            node_id = message.get("node_id")
+            new_name = message.get("new_name")
+            if session_id and node_id and new_name:
+                await engine.rename_node(session_id, node_id, new_name)
+
+        elif action == "save_macro":
+            session_id = message.get("session_id")
+            name = message.get("name")
+            node_id = message.get("node_id")
+            if session_id and name and node_id:
+                await engine.save_macro(session_id, name, node_id)
+
+        elif action == "apply_macro":
+            session_id = message.get("session_id")
+            name = message.get("name")
+            target_node_id = message.get("target_node_id")
+            if session_id and name and target_node_id:
+                await engine.apply_macro(session_id, name, target_node_id)
+
+        elif action == "get_macros":
+            session_id = message.get("session_id")
+            if session_id:
+                await engine.send_macro_list(session_id)
+    except Exception as e:
+        print(f"Error handling message: {e}")
+        session_id = message.get("session_id")
+        if session_id:
+            await manager.send_personal_message({
+                "event": "error",
+                "message": str(e)
+            }, session_id)
+
+@app.post("/upload")
+async def upload_image(request: Request, file: UploadFile = File(...)):
+    # Ensure static directory exists
+    os.makedirs("static", exist_ok=True)
+
+    # Create safe filename with extension fallback
+    file_id = str(uuid.uuid4())
+    original = file.filename or ""
+    if "." in original:
+        extension = original.rsplit(".", 1)[-1]
+    else:
+        extension = "jpg"  # default
+    filename = f"{file_id}.{extension}"
+    file_path = os.path.join("static", filename)
+
+    # Write file contents
+    try:
+        contents = await file.read()
+        with open(file_path, "wb") as buffer:
+            buffer.write(contents)
+    except Exception as exc:
+        # log and return error
+        logging.exception("Failed to save uploaded file")
+        raise HTTPException(status_code=500, detail="Failed to save uploaded file")
+
+    # Build absolute URL using request.base_url
+    base = str(request.base_url).rstrip("/")  # e.g. http://localhost:8000
+    public_url = f"{base}/static/{filename}"
+
+    return {"filename": filename, "url": public_url}

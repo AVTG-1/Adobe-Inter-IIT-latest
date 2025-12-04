@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Comprehensive technical documentation for Adobe Image Editor - AI-powered image editing application">
+    <title>Adobe Image Editor - Technical Documentation</title>
+    <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <div class="logo">
+                <span class="logo-icon">📸</span>
+                <div>
+                    <h1>Adobe Image Editor</h1>
+                    <p style="margin: 0; opacity: 0.9; font-size: 0.9rem;">Technical Documentation</p>
+                </div>
+            </div>
+            <nav class="header-nav">
+                <a href="index.html">Home</a>
+                <a href="pages/architecture.html">Architecture</a>
+                <a href="pages/api.html">API Reference</a>
+                <a href="pages/setup.html">Setup Guide</a>
+                <a href="https://github.com" target="_blank">GitHub</a>
+            </nav>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="docs-layout">
+            <!-- Sidebar Navigation -->
+            <aside class="sidebar">
+                <div class="search-bar">
+                    <input type="text" placeholder="Search documentation...">
+                </div>
+
+                <nav>
+                    <div class="nav-section">
+                        <h3>Getting Started</h3>
+                        <ul>
+                            <li><a href="index.html">Overview</a></li>
+                            <li><a href="pages/setup.html">Setup & Installation</a></li>
+                            <li><a href="pages/quickstart.html">Quick Start Guide</a></li>
+                        </ul>
+                    </div>
+
+                    <div class="nav-section">
+                        <h3>Architecture</h3>
+                        <ul>
+                            <li><a href="pages/architecture.html">System Architecture</a></li>
+                            <li><a href="pages/tech-stack.html">Technology Stack</a></li>
+                            <li><a href="pages/data-flow.html">Data Flow</a></li>
+                        </ul>
+                    </div>
+
+                    <div class="nav-section">
+                        <h3>Backend</h3>
+                        <ul>
+                            <li><a href="pages/api.html">API Reference</a></li>
+                            <li><a href="pages/backend-structure.html">Backend Structure</a></li>
+                            <li><a href="pages/ai-llm.html">AI & LLM Integration</a></li>
+                            <li><a href="pages/image-processing.html">Image Processing</a></li>
+                        </ul>
+                    </div>
+
+                    <div class="nav-section">
+                        <h3>Frontend</h3>
+                        <ul>
+                            <li><a href="pages/frontend-overview.html">Frontend Overview</a></li>
+                            <li><a href="pages/components.html">Components</a></li>
+                            <li><a href="pages/screens.html">Screens</a></li>
+                            <li><a href="pages/state-management.html">State Management</a></li>
+                        </ul>
+                    </div>
+
+                    <div class="nav-section">
+                        <h3>Features</h3>
+                        <ul>
+                            <li><a href="pages/features.html">Features Overview</a></li>
+                            <li><a href="pages/editing-tools.html">Editing Tools</a></li>
+                            <li><a href="pages/filters.html">Filters & Effects</a></li>
+                            <li><a href="pages/ai-features.html">AI Features</a></li>
+                        </ul>
+                    </div>
+
+                    <div class="nav-section">
+                        <h3>Developer Guide</h3>
+                        <ul>
+                            <li><a href="pages/development.html">Development Workflow</a></li>
+                            <li><a href="pages/testing.html">Testing</a></li>
+                            <li><a href="pages/deployment.html">Deployment</a></li>
+                            <li><a href="pages/contributing.html">Contributing</a></li>
+                        </ul>
+                    </div>
+                </nav>
+            </aside>
+
+            <!-- Main Content -->
+            <main class="main-content">
+                <div class="page-header">
+                    <h1>Adobe Image Editor</h1>
+                    <p class="subtitle">AI-Powered Professional Image Editing Platform</p>
+                </div>
+
+                <div class="alert alert-info">
+                    <strong>📘 Documentation Version:</strong> This documentation reflects the complete implementation from the <code>gcs</code> branch.
+                </div>
+
+                <section>
+                    <h2>Overview</h2>
+                    <p>
+                        Adobe Image Editor is a full-stack, AI-powered image editing application that combines professional-grade
+                        image processing capabilities with intelligent workflow automation. Built with React Native for mobile and
+                        FastAPI for backend services, it provides a comprehensive suite of editing tools enhanced by Google Gemini AI.
+                    </p>
+
+                    <div class="card-grid">
+                        <div class="feature-card">
+                            <div class="icon">🤖</div>
+                            <h3>AI-Powered Editing</h3>
+                            <p>Gemini AI analyzes images and generates intelligent editing workflows with multi-step processing plans.</p>
+                        </div>
+
+                        <div class="feature-card">
+                            <div class="icon">🌳</div>
+                            <h3>Tree-Based Workflow</h3>
+                            <p>Non-linear editing with branching, versioning, and macro recording for advanced editing scenarios.</p>
+                        </div>
+
+                        <div class="feature-card">
+                            <div class="icon">📱</div>
+                            <h3>Mobile-First Design</h3>
+                            <p>React Native frontend with intuitive touch gestures, smooth animations, and responsive UI components.</p>
+                        </div>
+
+                        <div class="feature-card">
+                            <div class="icon">⚡</div>
+                            <h3>Real-Time Processing</h3>
+                            <p>WebSocket-based live updates with step-by-step progress notifications and instant visual feedback.</p>
+                        </div>
+
+                        <div class="feature-card">
+                            <div class="icon">🎨</div>
+                            <h3>50+ Filters & Effects</h3>
+                            <p>Comprehensive filter library spanning artistic, vintage, blur, color correction, and edge detection.</p>
+                        </div>
+
+                        <div class="feature-card">
+                            <div class="icon">☁️</div>
+                            <h3>Cloud Storage</h3>
+                            <p>Integrated Google Cloud Storage with Firebase for reliable image hosting and project persistence.</p>
+                        </div>
+                    </div>
+                </section>
+
+                <section>
+                    <h2>Quick Links</h2>
+                    <div class="quick-links">
+                        <a href="pages/setup.html" class="quick-link-card">
+                            <div class="icon">🚀</div>
+                            <h3>Get Started</h3>
+                            <p>Setup instructions and installation guide</p>
+                        </a>
+
+                        <a href="pages/architecture.html" class="quick-link-card">
+                            <div class="icon">🏗️</div>
+                            <h3>Architecture</h3>
+                            <p>System design and technical overview</p>
+                        </a>
+
+                        <a href="pages/api.html" class="quick-link-card">
+                            <div class="icon">📡</div>
+                            <h3>API Reference</h3>
+                            <p>Complete backend API documentation</p>
+                        </a>
+
+                        <a href="pages/components.html" class="quick-link-card">
+                            <div class="icon">🧩</div>
+                            <h3>Components</h3>
+                            <p>Frontend component library reference</p>
+                        </a>
+
+                        <a href="pages/features.html" class="quick-link-card">
+                            <div class="icon">✨</div>
+                            <h3>Features</h3>
+                            <p>Complete features and capabilities guide</p>
+                        </a>
+
+                        <a href="pages/development.html" class="quick-link-card">
+                            <div class="icon">💻</div>
+                            <h3>Development</h3>
+                            <p>Developer workflow and best practices</p>
+                        </a>
+                    </div>
+                </section>
+
+                <section>
+                    <h2>Key Technologies</h2>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Category</th>
+                                <th>Technology</th>
+                                <th>Version</th>
+                                <th>Purpose</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Backend Framework</td>
+                                <td>FastAPI</td>
+                                <td>0.104.1</td>
+                                <td>RESTful API and WebSocket server</td>
+                            </tr>
+                            <tr>
+                                <td>Frontend Framework</td>
+                                <td>React Native + Expo</td>
+                                <td>0.81.5 / 54.0.23</td>
+                                <td>Cross-platform mobile application</td>
+                            </tr>
+                            <tr>
+                                <td>AI/LLM</td>
+                                <td>Google Gemini</td>
+                                <td>gemini-flash-latest</td>
+                                <td>Intelligent workflow planning</td>
+                            </tr>
+                            <tr>
+                                <td>Image Processing</td>
+                                <td>PIL/Pillow</td>
+                                <td>Latest</td>
+                                <td>Core image manipulation</td>
+                            </tr>
+                            <tr>
+                                <td>Storage</td>
+                                <td>Google Cloud Storage</td>
+                                <td>Latest</td>
+                                <td>Image hosting and storage</td>
+                            </tr>
+                            <tr>
+                                <td>Language</td>
+                                <td>TypeScript</td>
+                                <td>5.9.2</td>
+                                <td>Type-safe frontend development</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </section>
+
+                <section>
+                    <h2>Architecture Highlights</h2>
+                    <div class="diagram">
+                        <pre><code>┌─────────────────────────────────────────────────────┐
+│                 Mobile Client (React Native)        │
+│  ┌─────────────┐  ┌──────────────┐  ┌────────────┐│
+│  │   Screens   │  │  Components  │  │  Services  ││
+│  └──────┬──────┘  └──────┬───────┘  └─────┬──────┘│
+└─────────┼─────────────────┼────────────────┼───────┘
+          │                 │                │
+          └─────────────────┴────────────────┘
+                            │
+                   ┌────────▼─────────┐
+                   │   REST API +     │
+                   │   WebSocket      │
+                   └────────┬─────────┘
+                            │
+          ┌─────────────────┴─────────────────┐
+          │                                   │
+  ┌───────▼────────┐              ┌──────────▼─────────┐
+  │  Orchestration │              │    AI Services     │
+  │     Layer      │◄────────────►│  (Gemini LLM)     │
+  └───────┬────────┘              └────────────────────┘
+          │
+  ┌───────▼────────┐
+  │   Core Layer   │
+  │  ┌──────────┐  │
+  │  │ Services │  │
+  │  │  Models  │  │
+  │  └──────────┘  │
+  └───────┬────────┘
+          │
+  ┌───────▼────────┐
+  │  Experts Layer │
+  │  ┌──────────┐  │
+  │  │  Agents  │  │
+  │  │  Tools   │  │
+  │  └──────────┘  │
+  └───────┬────────┘
+          │
+  ┌───────▼────────────────────────┐
+  │   External Services            │
+  │  • Imaginary.io                │
+  │  • OpenCV                      │
+  │  • Google Cloud Storage        │
+  │  • Custom Relighting Model     │
+  └────────────────────────────────┘</code></pre>
+                    </div>
+                </section>
+
+                <section>
+                    <h2>Project Statistics</h2>
+                    <div class="card-grid">
+                        <div class="card">
+                            <h3>Backend</h3>
+                            <ul>
+                                <li><strong>~15,000</strong> lines of Python code</li>
+                                <li><strong>3</strong> architectural layers</li>
+                                <li><strong>10+</strong> image processing tools</li>
+                                <li><strong>WebSocket</strong> real-time communication</li>
+                            </ul>
+                        </div>
+
+                        <div class="card">
+                            <h3>Frontend</h3>
+                            <ul>
+                                <li><strong>~9,500</strong> lines of TypeScript/TSX</li>
+                                <li><strong>6</strong> main screens</li>
+                                <li><strong>20+</strong> reusable components</li>
+                                <li><strong>50+</strong> filters and effects</li>
+                            </ul>
+                        </div>
+
+                        <div class="card">
+                            <h3>Features</h3>
+                            <ul>
+                                <li><strong>11</strong> professional adjustments</li>
+                                <li><strong>13</strong> drawing tools</li>
+                                <li><strong>AI-powered</strong> workflow planning</li>
+                                <li><strong>Tree-based</strong> version control</li>
+                            </ul>
+                        </div>
+                    </div>
+                </section>
+
+                <section>
+                    <h2>Next Steps</h2>
+                    <div class="alert alert-success">
+                        <strong>✓ Ready to start?</strong> Follow the <a href="pages/setup.html">Setup & Installation Guide</a>
+                        to get your development environment configured.
+                    </div>
+
+                    <ol>
+                        <li>Review the <a href="pages/architecture.html">System Architecture</a> to understand the overall design</li>
+                        <li>Check the <a href="pages/setup.html">Setup Guide</a> for installation instructions</li>
+                        <li>Explore the <a href="pages/api.html">API Reference</a> for backend integration details</li>
+                        <li>Browse the <a href="pages/components.html">Component Library</a> for frontend development</li>
+                        <li>Read the <a href="pages/development.html">Development Workflow</a> for best practices</li>
+                    </ol>
+                </section>
+
+                <section>
+                    <h2>Documentation Navigation</h2>
+                    <p>
+                        Use the sidebar on the left to navigate through different sections of the documentation.
+                        Each section is organized hierarchically for easy access to specific topics. You can also use
+                        the search bar to quickly find relevant information.
+                    </p>
+                </section>
+            </main>
+        </div>
+    </div>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2025 Adobe Image Editor Documentation. Built with ❤️ for Inter IIT Tech Meet.</p>
+        </div>
+    </footer>
+
+    <script src="assets/script.js"></script>
+</body>
+</html>

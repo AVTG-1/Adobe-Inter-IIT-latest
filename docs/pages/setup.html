@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Setup & Installation - Adobe Image Editor Documentation</title>
+    <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <div class="logo">
+                <span class="logo-icon">📸</span>
+                <div>
+                    <h1>Adobe Image Editor</h1>
+                    <p style="margin: 0; opacity: 0.9; font-size: 0.9rem;">Technical Documentation</p>
+                </div>
+            </div>
+            <nav class="header-nav">
+                <a href="../index.html">Home</a>
+                <a href="architecture.html">Architecture</a>
+                <a href="api.html">API Reference</a>
+                <a href="setup.html">Setup Guide</a>
+                <a href="https://github.com" target="_blank">GitHub</a>
+            </nav>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="docs-layout">
+            <aside class="sidebar">
+                <div class="search-bar">
+                    <input type="text" placeholder="Search documentation...">
+                </div>
+
+                <nav>
+                    <div class="nav-section">
+                        <h3>Getting Started</h3>
+                        <ul>
+                            <li><a href="../index.html">Overview</a></li>
+                            <li><a href="setup.html" class="active">Setup & Installation</a></li>
+                            <li><a href="quickstart.html">Quick Start Guide</a></li>
+                        </ul>
+                    </div>
+
+                    <div class="nav-section">
+                        <h3>Architecture</h3>
+                        <ul>
+                            <li><a href="architecture.html">System Architecture</a></li>
+                            <li><a href="tech-stack.html">Technology Stack</a></li>
+                            <li><a href="data-flow.html">Data Flow</a></li>
+                        </ul>
+                    </div>
+
+                    <div class="nav-section">
+                        <h3>Backend</h3>
+                        <ul>
+                            <li><a href="api.html">API Reference</a></li>
+                            <li><a href="backend-structure.html">Backend Structure</a></li>
+                            <li><a href="ai-llm.html">AI & LLM Integration</a></li>
+                            <li><a href="image-processing.html">Image Processing</a></li>
+                        </ul>
+                    </div>
+
+                    <div class="nav-section">
+                        <h3>Frontend</h3>
+                        <ul>
+                            <li><a href="frontend-overview.html">Frontend Overview</a></li>
+                            <li><a href="components.html">Components</a></li>
+                            <li><a href="screens.html">Screens</a></li>
+                            <li><a href="state-management.html">State Management</a></li>
+                        </ul>
+                    </div>
+
+                    <div class="nav-section">
+                        <h3>Features</h3>
+                        <ul>
+                            <li><a href="features.html">Features Overview</a></li>
+                            <li><a href="editing-tools.html">Editing Tools</a></li>
+                            <li><a href="filters.html">Filters & Effects</a></li>
+                            <li><a href="ai-features.html">AI Features</a></li>
+                        </ul>
+                    </div>
+
+                    <div class="nav-section">
+                        <h3>Developer Guide</h3>
+                        <ul>
+                            <li><a href="development.html">Development Workflow</a></li>
+                            <li><a href="testing.html">Testing</a></li>
+                            <li><a href="deployment.html">Deployment</a></li>
+                            <li><a href="contributing.html">Contributing</a></li>
+                        </ul>
+                    </div>
+                </nav>
+            </aside>
+
+            <main class="main-content auto-toc">
+                <div class="breadcrumbs">
+                    <a href="../index.html">Home</a>
+                    <span>/</span>
+                    <span>Setup & Installation</span>
+                </div>
+
+                <div class="page-header">
+                    <h1>Setup & Installation Guide</h1>
+                    <p class="subtitle">Complete setup instructions for backend and frontend development</p>
+                </div>
+
+                <h2 id="prerequisites">Prerequisites</h2>
+
+                <div class="card-grid">
+                    <div class="feature-card">
+                        <div class="icon">🐍</div>
+                        <h3>Backend</h3>
+                        <ul>
+                            <li>Python 3.10+</li>
+                            <li>pip (Python package manager)</li>
+                            <li>Docker (for Imaginary service)</li>
+                            <li>Google Cloud SDK (optional)</li>
+                        </ul>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="icon">📱</div>
+                        <h3>Frontend</h3>
+                        <ul>
+                            <li>Node.js 20.0.0+</li>
+                            <li>npm 10.0.0+</li>
+                            <li>Expo CLI</li>
+                            <li>Android Studio / Xcode</li>
+                        </ul>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="icon">🔑</div>
+                        <h3>API Keys</h3>
+                        <ul>
+                            <li>Google Gemini API key</li>
+                            <li>Firebase project (optional)</li>
+                            <li>GCS service account (optional)</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <h2 id="backend-setup">Backend Setup</h2>
+
+                <h3>1. Clone Repository</h3>
+                <pre><code>git clone https://github.com/your-repo/Adobe-Frontend-Inter-IIT.git
+cd Adobe-Frontend-Inter-IIT</code></pre>
+
+                <h3>2. Install Python Dependencies</h3>
+                <pre><code>pip install -r requirements.txt</code></pre>
+
+                <h4>Key Dependencies:</h4>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Package</th>
+                            <th>Version</th>
+                            <th>Purpose</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>fastapi</td>
+                            <td>0.104.1</td>
+                            <td>Web framework for API</td>
+                        </tr>
+                        <tr>
+                            <td>google-generativeai</td>
+                            <td>≥0.3.0</td>
+                            <td>Gemini LLM integration</td>
+                        </tr>
+                        <tr>
+                            <td>torch</td>
+                            <td>≥2.0.0</td>
+                            <td>Deep learning framework</td>
+                        </tr>
+                        <tr>
+                            <td>pillow</td>
+                            <td>≥10.0.0</td>
+                            <td>Image processing</td>
+                        </tr>
+                        <tr>
+                            <td>google-cloud-storage</td>
+                            <td>≥2.10.0</td>
+                            <td>GCS integration</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3>3. Set Up Imaginary Service</h3>
+                <p>Imaginary is the image processing microservice required for edit operations.</p>
+
+                <div class="alert alert-info">
+                    <strong>💡 Recommended:</strong> Use Docker for easiest setup.
+                </div>
+
+                <pre><code># Pull and run Imaginary container
+docker run -d -p 8080:9000 \
+  --name imaginary \
+  h2non/imaginary:latest \
+  -enable-url-source
+
+# Verify it's running
+curl http://localhost:8080/info</code></pre>
+
+                <h3>4. Configure Environment Variables</h3>
+                <pre><code># Copy example environment file
+cp .env.example .env
+
+# Edit .env with your settings
+nano .env</code></pre>
+
+                <h4>Minimum Configuration:</h4>
+                <pre><code># Imaginary API (REQUIRED)
+IMAGINARY_BASE_URL=http://localhost:8080
+IMAGINARY_TIMEOUT=30
+
+# Gemini API (REQUIRED for AI features)
+GEMINI_API_KEY=your_gemini_api_key_here
+
+# Storage (Choose one)
+LOCAL_STORAGE_PATH=./storage
+# OR
+# CLOUD_STORAGE_BUCKET=your-gcs-bucket-name
+# GOOGLE_APPLICATION_CREDENTIALS=/path/to/credentials.json</code></pre>
+
+                <h3>5. Set Up Storage</h3>
+
+                <h4>Option A: Local Storage (Development)</h4>
+                <pre><code># Create storage directory
+mkdir -p storage
+chmod 755 storage
+
+# No additional configuration needed!</code></pre>
+
+                <h4>Option B: Google Cloud Storage (Production)</h4>
+                <pre><code># Install Google Cloud SDK
+curl https://sdk.cloud.google.com | bash
+exec -l $SHELL
+
+# Initialize and authenticate
+gcloud init
+gcloud auth application-default login
+
+# Create GCS bucket
+gsutil mb -p YOUR_PROJECT_ID -l us-central1 gs://your-bucket-name
+
+# Set environment variable
+export GOOGLE_APPLICATION_CREDENTIALS="/path/to/service-account.json"</code></pre>
+
+                <h3>6. Start Backend Server</h3>
+                <pre><code># Option 1: Using run script
+./run.sh
+
+# Option 2: Using uvicorn directly
+uvicorn app.orchestration.application.main:app --reload --host 0.0.0.0 --port 8000
+
+# Server will be available at:
+# http://localhost:8000
+# API docs: http://localhost:8000/docs</code></pre>
+
+                <div class="alert alert-success">
+                    <strong>✓ Backend Ready!</strong> Visit <a href="http://localhost:8000/docs" target="_blank">http://localhost:8000/docs</a> to test the API.
+                </div>
+
+                <h2 id="frontend-setup">Frontend Setup</h2>
+
+                <h3>1. Navigate to Frontend Directory</h3>
+                <pre><code>cd frontend</code></pre>
+
+                <h3>2. Install Dependencies</h3>
+                <pre><code>npm install
+
+# If you encounter peer dependency issues:
+npm install --legacy-peer-deps</code></pre>
+
+                <h4>Key Dependencies:</h4>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Package</th>
+                            <th>Version</th>
+                            <th>Purpose</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>expo</td>
+                            <td>~54.0.23</td>
+                            <td>React Native framework</td>
+                        </tr>
+                        <tr>
+                            <td>react-native</td>
+                            <td>0.81.5</td>
+                            <td>Mobile app framework</td>
+                        </tr>
+                        <tr>
+                            <td>@react-navigation</td>
+                            <td>^7.x</td>
+                            <td>Navigation library</td>
+                        </tr>
+                        <tr>
+                            <td>axios</td>
+                            <td>^1.13.2</td>
+                            <td>HTTP client</td>
+                        </tr>
+                        <tr>
+                            <td>@gorhom/bottom-sheet</td>
+                            <td>^5.2.6</td>
+                            <td>Bottom sheet UI</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3>3. Configure Firebase (Optional)</h3>
+                <p>Firebase is used for cloud image storage in the mobile app.</p>
+
+                <pre><code># Create src/config/firebase.ts with your credentials
+export const firebaseConfig = {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT.firebaseapp.com",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_PROJECT.appspot.com",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId: "YOUR_APP_ID"
+};</code></pre>
+
+                <h3>4. Configure Backend URL</h3>
+                <pre><code># Edit src/config/index.ts
+export const API_CONFIG = {
+  BASE_URL: 'http://localhost:8000',  // Or your server IP
+  TIMEOUT: 30000,
+  MOCK_MODE: false  // Set to true for offline development
+};</code></pre>
+
+                <h3>5. Start Development Server</h3>
+                <pre><code># Start Expo
+npm start
+
+# Or specific platform
+npm run android  # Android emulator/device
+npm run ios      # iOS simulator (Mac only)
+npm run web      # Web browser</code></pre>
+
+                <div class="alert alert-warning">
+                    <strong>⚠️ Network Configuration:</strong> For Android device/emulator to reach backend on localhost,
+                    you may need to use your computer's IP address instead of <code>localhost</code>.
+                </div>
+
+                <h2 id="development-tools">Development Tools Setup</h2>
+
+                <h3>Android Studio (For Android Development)</h3>
+                <ol>
+                    <li>Download Android Studio from <a href="https://developer.android.com/studio" target="_blank">developer.android.com/studio</a></li>
+                    <li>Install Android SDK and emulator</li>
+                    <li>Set up environment variables:
+                        <pre><code>export ANDROID_HOME=$HOME/Android/Sdk
+export PATH=$PATH:$ANDROID_HOME/emulator
+export PATH=$PATH:$ANDROID_HOME/platform-tools</code></pre>
+                    </li>
+                    <li>Create a virtual device (AVD) with API 33+</li>
+                </ol>
+
+                <h3>Xcode (For iOS Development - Mac Only)</h3>
+                <ol>
+                    <li>Install Xcode from App Store</li>
+                    <li>Install Xcode Command Line Tools:
+                        <pre><code>xcode-select --install</code></pre>
+                    </li>
+                    <li>Install CocoaPods:
+                        <pre><code>sudo gem install cocoapods</code></pre>
+                    </li>
+                </ol>
+
+                <h2 id="verification">Verification Checklist</h2>
+
+                <div class="card">
+                    <h3>Backend Verification</h3>
+                    <ul>
+                        <li>✓ Python dependencies installed</li>
+                        <li>✓ Imaginary service running on port 8080</li>
+                        <li>✓ Environment variables configured</li>
+                        <li>✓ Storage (local or GCS) accessible</li>
+                        <li>✓ FastAPI server running on port 8000</li>
+                        <li>✓ API docs accessible at <code>/docs</code></li>
+                    </ul>
+                </div>
+
+                <div class="card">
+                    <h3>Frontend Verification</h3>
+                    <ul>
+                        <li>✓ Node.js and npm installed</li>
+                        <li>✓ npm dependencies installed</li>
+                        <li>✓ Backend URL configured</li>
+                        <li>✓ Expo development server running</li>
+                        <li>✓ App loads on device/emulator</li>
+                    </ul>
+                </div>
+
+                <h2 id="troubleshooting">Troubleshooting</h2>
+
+                <h3>Backend Issues</h3>
+
+                <div class="endpoint">
+                    <h4>Issue: "Connection refused" to Imaginary</h4>
+                    <p><strong>Solution:</strong></p>
+                    <pre><code># Check if Imaginary is running
+docker ps | grep imaginary
+curl http://localhost:8080/info
+
+# Restart if needed
+docker restart imaginary</code></pre>
+                </div>
+
+                <div class="endpoint">
+                    <h4>Issue: "ModuleNotFoundError" for Python packages</h4>
+                    <p><strong>Solution:</strong></p>
+                    <pre><code># Ensure you're using correct Python version
+python --version  # Should be 3.10+
+
+# Reinstall dependencies
+pip install -r requirements.txt --upgrade</code></pre>
+                </div>
+
+                <div class="endpoint">
+                    <h4>Issue: GCS authentication errors</h4>
+                    <p><strong>Solution:</strong></p>
+                    <pre><code># Verify credentials path
+echo $GOOGLE_APPLICATION_CREDENTIALS
+
+# Test authentication
+gcloud auth application-default login
+
+# Check service account permissions
+gcloud projects get-iam-policy YOUR_PROJECT_ID</code></pre>
+                </div>
+
+                <h3>Frontend Issues</h3>
+
+                <div class="endpoint">
+                    <h4>Issue: "Unable to resolve module"</h4>
+                    <p><strong>Solution:</strong></p>
+                    <pre><code># Clear Metro bundler cache
+npm start -- --clear
+
+# Or delete node_modules and reinstall
+rm -rf node_modules package-lock.json
+npm install</code></pre>
+                </div>
+
+                <div class="endpoint">
+                    <h4>Issue: "Network request failed"</h4>
+                    <p><strong>Solution:</strong></p>
+                    <ul>
+                        <li>Use your computer's IP address instead of <code>localhost</code></li>
+                        <li>Ensure backend server is running and accessible</li>
+                        <li>Check firewall settings</li>
+                    </ul>
+                    <pre><code># Find your IP address
+# Mac/Linux:
+ifconfig | grep "inet "
+# Windows:
+ipconfig
+
+# Update config to use IP
+BASE_URL: 'http://192.168.1.100:8000'</code></pre>
+                </div>
+
+                <div class="endpoint">
+                    <h4>Issue: Expo "JavaScript heap out of memory"</h4>
+                    <p><strong>Solution:</strong></p>
+                    <pre><code># Increase Node.js memory limit
+export NODE_OPTIONS="--max-old-space-size=4096"
+npm start</code></pre>
+                </div>
+
+                <h2 id="quick-start">Quick Start (All-in-One)</h2>
+
+                <p>For the fastest setup with minimal configuration:</p>
+
+                <pre><code># Backend (Terminal 1)
+pip install -r requirements.txt
+docker run -d -p 8080:9000 --name imaginary h2non/imaginary:latest -enable-url-source
+echo "IMAGINARY_BASE_URL=http://localhost:8080" > .env
+echo "LOCAL_STORAGE_PATH=./storage" >> .env
+echo "GEMINI_API_KEY=your_key_here" >> .env
+./run.sh
+
+# Frontend (Terminal 2)
+cd frontend
+npm install
+npm start</code></pre>
+
+                <div class="alert alert-success">
+                    <strong>🎉 Done!</strong> Your development environment is ready. Check out the
+                    <a href="development.html">Development Workflow</a> guide to start building.
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2025 Adobe Image Editor Documentation. Built with ❤️ for Inter IIT Tech Meet.</p>
+        </div>
+    </footer>
+
+    <script src="../assets/script.js"></script>
+</body>
+</html>

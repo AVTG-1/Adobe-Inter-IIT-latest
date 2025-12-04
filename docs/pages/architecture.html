@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Architecture - Adobe Image Editor Documentation</title>
+    <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <div class="logo">
+                <span class="logo-icon">📸</span>
+                <div>
+                    <h1>Adobe Image Editor</h1>
+                    <p style="margin: 0; opacity: 0.9; font-size: 0.9rem;">Technical Documentation</p>
+                </div>
+            </div>
+            <nav class="header-nav">
+                <a href="../index.html">Home</a>
+                <a href="architecture.html">Architecture</a>
+                <a href="api.html">API Reference</a>
+                <a href="setup.html">Setup Guide</a>
+                <a href="https://github.com" target="_blank">GitHub</a>
+            </nav>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="docs-layout">
+            <!-- Sidebar Navigation -->
+            <aside class="sidebar">
+                <div class="search-bar">
+                    <input type="text" placeholder="Search documentation...">
+                </div>
+
+                <nav>
+                    <div class="nav-section">
+                        <h3>Getting Started</h3>
+                        <ul>
+                            <li><a href="../index.html">Overview</a></li>
+                            <li><a href="setup.html">Setup & Installation</a></li>
+                            <li><a href="quickstart.html">Quick Start Guide</a></li>
+                        </ul>
+                    </div>
+
+                    <div class="nav-section">
+                        <h3>Architecture</h3>
+                        <ul>
+                            <li><a href="architecture.html" class="active">System Architecture</a></li>
+                            <li><a href="tech-stack.html">Technology Stack</a></li>
+                            <li><a href="data-flow.html">Data Flow</a></li>
+                        </ul>
+                    </div>
+
+                    <div class="nav-section">
+                        <h3>Backend</h3>
+                        <ul>
+                            <li><a href="api.html">API Reference</a></li>
+                            <li><a href="backend-structure.html">Backend Structure</a></li>
+                            <li><a href="ai-llm.html">AI & LLM Integration</a></li>
+                            <li><a href="image-processing.html">Image Processing</a></li>
+                        </ul>
+                    </div>
+
+                    <div class="nav-section">
+                        <h3>Frontend</h3>
+                        <ul>
+                            <li><a href="frontend-overview.html">Frontend Overview</a></li>
+                            <li><a href="components.html">Components</a></li>
+                            <li><a href="screens.html">Screens</a></li>
+                            <li><a href="state-management.html">State Management</a></li>
+                        </ul>
+                    </div>
+
+                    <div class="nav-section">
+                        <h3>Features</h3>
+                        <ul>
+                            <li><a href="features.html">Features Overview</a></li>
+                            <li><a href="editing-tools.html">Editing Tools</a></li>
+                            <li><a href="filters.html">Filters & Effects</a></li>
+                            <li><a href="ai-features.html">AI Features</a></li>
+                        </ul>
+                    </div>
+
+                    <div class="nav-section">
+                        <h3>Developer Guide</h3>
+                        <ul>
+                            <li><a href="development.html">Development Workflow</a></li>
+                            <li><a href="testing.html">Testing</a></li>
+                            <li><a href="deployment.html">Deployment</a></li>
+                            <li><a href="contributing.html">Contributing</a></li>
+                        </ul>
+                    </div>
+                </nav>
+            </aside>
+
+            <!-- Main Content -->
+            <main class="main-content auto-toc">
+                <div class="breadcrumbs">
+                    <a href="../index.html">Home</a>
+                    <span>/</span>
+                    <span>Architecture</span>
+                </div>
+
+                <div class="page-header">
+                    <h1>System Architecture</h1>
+                    <p class="subtitle">Comprehensive overview of the application's architecture and design patterns</p>
+                </div>
+
+                <h2 id="overview">Architecture Overview</h2>
+                <p>
+                    Adobe Image Editor follows a <strong>layered architecture pattern</strong> with clear separation between
+                    frontend, backend, and external services. The system is designed for scalability, maintainability, and
+                    extensibility with AI-powered intelligent workflows at its core.
+                </p>
+
+                <div class="diagram">
+                    <h3>High-Level Architecture</h3>
+                    <pre><code>┌─────────────────────────────────────────────────────────┐
+│                  CLIENT LAYER                          │
+│                                                         │
+│  ┌──────────────────────────────────────────────────┐ │
+│  │         React Native Mobile App                  │ │
+│  │  ┌────────────┐  ┌────────────┐  ┌───────────┐  │ │
+│  │  │  Screens   │  │ Components │  │ Services  │  │ │
+│  │  └────────────┘  └────────────┘  └───────────┘  │ │
+│  │         TypeScript + Expo 54.0.23               │ │
+│  └──────────────────────────────────────────────────┘ │
+└────────────────────┬────────────────────────────────────┘
+                     │
+              HTTP/REST + WebSocket
+                     │
+┌────────────────────▼────────────────────────────────────┐
+│               API GATEWAY LAYER                         │
+│  ┌──────────────────────────────────────────────────┐  │
+│  │            FastAPI Server (0.104.1)              │  │
+│  │   • RESTful Endpoints                            │  │
+│  │   • WebSocket Server                             │  │
+│  │   • Request Validation (Pydantic v2)             │  │
+│  └──────────────────────────────────────────────────┘  │
+└────────────────────┬────────────────────────────────────┘
+                     │
+┌────────────────────▼────────────────────────────────────┐
+│            ORCHESTRATION LAYER                          │
+│  ┌──────────────────────────────────────────────────┐  │
+│  │        General Edit Orchestrator                 │  │
+│  │  • Workflow Coordination                         │  │
+│  │  • Service Selection                             │  │
+│  │  • Error Handling & Recovery                     │  │
+│  ├──────────────────────────────────────────────────┤  │
+│  │         Execution Engine                         │  │
+│  │  • Tree-Based State Management                   │  │
+│  │  • Step-by-Step Processing                       │  │
+│  │  • Real-time WebSocket Updates                   │  │
+│  ├──────────────────────────────────────────────────┤  │
+│  │            LLM Service                           │  │
+│  │  • Prompt Construction                           │  │
+│  │  • Gemini API Integration                        │  │
+│  │  • Response Parsing                              │  │
+│  └──────────────────────────────────────────────────┘  │
+└────────────────────┬────────────────────────────────────┘
+                     │
+┌────────────────────▼────────────────────────────────────┐
+│                  CORE LAYER                             │
+│  ┌──────────────────────────────────────────────────┐  │
+│  │              Services                            │  │
+│  │  ┌────────────────┐  ┌──────────────────────┐   │  │
+│  │  │ StorageService │  │  ImageProcessor      │   │  │
+│  │  │  • GCS Upload  │  │  • Format Conversion │   │  │
+│  │  │  • Local Files │  │  • Transformation    │   │  │
+│  │  └────────────────┘  └──────────────────────┘   │  │
+│  ├──────────────────────────────────────────────────┤  │
+│  │               Models (Pydantic)                  │  │
+│  │  • EditRequest / Response                        │  │
+│  │  • Operation Schemas                             │  │
+│  │  • State Node Structures                         │  │
+│  └──────────────────────────────────────────────────┘  │
+└────────────────────┬────────────────────────────────────┘
+                     │
+┌────────────────────▼────────────────────────────────────┐
+│               EXPERTS LAYER                             │
+│  ┌──────────────────────────────────────────────────┐  │
+│  │            Specialized Agents                    │  │
+│  │  • InpaintingAgent (Object Removal)              │  │
+│  │  • RelightingAgent (3D Light Adjustment)         │  │
+│  │  • BaseAgent (TAO Pattern)                       │  │
+│  ├──────────────────────────────────────────────────┤  │
+│  │             Image Tools                          │  │
+│  │  • LangChain Tool Wrappers                       │  │
+│  │  • Tool Schema Definitions                       │  │
+│  └──────────────────────────────────────────────────┘  │
+└────────────────────┬────────────────────────────────────┘
+                     │
+┌────────────────────▼────────────────────────────────────┐
+│           EXTERNAL SERVICES LAYER                       │
+│  ┌─────────────┐  ┌─────────────┐  ┌──────────────┐   │
+│  │ Imaginary.io│  │   OpenCV    │  │  Google GCS  │   │
+│  │  (Docker)   │  │  Processing │  │   Storage    │   │
+│  └─────────────┘  └─────────────┘  └──────────────┘   │
+│  ┌─────────────┐  ┌─────────────────────────────────┐  │
+│  │   Gemini    │  │  Custom Relighting Model        │  │
+│  │  LLM API    │  │  (IC-Light based)               │  │
+│  └─────────────┘  └─────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────┘</code></pre>
+                </div>
+
+                <h2 id="backend-architecture">Backend Architecture</h2>
+
+                <h3>Layered Architecture Pattern</h3>
+                <p>
+                    The backend follows a strict 3-layer architecture that separates concerns and promotes maintainability:
+                </p>
+
+                <div class="card-grid">
+                    <div class="feature-card">
+                        <div class="icon">🎯</div>
+                        <h3>Orchestration Layer</h3>
+                        <p><strong>Location:</strong> <code>app/orchestration/</code></p>
+                        <p>Handles API endpoints, WebSocket connections, workflow coordination, and user interaction.</p>
+                        <p><strong>Components:</strong></p>
+                        <ul>
+                            <li>FastAPI application</li>
+                            <li>Execution engine</li>
+                            <li>LLM service integration</li>
+                            <li>State store management</li>
+                        </ul>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="icon">⚙️</div>
+                        <h3>Core Layer</h3>
+                        <p><strong>Location:</strong> <code>app/core/</code></p>
+                        <p>Contains business logic, data models, and core services that power the application.</p>
+                        <p><strong>Components:</strong></p>
+                        <ul>
+                            <li>Pydantic models & schemas</li>
+                            <li>Storage service (GCS/Local)</li>
+                            <li>Third-party service clients</li>
+                            <li>Image processing utilities</li>
+                        </ul>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="icon">🤖</div>
+                        <h3>Experts Layer</h3>
+                        <p><strong>Location:</strong> <code>app/experts/</code></p>
+                        <p>Specialized AI agents and tools for complex image processing tasks.</p>
+                        <p><strong>Components:</strong></p>
+                        <ul>
+                            <li>Base agent (TAO pattern)</li>
+                            <li>Inpainting agent</li>
+                            <li>Relighting agent</li>
+                            <li>LangChain tool wrappers</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <h3>Backend Directory Structure</h3>
+                <pre><code>app/
+├── orchestration/
+│   ├── application/
+│   │   ├── main.py                    # FastAPI app entry point
+│   │   ├── config.py                  # Settings (env vars)
+│   │   ├── engine.py                  # Execution engine
+│   │   ├── llm_service.py             # Gemini integration
+│   │   ├── image_processor.py         # Processing pipeline
+│   │   ├── manager.py                 # WebSocket manager
+│   │   ├── state_store.py             # Session state
+│   │   ├── features.json              # Tool definitions
+│   │   └── resources/
+│   │       ├── health.py              # Health endpoint
+│   │       └── edit_workflow.py       # Edit endpoint
+│   └── orchestrator/
+│       └── general_edit_orchestrator.py  # Workflow logic
+├── core/
+│   ├── models/
+│   │   └── schemas.py                 # Pydantic models
+│   └── services/
+│       ├── app/
+│       │   └── storage_service.py     # GCS/Local storage
+│       └── third_party/
+│           ├── imaginary/             # Imaginary.io client
+│           ├── opencv/                # OpenCV processing
+│           └── relighting/            # Relighting service
+└── experts/
+    ├── agents/
+    │   ├── base_agent.py              # TAO pattern base
+    │   ├── inpainting_agent.py        # Object removal
+    │   └── relighting_agent.py        # Light adjustment
+    └── tools/
+        └── image_tools.py             # LangChain tools</code></pre>
+
+                <h2 id="frontend-architecture">Frontend Architecture</h2>
+
+                <h3>Component-Based Architecture</h3>
+                <p>
+                    The React Native frontend follows a component-based architecture with clear separation between
+                    presentation, business logic, and data access layers.
+                </p>
+
+                <div class="diagram">
+                    <pre><code>frontend/src/
+├── screens/               # Screen Components (Pages)
+│   ├── Splash1Screen      # Onboarding
+│   ├── Splash2Screen      # Onboarding
+│   ├── HomeScreen         # Gallery/Projects
+│   ├── EditorScreen       # Main Editor (4092 lines!)
+│   ├── LayersScreen       # Layer Management
+│   └── EffectsScreen      # Effects Library
+│
+├── components/            # Reusable UI Components
+│   ├── FiltersPanel       # 50+ filters
+│   ├── ProfessionalAdjustmentsPanel  # 11 adjustments
+│   ├── DrawingToolsPanel  # 13 drawing tools
+│   ├── CropTool
+│   ├── RotateTool
+│   ├── BeforeAfterSlider
+│   └── [15+ more...]
+│
+├── services/              # Business Logic & API
+│   ├── api.ts             # Backend API client
+│   ├── storage.ts         # Firebase/GCS integration
+│   └── projects.ts        # Project management
+│
+├── navigation/            # Navigation Setup
+│   └── AppNavigator.tsx   # Stack navigation
+│
+├── types/                 # TypeScript Definitions
+│   ├── api.ts             # API types
+│   └── treeNode.ts        # State tree types
+│
+├── utils/                 # Utility Functions
+│   ├── imageProcessing.ts # Image utilities
+│   ├── canvasFilters.ts   # Canvas filters
+│   └── historyManager.ts  # Undo/redo
+│
+└── config/                # Configuration
+    ├── firebase.ts        # Firebase setup
+    ├── theme.ts           # Design system
+    └── index.ts           # App config</code></pre>
+                </div>
+
+                <h3>Screen-Based Navigation</h3>
+                <div class="diagram">
+                    <pre><code>App Launch
+    │
+    ▼
+┌─────────────┐
+│ Splash1     │ (2s auto or skip)
+└──────┬──────┘
+       │
+       ▼
+┌─────────────┐
+│ Splash2     │ (2s auto or skip)
+└──────┬──────┘
+       │
+       ▼
+┌─────────────────────────┐
+│    HomeScreen           │
+│  • Import Gallery       │
+│  • Open Camera          │
+│  • Recent Projects      │
+└──┬───────┬─────────┬────┘
+   │       │         │
+   └───────┴─────────┘
+           │
+           ▼
+    ┌──────────────┐
+    │ EditorScreen │ ◄───┐ Main Hub
+    └──┬────────┬──┘     │
+       │        │        │
+       ▼        ▼        │
+  ┌─────┐  ┌──────┐     │
+  │Layers│ │Effects│─────┘
+  └─────┘  └──────┘</code></pre>
+                </div>
+
+                <h2 id="ai-workflow">AI-Powered Workflow System</h2>
+
+                <h3>Tree-Based State Management</h3>
+                <p>
+                    One of the key innovations is the tree-based state management system that enables non-linear editing
+                    with branching, versioning, and macro recording.
+                </p>
+
+                <div class="diagram">
+                    <pre><code>Initial Image (Root Node)
+       │
+       ▼
+  ┌────────┐
+  │ Crop   │
+  └────┬───┘
+       │
+       ├─────────┬─────────┐
+       │         │         │
+  ┌────▼───┐ ┌──▼────┐ ┌──▼────┐
+  │Brighten│ │ Blur  │ │Contrast│  (Multiple Branches)
+  └────┬───┘ └───┬───┘ └───┬───┘
+       │         │         │
+       ▼         ▼         ▼
+   [Version 1][Version 2][Version 3]
+
+User can:
+• Switch between any version
+• Refine any node to create new branch
+• Record macro from path
+• Apply macro to new images</code></pre>
+                </div>
+
+                <h3>LLM Planning Flow</h3>
+                <div class="diagram">
+                    <pre><code>1. User Input
+   ├─ Natural language prompt
+   ├─ Reference image (optional)
+   └─ Original image
+        │
+        ▼
+2. LLM Analysis (Gemini)
+   ├─ Analyzes image content
+   ├─ Parses user intent
+   └─ Generates multi-step plan
+        │
+        ▼
+3. Plan Generation
+   {
+     "steps": [
+       {"tool": "crop", "params": {...}},
+       {"tool": "brightness", "params": {...}},
+       {"tool": "filter", "params": {...}}
+     ],
+     "reasoning": "..."
+   }
+        │
+        ▼
+4. Execution Engine
+   ├─ Execute steps sequentially
+   ├─ Send WebSocket updates
+   └─ Handle errors (retry/skip)
+        │
+        ▼
+5. Result Delivery
+   ├─ Final image URL
+   ├─ State tree updated
+   └─ Client displays result</code></pre>
+                </div>
+
+                <h2 id="communication">Communication Patterns</h2>
+
+                <h3>REST API</h3>
+                <p>
+                    Used for simple request-response operations like health checks and single-shot edits.
+                </p>
+                <pre><code>POST /api/v1/edit/general
+Content-Type: application/json
+
+{
+  "image_url": "https://storage.googleapis.com/...",
+  "operations": [
+    {"type": "brightness", "value": 1.2},
+    {"type": "crop", "x": 0, "y": 0, "width": 800, "height": 600}
+  ]
+}
+
+Response:
+{
+  "job_id": "uuid",
+  "status": "completed",
+  "result_url": "https://...",
+  "processing_time_ms": 1234
+}</code></pre>
+
+                <h3>WebSocket Protocol</h3>
+                <p>
+                    Used for real-time AI workflows with step-by-step progress updates.
+                </p>
+                <pre><code>// Client connects
+ws://localhost:8000/ws/client_123
+
+// Client sends
+{
+  "action": "start_processing",
+  "data": {
+    "prompt": "Make this photo more vibrant and crop to square",
+    "image_url": "https://...",
+    "session_id": "session_456"
+  }
+}
+
+// Server sends (multiple events)
+{
+  "type": "step_start",
+  "step_index": 0,
+  "tool": "crop",
+  "params": {...}
+}
+
+{
+  "type": "path_update",
+  "node": {
+    "id": "node_789",
+    "image_url": "https://...",
+    "thumbnail_url": "https://..."
+  }
+}</code></pre>
+
+                <h2 id="data-persistence">Data Persistence</h2>
+
+                <div class="card-grid">
+                    <div class="feature-card">
+                        <div class="icon">☁️</div>
+                        <h3>Cloud Storage</h3>
+                        <p><strong>Google Cloud Storage (GCS)</strong></p>
+                        <ul>
+                            <li>Image file hosting</li>
+                            <li>Public URL generation</li>
+                            <li>Automatic cleanup</li>
+                            <li>Cost-effective ($0.020/GB/month)</li>
+                        </ul>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="icon">💾</div>
+                        <h3>Local Storage</h3>
+                        <p><strong>AsyncStorage (React Native)</strong></p>
+                        <ul>
+                            <li>Project metadata</li>
+                            <li>Recent projects list</li>
+                            <li>User preferences</li>
+                            <li>Edit history</li>
+                        </ul>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="icon">🗂️</div>
+                        <h3>Session State</h3>
+                        <p><strong>In-Memory (Backend)</strong></p>
+                        <ul>
+                            <li>WebSocket connections</li>
+                            <li>Tree-based edit history</li>
+                            <li>Processing status</li>
+                            <li>Temporary files</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <h2 id="security">Security Considerations</h2>
+
+                <div class="alert alert-warning">
+                    <strong>⚠️ Production Security:</strong> This codebase includes placeholder credentials. Before
+                    deploying to production, ensure all API keys and service account credentials are properly secured
+                    using environment variables and secret management systems.
+                </div>
+
+                <ul>
+                    <li><strong>API Keys:</strong> Stored in environment variables, not committed to Git</li>
+                    <li><strong>GCS Service Account:</strong> JSON key files excluded via <code>.gitignore</code></li>
+                    <li><strong>CORS:</strong> Configure allowed origins in production</li>
+                    <li><strong>Rate Limiting:</strong> Implement rate limiting for API endpoints</li>
+                    <li><strong>Input Validation:</strong> Pydantic models validate all inputs</li>
+                    <li><strong>File Upload:</strong> Validate file types and sizes</li>
+                </ul>
+
+                <h2 id="scalability">Scalability & Performance</h2>
+
+                <h3>Backend Scalability</h3>
+                <ul>
+                    <li><strong>Async Processing:</strong> FastAPI async endpoints for concurrent request handling</li>
+                    <li><strong>Service Separation:</strong> Image processing can be moved to separate microservices</li>
+                    <li><strong>Caching:</strong> Redis can be added for session state and result caching</li>
+                    <li><strong>Load Balancing:</strong> Multiple backend instances can run behind a load balancer</li>
+                    <li><strong>Queue System:</strong> Celery/RabbitMQ for long-running tasks</li>
+                </ul>
+
+                <h3>Frontend Performance</h3>
+                <ul>
+                    <li><strong>Image Optimization:</strong> Thumbnails and progressive loading</li>
+                    <li><strong>Lazy Loading:</strong> Components and screens loaded on demand</li>
+                    <li><strong>Caching:</strong> Local image caching to reduce network requests</li>
+                    <li><strong>Animations:</strong> Native driver for smooth 60 FPS animations</li>
+                    <li><strong>Memoization:</strong> React.memo and useMemo to prevent unnecessary renders</li>
+                </ul>
+
+                <h2 id="design-patterns">Design Patterns</h2>
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Pattern</th>
+                            <th>Location</th>
+                            <th>Purpose</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Layered Architecture</strong></td>
+                            <td>Backend (3 layers)</td>
+                            <td>Separation of concerns, maintainability</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Service Layer</strong></td>
+                            <td>Frontend services/</td>
+                            <td>Abstract API calls and business logic</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Factory Pattern</strong></td>
+                            <td>Service clients</td>
+                            <td>Create service instances (Imaginary, OpenCV)</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Observer Pattern</strong></td>
+                            <td>WebSocket manager</td>
+                            <td>Real-time event broadcasting</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Command Pattern</strong></td>
+                            <td>Image operations</td>
+                            <td>Encapsulate edit operations as objects</td>
+                        </tr>
+                        <tr>
+                            <td><strong>TAO Pattern</strong></td>
+                            <td>AI agents</td>
+                            <td>Think-Act-Observe for AI agents</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Repository Pattern</strong></td>
+                            <td>Storage service</td>
+                            <td>Abstract data access (GCS/Local)</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div class="alert alert-info">
+                    <strong>💡 Next Steps:</strong> Explore the <a href="api.html">API Reference</a> for detailed
+                    endpoint documentation or check out the <a href="tech-stack.html">Technology Stack</a> for
+                    information on specific libraries and frameworks used.
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2025 Adobe Image Editor Documentation. Built with ❤️ for Inter IIT Tech Meet.</p>
+        </div>
+    </footer>
+
+    <script src="../assets/script.js"></script>
+</body>
+</html>
