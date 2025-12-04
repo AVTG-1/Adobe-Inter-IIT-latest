@@ -88,7 +88,6 @@ class GeneralEditOrchestrator:
         image_url: str,
         operations: List[Tuple[EditService, EditOperation]],
     ):
-        print("Starting general edit orchestrator run method")
         # 1. Download source image bytes (used by both backends)
         img_bytes = await self._download_image(image_url)
 
@@ -99,7 +98,6 @@ class GeneralEditOrchestrator:
             if service == EditService.OPENCV:
                 current_bytes = await self._apply_opencv(current_bytes, ops)
             else:
-                print("Applying Imaginary operations:", ops)
                 current_bytes = await self._apply_imaginary(current_bytes, ops)
 
         # 3. Save final image

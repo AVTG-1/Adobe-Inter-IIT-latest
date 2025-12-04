@@ -9,6 +9,8 @@ from typing import Optional
 from io import BytesIO
 import random
 from PIL import ImageFilter, ImageDraw
+from app.core.services.third_party.relighting.client import RelightingClient
+
 
 from app.core.services.app.storage_service import StorageService
 
@@ -18,6 +20,18 @@ class ImageProcessor:
         os.makedirs(self.static_dir, exist_ok=True)
         # Use provided StorageService or create one (GCS with local fallback)
         self.storage = storage or StorageService()
+        # Initialize relighting client
+        self._relighting_client = None
+
+    @property
+    def relighting_client(self) -> RelightingClient:
+        if self._relighting_client is None:
+            try:
+                self._relighting_client = RelightingClient()
+            except FileNotFoundError as e:
+                print(f"Warning: Relighting model not found: {e}")
+                return None
+        return self._relighting_client
 
     def _save_image(self, image: Image.Image) -> str:
         """Save image to local disk and return filesystem path."""
@@ -88,14 +102,18 @@ class ImageProcessor:
             
             loop = asyncio.get_running_loop()
             # Run blocking image processing in separate thread
-            result_bytes = await loop.run_in_executor(
-                None, 
-                self._process_image_bytes_sync, 
-                image_bytes, 
-                tool, 
-                params, 
-                input_image_path
-            )
+            # if tool is relighting, call async relighting client
+            if tool == "relighting":
+                result_bytes = await self._process_image_bytes_async(image_bytes, tool, params, input_image_path)
+            else:
+                result_bytes = await loop.run_in_executor(
+                    None, 
+                    self._process_image_bytes_sync, 
+                    image_bytes, 
+                    tool, 
+                    params, 
+                    input_image_path
+                )
             
             # Upload processed image to storage (GCS or local)
             # Use StorageService filename generator for consistent naming
@@ -106,27 +124,23 @@ class ImageProcessor:
                 filename = f"processed_{uuid.uuid4()}.jpg"
 
             # Attempt primary upload
-            print(f"[ImageProcessor] Uploading processed image. input={input_image_path} filename={filename}")
             url = await self.storage.save_image(
                 result_bytes,
                 filename=filename,
                 content_type="image/jpeg",
                 make_public=True
             )
-            print(f"[ImageProcessor] Storage returned url={url}")
 
             # If storage returned the same URL as the input (unexpected),
             # force a unique filename upload as a fallback to ensure a new object is created.
             if url == input_image_path or not url:
                 fallback_filename = f"processed_{uuid.uuid4()}.jpg"
-                print(f"[ImageProcessor] Detected storage returned input URL or empty. Retrying with fallback filename={fallback_filename}")
                 url2 = await self.storage.save_image(
                     result_bytes,
                     filename=fallback_filename,
                     content_type="image/jpeg",
                     make_public=True
                 )
-                print(f"[ImageProcessor] Fallback storage returned url={url2}")
                 if url2 and url2 != input_image_path:
                     return url2
                 # If still same, fail fast so caller can diagnose
@@ -269,39 +283,29 @@ class ImageProcessor:
                 else:
                     # Unknown overlay: no-op
                     overlay = Image.new("RGBA", base.size, (0, 0, 0, 0))
-            elif tool == "relighting":
-                # Call external relighting API which returns a result image URL.
-                relight_api = os.getenv("RELIGHT_API_URL", "http://localhost:5000/relight")
-                image_base = os.getenv("IMAGE_BASE_URL", "http://localhost:8000")
 
-                public_input_url = input_image_path
-                payload = {
-                    "image_url": public_input_url,
-                    "x": float(params.get("x", 0.0)),
-                    "y": float(params.get("y", -100.0)),
-                    "z": float(params.get("z", 100.0))
-                }
-                try:
-                    resp = httpx.post(relight_api, json=payload, timeout=60.0)
-                    resp.raise_for_status()
-                    data = resp.json()
-                    result_url = data.get("result_url")
-                    if not result_url:
-                        raise RuntimeError("No result_url in relight response")
+            # elif tool == "relighting":
+            #     if self.relighting_client is None:
+            #         raise RuntimeError("Relighting model not available")
 
-                    # Download result image into memory and load as PIL Image
-                    if result_url.startswith("http://") or result_url.startswith("https://"):
-                        r2 = httpx.get(result_url, timeout=30.0)
-                        r2.raise_for_status()
-                        img = Image.open(BytesIO(r2.content)).convert("RGB")
-                    else:
-                        # If service returned a server-relative path, load from disk
-                        local_path = result_url.lstrip("/")
-                        img = Image.open(local_path).convert("RGB")
-                except Exception as e:
-                    print(f"Relighting service error: {e}")
-                    # fall back to returning input on failure (existing behavior)
-                    img = Image.open(input_image_path).convert("RGB")
+            #     # Call relighting model directly
+            #     output_path = await self.relighting_client.relight(
+            #         img,
+            #         light_pos=(
+            #             float(params.get("light_x", 0.0)),
+            #             float(params.get("light_y", 100.0)),
+            #             float(params.get("light_z", 1.0))
+            #         ),
+            #         steps=int(params.get("steps", 25)),
+            #         prompt=params.get("prompt", "a scene")
+            #     )
+
+            #     # Read output image
+            #     with open(output_path, "rb") as f:
+            #         result_bytes = f.read()
+            #         return result_bytes
+                        
+            
             # Save processed image to BytesIO as JPEG and return as bytes
             output = BytesIO()
             # JPEG requires RGB (no alpha); image already converted to RGB above
@@ -311,3 +315,26 @@ class ImageProcessor:
         except Exception as e:
             print(f"Error processing image bytes: {e}")
             raise
+    async def _process_image_bytes_async(self, image_bytes: bytes, tool: str, params: dict, input_image_path: str) -> bytes:
+        if self.relighting_client is None:
+            raise RuntimeError("Relighting model not available")
+
+        img = Image.open(BytesIO(image_bytes))
+        img = img.convert("RGB")
+
+        # Call relighting model directly
+        output_path = await self.relighting_client.relight(
+            img,
+            light_pos=(
+                float(params.get("light_x", 0.0)),
+                float(params.get("light_y", 100.0)),
+                float(params.get("light_z", 1.0))
+            ),
+            steps=int(params.get("steps", 25)),
+            prompt=params.get("prompt", "a scene")
+        )
+
+        # Read output image
+        with open(output_path, "rb") as f:
+            result_bytes = f.read()
+            return result_bytes

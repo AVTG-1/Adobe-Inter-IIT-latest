@@ -94,7 +94,6 @@ class ExecutionEngine:
 
                 # Process Image with Error Recovery
                 # Instrumented processing with timeout + thread-offload for sync processors
-                print(f"Processing step '{step['tool']}' with params={step.get('params')} from image={current_node.get('image_url')}")
                 try:
                     # choose timeout (seconds) — adjust as appropriate
                     step_timeout = 30
@@ -110,7 +109,6 @@ class ExecutionEngine:
                         proc_call = asyncio.to_thread(self.processor.process_step, current_node["image_url"], step["tool"], step["params"])
 
                     result_url = await asyncio.wait_for(proc_call, timeout=step_timeout)
-                    print(f"Processing completed for '{step['tool']}', result_url={result_url}")
                 except asyncio.TimeoutError as te:
                     print(f"Timeout while processing tool {step['tool']}: {te}")
                     await self.manager.send_personal_message({
