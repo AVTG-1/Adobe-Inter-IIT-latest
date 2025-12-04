@@ -1412,6 +1412,7 @@ export default function EditorScreen({ route, navigation }: Props) {
         // optional: reference_image_path
       };
     }
+    setAiPrompt('');
 
     const ok = sendWs(payload);
     if (!ok) {
