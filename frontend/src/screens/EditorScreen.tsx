@@ -1328,13 +1328,13 @@ export default function EditorScreen({ route, navigation }: Props) {
 
     // --- NORMALIZE / UPLOAD IMAGE PATH (replace old normalization) ---
     let imagePath = currentImageUrl || '';
-    console.log("This is image Path : ", imagePath);
+    console.log("Orignal Image Path : ", imagePath);
 
     try {
       // If imagePath is a blob or file URL -> upload it
       const isBlobOrFile = imagePath.startsWith('blob:') || imagePath.startsWith('file:') || imagePath.includes('blob:http');
       const isHttp = imagePath.startsWith('http://') || imagePath.startsWith('https://');
-      const isStaticRelative = imagePath.startsWith('/static/') || imagePath.startsWith('static/');
+      const isStatic = imagePath.startsWith('/static/') || imagePath.startsWith('static/');
 
       if (isBlobOrFile) {
         // upload the local/blob uri and use returned url
@@ -1343,15 +1343,20 @@ export default function EditorScreen({ route, navigation }: Props) {
         imagePath = uploadedUrl;
         setCurrentImageUrl(imagePath);
         Toast.show({ type: 'info', text1: 'Upload complete' });
-      } else if (!isHttp && !isStaticRelative) {
-        // Not http and not already /static/ — could be just a filename. Prefix /static/ ONLY if it's a filename
-        if (imagePath && !imagePath.startsWith('/')) {
+      } else if (isHttp) {
+        console.log("Remote image URL detected — keeping as-is.");
+      }
+      // Case 3: local filename → convert to /static/filename
+      else if (!isStatic) {
+        if (imagePath.startsWith("/")) {
+          imagePath = imagePath; // already like /something
+        } else {
           imagePath = `/static/${imagePath}`;
-        } else if (!imagePath) {
-          Toast.show({ type: 'error', text1: 'No image selected', text2: 'Open an image before using AI.' });
-          setIsExecutingAI(false);
-          return;
         }
+      }
+      // Case 4: Already /static/... → keep as-is
+      else {
+        imagePath = imagePath;
       }
       // If it's http(s) or /static/ we leave it as-is
     } catch (e) {
@@ -1362,18 +1367,28 @@ export default function EditorScreen({ route, navigation }: Props) {
     }
 
 
-    if (!imagePath.includes('/static/')) {
-      if (imagePath && !imagePath.startsWith('/')) imagePath = `/static/${imagePath}`;
-      else if (!imagePath) {
-        Toast.show({
-          type: 'error',
-          text1: 'No image selected',
-          text2: 'Please open an image to edit before using AI.',
-        });
-        setIsExecutingAI(false);
-        return;
+    // Final validation: only add /static/ for plain filenames
+    const isHttp = imagePath.startsWith("http://") || imagePath.startsWith("https://");
+    const isStatic = imagePath.startsWith("/static/") || imagePath.startsWith("static/");
+    const isEmpty = !imagePath;
+
+    if (isEmpty) {
+      Toast.show({
+        type: "error",
+        text1: "No image selected",
+        text2: "Please open an image before using AI.",
+      });
+      setIsExecutingAI(false);
+      return;
+    }
+
+    // Only convert if it's not http AND not already /static/
+    if (!isHttp && !isStatic) {
+      if (!imagePath.startsWith("/")) {
+        imagePath = `/static/${imagePath}`;
       }
     }
+    console.log("Final Image Path for AI:", imagePath);
 
     // If continueParentNodeRef is set -> send continue_processing
     const parentNodeId = continueParentNodeRef.current;
