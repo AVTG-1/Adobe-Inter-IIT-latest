@@ -85,7 +85,7 @@ const DrawingToolsPanel: React.FC<DrawingToolsPanelProps> = ({
   const [brushSize, setBrushSize] = useState<number>(5);
   const [opacity, setOpacity] = useState<number>(100);
 
-  const snapPoints = useMemo(() => ['50%'], []);
+  const snapPoints = useMemo(() => ['65%'], []);
 
   const animationConfigs = useMemo(
     () => ({
@@ -98,8 +98,18 @@ const DrawingToolsPanel: React.FC<DrawingToolsPanelProps> = ({
   const renderBackdrop = useMemo(() => null, []);
 
   const handleToolPress = (toolId: string) => {
+    // Only select the tool, don't trigger onToolSelect yet
+    // User can adjust settings first, then tap "Start Drawing"
     setSelectedTool(toolId);
-    const tool = DRAWING_TOOLS.find(t => t.id === toolId);
+  };
+
+  const handleColorSelect = (color: string) => {
+    setSelectedColor(color);
+  };
+
+  const handleStartDrawing = () => {
+    // Called when user taps "Start Drawing" button
+    const tool = DRAWING_TOOLS.find(t => t.id === selectedTool);
     if (tool) {
       onToolSelect({
         ...tool,
@@ -110,10 +120,6 @@ const DrawingToolsPanel: React.FC<DrawingToolsPanelProps> = ({
         },
       } as DrawingTool);
     }
-  };
-
-  const handleColorSelect = (color: string) => {
-    setSelectedColor(color);
   };
 
   return (
@@ -251,24 +257,51 @@ const DrawingToolsPanel: React.FC<DrawingToolsPanelProps> = ({
 
             {/* Action Buttons */}
             <View style={styles.actionsSection}>
-              <TouchableOpacity style={styles.actionButton}>
-                <Ionicons name="arrow-undo" size={20} color={COLORS.textPrimary} />
-                <Text style={styles.actionButtonText}>Undo</Text>
+              <TouchableOpacity
+                style={styles.actionButton}
+                onPress={() => {}}
+                activeOpacity={0.7}
+                disabled
+              >
+                <Ionicons name="arrow-undo" size={20} color={COLORS.textTertiary} />
+                <Text style={[styles.actionButtonText, { color: COLORS.textTertiary }]}>Undo</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.actionButton}>
-                <Ionicons name="arrow-redo" size={20} color={COLORS.textPrimary} />
-                <Text style={styles.actionButtonText}>Redo</Text>
+              <TouchableOpacity
+                style={styles.actionButton}
+                onPress={() => {}}
+                activeOpacity={0.7}
+                disabled
+              >
+                <Ionicons name="arrow-redo" size={20} color={COLORS.textTertiary} />
+                <Text style={[styles.actionButtonText, { color: COLORS.textTertiary }]}>Redo</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.actionButton}>
-                <Ionicons name="trash" size={20} color="#FF6B6B" />
-                <Text style={[styles.actionButtonText, { color: '#FF6B6B' }]}>Clear All</Text>
+              <TouchableOpacity
+                style={styles.actionButton}
+                onPress={() => {
+                  // Reset all settings to defaults
+                  setSelectedTool('pen');
+                  setSelectedColor('#FF0000');
+                  setBrushSize(5);
+                  setOpacity(100);
+                }}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="refresh" size={20} color={COLORS.textPrimary} />
+                <Text style={styles.actionButtonText}>Reset</Text>
               </TouchableOpacity>
             </View>
 
             {/* Apply Button */}
-            <TouchableOpacity style={styles.applyButton} onPress={onClose}>
-              <Ionicons name="checkmark-circle" size={24} color="#000" />
-              <Text style={styles.applyButtonText}>Start Drawing</Text>
+            <TouchableOpacity
+              style={[styles.applyButton, !selectedTool && styles.applyButtonDisabled]}
+              onPress={handleStartDrawing}
+              disabled={!selectedTool}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="checkmark-circle" size={24} color={selectedTool ? "#000" : "#666"} />
+              <Text style={[styles.applyButtonText, !selectedTool && styles.applyButtonTextDisabled]}>
+                Start Drawing
+              </Text>
             </TouchableOpacity>
           </View>
         </BottomSheetScrollView>
@@ -426,10 +459,17 @@ const styles = StyleSheet.create({
     borderRadius: BORDER_RADIUS.lg,
     gap: 8,
   },
+  applyButtonDisabled: {
+    backgroundColor: COLORS.border,
+    opacity: 0.5,
+  },
   applyButtonText: {
     color: '#000000',
     fontSize: FONT_SIZES.md,
     fontWeight: '700',
+  },
+  applyButtonTextDisabled: {
+    color: '#666666',
   },
 });
 

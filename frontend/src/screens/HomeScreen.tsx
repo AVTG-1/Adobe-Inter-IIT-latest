@@ -47,6 +47,10 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
   // Recent projects state
   const [recentProjects, setRecentProjects] = useState<Project[]>([]);
   const [loadingProjects, setLoadingProjects] = useState(true);
+  
+  // Plus button popup state
+  const [showPlusPopup, setShowPlusPopup] = useState(false);
+  const [showAspectPopup, setShowAspectPopup] = useState(false);
 
   useEffect(() => {
     // Entrance animations
@@ -86,7 +90,7 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
   };
 
   /**
-   * Handle image selection - LOCAL ONLY (No cloud upload)
+   * Handle image selection - Creates NEW PROJECT with unique ID
    */
   const handleImageSelected = async (result: ImagePicker.ImagePickerResult) => {
     if (result.canceled) {
@@ -107,21 +111,31 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
 
     // Show brief loading message
     setUploading(true);
-    setUploadMessage('Opening editor...');
+    setUploadMessage('Creating new project...');
 
     try {
+      // Create unique project ID
+      const projectId = `proj_${Date.now()}`;
+      
+      console.log('🆕 Creating new project:', projectId);
+      
       // Small delay for smooth UX
       setTimeout(() => {
         setUploading(false);
-        // Navigate to Editor with LOCAL URI (no cloud upload!)
-        navigation.navigate('Editor', { imageUrl: uri });
+        // Navigate to Editor with NEW PROJECT
+        // isNewProject flag tells EditorScreen this is from HomeScreen
+        navigation.navigate('Editor', { 
+          imageUrl: uri,
+          projectId: projectId,
+          isNewProject: true,  // 🆕 Flag for new project creation
+        });
       }, 300);
     } catch (error: any) {
-      console.error('Error opening editor:', error);
+      console.error('Error creating project:', error);
       setUploading(false);
       Alert.alert(
         'Error',
-        'Failed to open editor. Please try again.',
+        'Failed to create project. Please try again.',
         [{ text: 'OK' }]
       );
     }
@@ -161,16 +175,6 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
     }
   };
 
-  const handleMenuPress = () => {
-    console.log('Menu pressed');
-    Toast.show({
-      type: 'info',
-      text1: '☰ Menu',
-      text2: 'Menu feature coming soon!',
-      position: 'top',
-      visibilityTime: 2000,
-    });
-  };
 
   const handleProfilePress = () => {
     console.log('Profile pressed');
@@ -219,6 +223,93 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
 
   const handlePlusPress = () => {
     animatePlusButton();
+    setShowPlusPopup(true);
+  };
+
+  /**
+   * Open camera to take a photo
+   */
+  const handleOpenCamera = async () => {
+    setShowPlusPopup(false);
+    
+    try {
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission Required', 'Please grant camera permission to take photos.');
+        return;
+      }
+
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: false,
+        quality: 1,
+      });
+
+      await handleImageSelected(result);
+    } catch (error: any) {
+      console.error('Camera error:', error);
+      Alert.alert('Error', 'Failed to open camera. Please try again.');
+    }
+  };
+
+  /**
+   * Create blank canvas with selected aspect ratio
+   */
+  const createBlankCanvas = (aspectRatio: string) => {
+    setShowAspectPopup(false);
+    
+    let canvasWidth = 1080;
+    let canvasHeight = 1080;
+    
+    switch (aspectRatio) {
+      case '1:1':
+        canvasWidth = 1080;
+        canvasHeight = 1080;
+        break;
+      case '4:3':
+        canvasWidth = 1440;
+        canvasHeight = 1080;
+        break;
+      case '3:4':
+        canvasWidth = 1080;
+        canvasHeight = 1440;
+        break;
+      case '16:9':
+        canvasWidth = 1920;
+        canvasHeight = 1080;
+        break;
+      case '9:16':
+        canvasWidth = 1080;
+        canvasHeight = 1920;
+        break;
+      case 'A4':
+        canvasWidth = 2480;
+        canvasHeight = 3508;
+        break;
+      default:
+        canvasWidth = 1080;
+        canvasHeight = 1080;
+    }
+    
+    const projectId = `proj_${Date.now()}`;
+    console.log('📐 Creating blank canvas:', aspectRatio, canvasWidth, 'x', canvasHeight);
+    
+    navigation.navigate('Editor', {
+      isBlankCanvas: true,
+      canvasWidth,
+      canvasHeight,
+      projectId,
+      isNewProject: true,
+    });
+  };
+
+  const handleBlankCanvasPress = () => {
+    setShowPlusPopup(false);
+    setShowAspectPopup(true);
+  };
+
+  const handleGalleryPress = () => {
+    setShowPlusPopup(false);
     handleImportGallery();
   };
 
@@ -227,19 +318,6 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
       <Animated.View style={[styles.content, { opacity: fadeAnim }]}>
         {/* Header */}
         <View style={styles.header}>
-          {/* Menu Button */}
-          <TouchableOpacity
-            onPress={handleMenuPress}
-            style={styles.menuButton}
-            activeOpacity={0.7}
-          >
-            <View style={styles.menuLines}>
-              <View style={styles.menuLine} />
-              <View style={styles.menuLine} />
-              <View style={styles.menuLine} />
-            </View>
-          </TouchableOpacity>
-
           {/* Title */}
           <Text style={styles.headerTitle}>Auralite</Text>
 
@@ -390,6 +468,135 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
         </View>
       </Modal>
 
+      {/* Plus Button Popup - 3 Options */}
+      <Modal visible={showPlusPopup} transparent animationType="fade">
+        <TouchableOpacity 
+          style={styles.popupOverlay}
+          activeOpacity={1}
+          onPress={() => setShowPlusPopup(false)}
+        >
+          <View style={styles.plusPopupContent}>
+            <Text style={styles.plusPopupTitle}>Create New</Text>
+            
+            <TouchableOpacity 
+              style={styles.plusPopupOption}
+              onPress={handleBlankCanvasPress}
+            >
+              <View style={[styles.plusPopupIcon, { backgroundColor: '#4CAF50' }]}>
+                <Ionicons name="square-outline" size={24} color="#FFF" />
+              </View>
+              <View style={styles.plusPopupTextContainer}>
+                <Text style={styles.plusPopupOptionTitle}>Blank Canvas</Text>
+                <Text style={styles.plusPopupOptionDesc}>Start with a clean slate</Text>
+              </View>
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={styles.plusPopupOption}
+              onPress={handleOpenCamera}
+            >
+              <View style={[styles.plusPopupIcon, { backgroundColor: '#2196F3' }]}>
+                <Ionicons name="camera" size={24} color="#FFF" />
+              </View>
+              <View style={styles.plusPopupTextContainer}>
+                <Text style={styles.plusPopupOptionTitle}>Open Camera</Text>
+                <Text style={styles.plusPopupOptionDesc}>Take a new photo</Text>
+              </View>
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={styles.plusPopupOption}
+              onPress={handleGalleryPress}
+            >
+              <View style={[styles.plusPopupIcon, { backgroundColor: '#9C27B0' }]}>
+                <Ionicons name="images" size={24} color="#FFF" />
+              </View>
+              <View style={styles.plusPopupTextContainer}>
+                <Text style={styles.plusPopupOptionTitle}>Open Photo</Text>
+                <Text style={styles.plusPopupOptionDesc}>Import from gallery</Text>
+              </View>
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={styles.plusPopupCancel}
+              onPress={() => setShowPlusPopup(false)}
+            >
+              <Text style={styles.plusPopupCancelText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
+      {/* Aspect Ratio Selection Popup */}
+      <Modal visible={showAspectPopup} transparent animationType="fade">
+        <TouchableOpacity 
+          style={styles.popupOverlay}
+          activeOpacity={1}
+          onPress={() => setShowAspectPopup(false)}
+        >
+          <View style={styles.aspectPopupContent}>
+            <Text style={styles.plusPopupTitle}>Select Canvas Size</Text>
+            
+            <View style={styles.aspectGrid}>
+              <TouchableOpacity 
+                style={styles.aspectOption}
+                onPress={() => createBlankCanvas('1:1')}
+              >
+                <View style={[styles.aspectPreview, { width: 50, height: 50 }]} />
+                <Text style={styles.aspectLabel}>1:1</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={styles.aspectOption}
+                onPress={() => createBlankCanvas('4:3')}
+              >
+                <View style={[styles.aspectPreview, { width: 60, height: 45 }]} />
+                <Text style={styles.aspectLabel}>4:3</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={styles.aspectOption}
+                onPress={() => createBlankCanvas('3:4')}
+              >
+                <View style={[styles.aspectPreview, { width: 45, height: 60 }]} />
+                <Text style={styles.aspectLabel}>3:4</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={styles.aspectOption}
+                onPress={() => createBlankCanvas('16:9')}
+              >
+                <View style={[styles.aspectPreview, { width: 70, height: 40 }]} />
+                <Text style={styles.aspectLabel}>16:9</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={styles.aspectOption}
+                onPress={() => createBlankCanvas('9:16')}
+              >
+                <View style={[styles.aspectPreview, { width: 40, height: 70 }]} />
+                <Text style={styles.aspectLabel}>9:16</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={styles.aspectOption}
+                onPress={() => createBlankCanvas('A4')}
+              >
+                <View style={[styles.aspectPreview, { width: 45, height: 64 }]} />
+                <Text style={styles.aspectLabel}>A4</Text>
+              </TouchableOpacity>
+            </View>
+            
+            <TouchableOpacity 
+              style={styles.plusPopupCancel}
+              onPress={() => setShowAspectPopup(false)}
+            >
+              <Text style={styles.plusPopupCancelText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
       <Toast />
     </SafeAreaView>
   );
@@ -410,19 +617,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 27,
     paddingBottom: 20,
-  },
-  menuButton: {
-    width: 30,
-    height: 20,
-    justifyContent: 'space-between',
-  },
-  menuLines: {
-    gap: 9,
-  },
-  menuLine: {
-    width: 30,
-    height: 1,
-    backgroundColor: '#FFFFFF',
   },
   headerTitle: {
     fontFamily: 'System',
@@ -579,6 +773,101 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#FFFFFF',
     textAlign: 'center',
+  },
+  // Plus Popup Styles
+  popupOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  plusPopupContent: {
+    backgroundColor: '#1C1C1E',
+    borderRadius: 20,
+    padding: 24,
+    width: width - 48,
+    maxWidth: 340,
+  },
+  plusPopupTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  plusPopupOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#2C2C2E',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+  },
+  plusPopupIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
+  },
+  plusPopupTextContainer: {
+    flex: 1,
+  },
+  plusPopupOptionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FFFFFF',
+    marginBottom: 4,
+  },
+  plusPopupOptionDesc: {
+    fontSize: 13,
+    color: '#8E8E93',
+  },
+  plusPopupCancel: {
+    marginTop: 8,
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+  plusPopupCancelText: {
+    fontSize: 16,
+    color: '#FF453A',
+    fontWeight: '500',
+  },
+  // Aspect Ratio Popup Styles
+  aspectPopupContent: {
+    backgroundColor: '#1C1C1E',
+    borderRadius: 20,
+    padding: 24,
+    width: width - 48,
+    maxWidth: 340,
+  },
+  aspectGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  aspectOption: {
+    width: '30%',
+    aspectRatio: 1,
+    backgroundColor: '#2C2C2E',
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  aspectPreview: {
+    backgroundColor: '#3A3A3C',
+    borderRadius: 4,
+    borderWidth: 2,
+    borderColor: '#48484A',
+  },
+  aspectLabel: {
+    marginTop: 8,
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#FFFFFF',
   },
 });
 

@@ -2,6 +2,7 @@
  * Export Sheet
  *
  * Bottom sheet for exporting edited images in various formats
+ * Supports: PNG, JPG, Save to Files, Save to Gallery
  */
 
 import React, { useCallback, useMemo } from 'react';
@@ -9,33 +10,44 @@ import { View, Text, StyleSheet, TouchableOpacity, Easing } from 'react-native';
 import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { Ionicons } from '@expo/vector-icons';
 
-export type ExportFormat = 'jpg' | 'png' | 'psd';
+export type ExportFormat = 'png' | 'jpg' | 'files' | 'gallery';
 
 interface ExportOption {
   format: ExportFormat;
   title: string;
   description: string;
   icon: string;
+  color: string;
 }
 
 const EXPORT_OPTIONS: ExportOption[] = [
   {
+    format: 'png',
+    title: 'Save as PNG',
+    description: 'Lossless quality, supports transparency',
+    icon: 'image-outline',
+    color: '#4CAF50',
+  },
+  {
     format: 'jpg',
-    title: 'JPEG',
+    title: 'Save as JPG',
     description: 'Compressed image, smaller file size',
     icon: 'image',
+    color: '#2196F3',
   },
   {
-    format: 'png',
-    title: 'PNG',
-    description: 'Lossless quality, supports transparency',
-    icon: 'images',
+    format: 'files',
+    title: 'Save to Files',
+    description: 'Share or save to any location',
+    icon: 'folder-outline',
+    color: '#FF9800',
   },
   {
-    format: 'psd',
-    title: 'PSD',
-    description: 'Photoshop format with layers',
-    icon: 'layers',
+    format: 'gallery',
+    title: 'Save to Gallery',
+    description: 'Save directly to your photo library',
+    icon: 'images-outline',
+    color: '#9C27B0',
   },
 ];
 
@@ -103,14 +115,16 @@ export default function ExportSheet({
             onPress={() => handleExportOption(option.format)}
             activeOpacity={0.7}
           >
-            <View style={styles.optionIconContainer}>
-              <Ionicons name={option.icon as any} size={28} color="#667eea" />
+            <View style={[styles.optionIconContainer, { backgroundColor: option.color + '20' }]}>
+              <Ionicons name={option.icon as any} size={28} color={option.color} />
             </View>
             <View style={styles.optionTextContainer}>
               <Text style={styles.optionTitle}>{option.title}</Text>
               <Text style={styles.optionDescription}>{option.description}</Text>
             </View>
-            <Ionicons name="chevron-forward" size={20} color="#ccc" />
+            <View style={[styles.exportArrow, { backgroundColor: option.color }]}>
+              <Ionicons name="arrow-forward" size={16} color="#FFF" />
+            </View>
           </TouchableOpacity>
         ))}
       </BottomSheetScrollView>
@@ -194,5 +208,12 @@ const styles = StyleSheet.create({
   optionDescription: {
     fontSize: 13,
     color: '#999',
+  },
+  exportArrow: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });

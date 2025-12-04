@@ -11,6 +11,8 @@ import shutil
 import uuid
 import json
 from typing import List
+from fastapi import Request
+
 
 from .config import get_settings
 from app.orchestration.application.resources import health_router, edit_router
@@ -71,6 +73,9 @@ app.add_middleware(
 # Register routers
 app.include_router(health_router, prefix=settings.api_v1_prefix)
 app.include_router(edit_router, prefix=settings.api_v1_prefix)
+
+os.makedirs("static", exist_ok=True)
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # Global instances
 manager = ConnectionManager()
@@ -185,13 +190,32 @@ async def handle_websocket_message(client_id: str, message: dict):
             }, session_id)
 
 @app.post("/upload")
-async def upload_image(file: UploadFile = File(...)):
+async def upload_image(request: Request, file: UploadFile = File(...)):
+    # Ensure static directory exists
+    os.makedirs("static", exist_ok=True)
+
+    # Create safe filename with extension fallback
     file_id = str(uuid.uuid4())
-    extension = file.filename.split(".")[-1]
+    original = file.filename or ""
+    if "." in original:
+        extension = original.rsplit(".", 1)[-1]
+    else:
+        extension = "jpg"  # default
     filename = f"{file_id}.{extension}"
     file_path = os.path.join("static", filename)
-    
-    with open(file_path, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
-        
-    return {"filename": filename, "url": f"/static/{filename}"}
+
+    # Write file contents
+    try:
+        contents = await file.read()
+        with open(file_path, "wb") as buffer:
+            buffer.write(contents)
+    except Exception as exc:
+        # log and return error
+        logging.exception("Failed to save uploaded file")
+        raise HTTPException(status_code=500, detail="Failed to save uploaded file")
+
+    # Build absolute URL using request.base_url
+    base = str(request.base_url).rstrip("/")  # e.g. http://localhost:8000
+    public_url = f"{base}/static/{filename}"
+
+    return {"filename": filename, "url": public_url}

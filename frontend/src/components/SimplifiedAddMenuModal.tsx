@@ -1,7 +1,9 @@
 /**
- * Simplified Add Menu Modal - Auralite Design
+ * Simplified Add Menu Modal - Clean Import UI
  *
- * Import new picture with camera/gallery options
+ * ONLY 2 OPTIONS:
+ * 1. Open Camera - Take a new photo
+ * 2. Import from Gallery - Select existing photo
  */
 
 import React from 'react';
@@ -46,10 +48,13 @@ const SimplifiedAddMenuModal: React.FC<SimplifiedAddMenuModalProps> = ({
           <TouchableOpacity activeOpacity={1}>
             {/* Header */}
             <View style={styles.header}>
-              <Text style={styles.headerTitle}>Import new picture</Text>
+              <Text style={styles.headerTitle}>Add Photo</Text>
+              <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
+                <Ionicons name="close" size={24} color="#888" />
+              </TouchableOpacity>
             </View>
 
-            {/* Options */}
+            {/* Two Options */}
             <View style={styles.optionsContainer}>
               {/* Open Camera */}
               <TouchableOpacity
@@ -57,20 +62,37 @@ const SimplifiedAddMenuModal: React.FC<SimplifiedAddMenuModalProps> = ({
                 onPress={onOpenCamera}
                 activeOpacity={0.7}
               >
-                <Ionicons name="camera" size={32} color="#FFFFFF" />
-                <Text style={styles.optionText}>Open Camera</Text>
+                <View style={[styles.iconContainer, { backgroundColor: '#007AFF' }]}>
+                  <Ionicons name="camera" size={32} color="#FFFFFF" />
+                </View>
+                <View style={styles.optionTextContainer}>
+                  <Text style={styles.optionTitle}>Take Photo</Text>
+                  <Text style={styles.optionSubtitle}>Use camera to capture new image</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={24} color="#555" />
               </TouchableOpacity>
 
-              {/* Import from gallery */}
+              {/* Import from Gallery */}
               <TouchableOpacity
                 style={styles.optionCard}
                 onPress={onImportGallery}
                 activeOpacity={0.7}
               >
-                <Ionicons name="images" size={32} color="#FFFFFF" />
-                <Text style={styles.optionText}>Import from gallery</Text>
+                <View style={[styles.iconContainer, { backgroundColor: '#34C759' }]}>
+                  <Ionicons name="images" size={32} color="#FFFFFF" />
+                </View>
+                <View style={styles.optionTextContainer}>
+                  <Text style={styles.optionTitle}>Import from Gallery</Text>
+                  <Text style={styles.optionSubtitle}>Choose photo from your library</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={24} color="#555" />
               </TouchableOpacity>
             </View>
+
+            {/* Helper text */}
+            <Text style={styles.helperText}>
+              First photo becomes background • Additional photos create new layers
+            </Text>
           </TouchableOpacity>
         </View>
       </TouchableOpacity>
@@ -81,18 +103,22 @@ const SimplifiedAddMenuModal: React.FC<SimplifiedAddMenuModalProps> = ({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
+    zIndex:1000,
     backgroundColor: 'rgba(0, 0, 0, 0.7)',
     justifyContent: 'flex-end',
   },
   container: {
-    backgroundColor: '#242428',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    paddingBottom: 34,
+    backgroundColor: '#1C1C1E',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingBottom: 40,
   },
   header: {
-    paddingTop: 24,
-    paddingBottom: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingTop: 20,
+    paddingBottom: 16,
     paddingHorizontal: 20,
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(255, 255, 255, 0.1)',
@@ -101,32 +127,49 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
     color: '#FFFFFF',
-    textAlign: 'center',
+  },
+  closeBtn: {
+    padding: 4,
   },
   optionsContainer: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
     paddingTop: 20,
-    gap: 16,
+    gap: 12,
   },
   optionCard: {
-    width: '100%',
-    height: 80,
-    backgroundColor: '#323232',
-    borderRadius: 12,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 24,
-    gap: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 3,
+    backgroundColor: '#2C2C2E',
+    borderRadius: 16,
+    padding: 16,
+    gap: 16,
   },
-  optionText: {
-    fontSize: 18,
+  iconContainer: {
+    width: 56,
+    height: 56,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  optionTextContainer: {
+    flex: 1,
+  },
+  optionTitle: {
+    fontSize: 17,
     fontWeight: '600',
     color: '#FFFFFF',
+    marginBottom: 4,
+  },
+  optionSubtitle: {
+    fontSize: 13,
+    color: '#888',
+  },
+  helperText: {
+    fontSize: 12,
+    color: '#666',
+    textAlign: 'center',
+    marginTop: 20,
+    paddingHorizontal: 20,
   },
 });
 

@@ -48,8 +48,7 @@
         "description": "Adds an overlay effect to the image.",
         "params": {
             "type": {"type": "string", "description": "Type of overlay", "options": ["rain", "sun", "snow"], "default": "rain"},
-            "amount": {"type": "int", "description": "Intensity of the overlay effect", "default": 50}
-
+            "amount": {"type": "int", "description": "Intensity of the overlay effect (0-100)", "default": 50, "min": 0, "max": 100}       
         }
     },
     "resize": {
