@@ -72,6 +72,7 @@ import { applyFilter, applyAdjustments } from '../utils/canvasFilters';
 import { useEnhancedLayerManager } from '../hooks/useEnhancedLayerManager';
 import { fitAndCenter, getImageDimensions } from '../utils/imageFit';
 import { mergeAllLayers } from '../utils/mergeLayers';
+import { v4 as uuidv4 } from 'uuid';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Editor'>;
 
@@ -92,6 +93,11 @@ export default function EditorScreen({ route, navigation }: Props) {
   const watermarkToolRef = useRef<BottomSheet>(null);
   const proAdjustmentsRef = useRef<BottomSheet>(null);
   const shapeCropRef = useRef<BottomSheet>(null);
+  const wsRef = useRef<WebSocket | null>(null);
+  const clientIdRef = useRef<string>(uuidv4());
+  const continueParentNodeRef = useRef<string | null>(null);
+
+
 
   // State
   const [selectedTool, setSelectedTool] = useState<string | null>(null);
@@ -115,18 +121,18 @@ export default function EditorScreen({ route, navigation }: Props) {
   const [currentImageUrl, setCurrentImageUrl] = useState<string>(imageUrl || '');
   const [processing, setProcessing] = useState(false);
   const [editPanelOpen, setEditPanelOpen] = useState(false);
-  
+
   // New ImageToolbox-inspired tool states
   const [beforeAfterOpen, setBeforeAfterOpen] = useState(false);
   const [colorPickerOpen, setColorPickerOpen] = useState(false);
   const [watermarkOpen, setWatermarkOpen] = useState(false);
-  
+
   // Drawing overlay state
   const [drawingOverlayOpen, setDrawingOverlayOpen] = useState(false);
   const [currentDrawingPaths, setCurrentDrawingPaths] = useState<DrawingPath[]>([]);
   const [drawingPopupOpen, setDrawingPopupOpen] = useState(false);
   const [drawingSettings, setDrawingSettings] = useState<DrawingSettings>({ color: '#FF3B30', size: 10, opacity: 1 });
-  
+
   // Real-time adjustment preview state
   const [realTimeAdjustmentsOpen, setRealTimeAdjustmentsOpen] = useState(false);
   const [filterPreview, setFilterPreview] = useState<FilterPreview | undefined>(undefined);
@@ -137,32 +143,445 @@ export default function EditorScreen({ route, navigation }: Props) {
   const [shapeToolOpen, setShapeToolOpen] = useState(false);
   const [curveToolOpen, setCurveToolOpen] = useState(false);
   const [originalImageUrl, setOriginalImageUrl] = useState<string>(imageUrl || ''); // For before/after comparison
-  
+  const [wsConnected, setWsConnected] = useState(false);
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  // Tree / workflow state (from app.js)
+  const [fullTree, setFullTree] = useState<Record<string, any>>({});
+  const [activeStepIndex, setActiveStepIndex] = useState<number>(0); // same as currentStepIndex but explicit
+  const [uploadedImagePath, setUploadedImagePath] = useState<string | null>(null);
+  const [isEditing, setIsEditing] = useState<boolean>(false);
+  const [macros, setMacros] = useState<any[]>([]);
+  const [mainReferenceImage, setMainReferenceImage] = useState<string | null>(null);
+  const [mainReferenceImagePath, setMainReferenceImagePath] = useState<string | null>(null);
+
+
+  // configurable WS base URL - set via env or fallback to localhost
+  const WS_BASE =
+    (process.env.REACT_NATIVE_WS_URL && process.env.REACT_NATIVE_WS_URL) ||
+    (process.env.REACT_APP_WS_URL && process.env.REACT_APP_WS_URL) ||
+    'ws://localhost:8000'; // change for prod to wss://...
+
+  const connectWebSocket = () => {
+    if (wsRef.current && (wsRef.current.readyState === 1 || wsRef.current.readyState === 0)) {
+      // already connected or connecting
+      return;
+    }
+    const url = `${WS_BASE.replace(/\/$/, '')}/ws/${clientIdRef.current}`;
+    const ws = new WebSocket(url);
+
+    ws.onopen = () => {
+      console.log('[WS] connected', url);
+      setWsConnected(true);
+      // hello/metadata
+      const hello = {
+        event: 'hello',
+        client_id: clientIdRef.current,
+      };
+      ws.send(JSON.stringify(hello));
+
+      // Request macros from backend (app.js does this on connect)
+      ws.send(JSON.stringify({
+        action: 'get_macros',
+        session_id: clientIdRef.current,
+      }));
+    };
+
+
+    ws.onmessage = (ev) => {
+      try {
+        const data = JSON.parse(ev.data);
+        console.log('[WS] message received:', data);
+        handleWsMessage(data); // we'll implement this in step 2
+      } catch (err) {
+        console.warn('[WS] failed to parse message', err);
+      }
+    };
+
+    ws.onerror = (err) => {
+      console.error('[WS] error', err);
+    };
+
+    ws.onclose = (ev) => {
+      console.log('[WS] closed', ev.code, ev.reason);
+      setWsConnected(false);
+      wsRef.current = null;
+      // optional: basic reconnect attempt after small delay
+      setTimeout(() => {
+        // only reconnect if screen still mounted / user in editor
+        connectWebSocket();
+      }, 2000);
+    };
+
+    wsRef.current = ws;
+  };
+
+  // helper to send JSON via WS (safe-check)
+  const sendWs = (payload: object) => {
+    try {
+      if (wsRef.current && wsRef.current.readyState === 1) {
+        wsRef.current.send(JSON.stringify(payload));
+        return true;
+      } else {
+        console.warn('[WS] not connected, cannot send', payload);
+        return false;
+      }
+    } catch (e) {
+      console.error('[WS] send failed', e);
+      return false;
+    }
+  };
+
+  // ---------- Add this helper near your other helpers (sendWs / connectWebSocket) ----------
+  /**
+   * Upload a local image (file:// or blob:) or a File object to backend /upload.
+   * Returns an absolute URL (e.g. https://localhost:8000/static/xxx) or the original http(s) URL.
+   */
+  // ---------- uploadImageToServer (improved filename handling) ----------
+  const uploadImageToServer = async (fileUriOrFile: string | File, fileName?: string) => {
+    try {
+      // If it's already a remote URL, return as-is
+      if (typeof fileUriOrFile === 'string') {
+        const s = fileUriOrFile;
+        if (s.startsWith('http://') || s.startsWith('https://')) return s;
+        // else we will upload the blob/file below
+      }
+
+      const formData = new FormData();
+
+      // If caller passed a File object (web input), use that directly but ensure filename has extension
+      if (fileUriOrFile instanceof File) {
+        let useFile = fileUriOrFile;
+        // ensure filename has extension — otherwise append .jpg
+        if (!/\.[a-zA-Z0-9]{1,5}$/.test(useFile.name)) {
+          // create a new File with .jpg name
+          // @ts-ignore
+          useFile = new File([useFile], `${useFile.name || 'upload'} .jpg`.replace(/\s+/g, ''), { type: useFile.type || 'image/jpeg' });
+        }
+        formData.append('file', useFile, useFile.name);
+      } else if (typeof fileUriOrFile === 'string') {
+        const uri = fileUriOrFile;
+        // pick a sensible name with extension
+        const derivedName = fileName || (() => {
+          // try to extract extension from uri
+          const maybe = uri.split('/').pop() || `upload-${Date.now()}`;
+          if (/\.[a-zA-Z0-9]{1,5}$/.test(maybe)) return maybe;
+          // default to .jpg if no extension
+          return `${maybe}.jpg`;
+        })();
+
+        if (uri.startsWith('blob:') || uri.startsWith('file:') || uri.includes('blob:http')) {
+          // Fetch the blob and convert to File with safe name
+          const resp = await fetch(uri);
+          const blob = await resp.blob();
+          // force a content type fallback
+          const contentType = blob.type || 'image/jpeg';
+          // Ensure name has extension
+          const safeName = /\.[a-zA-Z0-9]{1,5}$/.test(derivedName) ? derivedName : `${derivedName}.jpg`;
+          // @ts-ignore
+          const fileObj = new File([blob], safeName, { type: contentType });
+          formData.append('file', fileObj);
+        } else {
+          // Not a blob and not http(s). Likely a relative path; cannot upload file contents.
+          // Let caller handle this case (we'll error)
+          throw new Error('uploadImageToServer expects a blob/file URI or File object for upload.');
+        }
+      } else {
+        throw new Error('Unsupported file parameter for uploadImageToServer');
+      }
+
+      const apiBase = (process.env.REACT_NATIVE_API_URL || process.env.REACT_APP_API_URL || 'http://localhost:8000').replace(/\/$/, '');
+      const uploadUrl = `${apiBase}/upload`;
+
+      const res = await fetch(uploadUrl, {
+        method: 'POST',
+        body: formData,
+        headers: {
+          Accept: 'application/json',
+        },
+      });
+
+      if (!res.ok) {
+        const t = await res.text().catch(() => '');
+        throw new Error(`Upload failed: ${res.status} ${t}`);
+      }
+
+      const json = await res.json();
+      if (!json || !json.url) throw new Error('Upload succeeded but response missing url');
+
+      let returnedUrl = json.url as string;
+      if (returnedUrl.startsWith('/')) {
+        returnedUrl = `${apiBase}${returnedUrl}`;
+      }
+      return returnedUrl;
+    } catch (err) {
+      console.error('[uploadImageToServer]', err);
+      throw err;
+    }
+  };
+
+
+  // WebSocket message handler — add after sendWs
+  const handleWsMessage = (data: any) => {
+    // Expecting messages with an "event" field from backend, e.g.:
+    // { event: 'progress', session_id, progress: 0.4 }
+    // { event: 'step_complete', session_id, step: {...} }
+    // { event: 'image_update', session_id, image_url: '/static/...' }
+    // { event: 'finished', session_id, result_node_id: 'node-...' }
+    // { event: 'error', session_id, message: '...' }
+    // { event: 'macro_list', session_id, macros: [...] }
+
+    // Ignore messages for other sessions (if sessionId is set)
+    if (data.session_id && sessionId && data.session_id !== sessionId) {
+      // console.log optional: '[WS] ignored message for other session', data.session_id;
+      return;
+    }
+    const ev = data.event || data.type || data.name; // tolerant
+    console.log('[WS] handle event:', ev, data);
+
+    switch (ev) {
+      case 'progress': {
+        // optional progress - show loader or percent
+        const progress = data.progress ?? null;
+        // If you have a progress state, set it; otherwise you can set isExecutingAI true
+        if (progress !== null) {
+          // example: setAiProgress(progress) // if you create such state
+          console.log(`[AI Progress] ${Math.round(progress * 100)}%`);
+        }
+        break;
+      }
+
+      case 'step_complete': {
+        const step = data.step || null;
+
+        const nodeIdFromBackend = (step && (step.node_id || step.nodeId)) || null;
+        const generatedNodeId = `node-${Date.now()}`;
+
+        // Backend may send step details or just index + image_url; normalize to an executedStep
+        const executedStep = step
+          ? {
+            id: step.id || `step-${Date.now()}`,
+            node_id: nodeIdFromBackend || step.id || generatedNodeId,
+            actionId: step.actionId || step.action || 'ai-action',
+            name: step.name || step.action || 'AI step',
+            description: step.description || '',
+            icon: step.icon || getIconForTool(step.action || step.actionId || 'ai'),
+            params: step.params || {},
+            timestamp: step.timestamp || Date.now(),
+            thumbnailUri: data.image_url || step.image_url || currentImageUrl || '', // prefer backend image
+          }
+          : {
+            id: `step-${Date.now()}`,
+            node_id: data.node_id || generatedNodeId,
+            actionId: 'ai-action',
+            name: data.name || 'AI step',
+            description: data.description || '',
+            icon: getIconForTool(data.action || 'ai'),
+            params: data.params || {},
+            timestamp: Date.now(),
+            thumbnailUri: data.image_url || currentImageUrl || '',
+          };
+
+        // Prevent duplicates: check by node_id or id
+        setExecutedSteps((prev) => {
+          const exists = prev.some((s) => (s.node_id && executedStep.node_id && s.node_id === executedStep.node_id) || s.id === executedStep.id);
+          if (exists) {
+            console.log('[WS] duplicate step_complete ignored:', executedStep.id || executedStep.node_id);
+            return prev;
+          }
+          return [...prev, executedStep];
+        });
+
+        setCurrentStepIndex((prev) => prev + 1);
+
+        if (data.image_url) {
+          setCurrentImageUrl(data.image_url);
+        }
+        break;
+      }
+
+
+
+      case 'image_update': {
+        if (data.image_url) {
+          // update main canvas image
+          setCurrentImageUrl(data.image_url);
+
+          // Optionally add a timeline step representing this image update
+          const imgUpdateStep = {
+            id: `imgupdate-${Date.now()}`,
+            actionId: 'image_update',
+            name: 'Image update',
+            description: data.message || 'Intermediate result',
+            icon: getIconForTool('filter'),
+            params: {},
+            timestamp: Date.now(),
+            thumbnailUri: data.image_url,
+          };
+          setExecutedSteps((prev) => [...prev, imgUpdateStep]);
+          setCurrentStepIndex((prev) => prev + 1);
+        }
+        break;
+      }
+
+
+      case 'finished': {
+        // session finished — update UI
+        setIsExecutingAI(false);
+        // If backend provides node id, set current node
+        if (data.result_node_id) {
+          setCurrentNodeId(data.result_node_id);
+        } else {
+          // fallback: create one from timestamp
+          const createdId = `node-${Date.now()}`;
+          setCurrentNodeId(createdId);
+        }
+        setAiChatOpen(false);
+        Toast.show({
+          type: 'success',
+          text1: 'AI Editing Complete',
+          text2: data.message || 'Processing finished',
+        });
+        break;
+      }
+
+      case 'error': {
+        setIsExecutingAI(false);
+        const msg = data.message || 'Unknown error from AI engine';
+        Toast.show({
+          type: 'error',
+          text1: 'AI Error',
+          text2: msg,
+        });
+        break;
+      }
+
+      case 'path_update': {
+        try {
+          const rawPath = Array.isArray(data.path) ? data.path : [];
+          const API_ORIGIN = (process.env.REACT_NATIVE_API_URL || process.env.REACT_APP_API_URL || 'http://localhost:8000').replace(/\/$/, '');
+
+          const normalized = rawPath.map((p: any, idx: number) => {
+            const id = p.id || `step-${idx}-${Date.now()}`;
+
+            let thumb = p.thumbnail_url || p.image_url || p.thumbnailUri || p.thumbnail || '';
+            let image = p.image_url || p.image || '';
+
+            const norm = (url: string) => {
+              if (!url) return '';
+              if (url.startsWith('/')) return `${API_ORIGIN}${url}`;
+              if (url.startsWith('http') || url.startsWith('https')) return url;
+              return url;
+            };
+
+            thumb = norm(thumb);
+            image = norm(image);
+
+            return {
+              id,
+              actionId: p.tool || p.action || p.actionId || p.name || 'ai-action',
+              name: p.name || p.tool || (p.intent || '').slice(0, 30) || `Step ${idx + 1}`,
+              description: p.intent || p.description || p.summary || '',
+              params: p.params || {},
+              timestamp: p.timestamp || Date.now(),
+              thumbnailUri: thumb || image,
+              image_url: image || thumb,
+              raw: p,
+            };
+          });
+
+          // Update timeline
+          setExecutedSteps(normalized);
+
+          // REAL FIX: Build tree with correct root
+          const rootImage = normalized.length > 0 ? normalized[0].image_url : currentImageUrl;
+          const tree = buildTreeStructure(normalized, rootImage);
+          setFullTree(tree);
+
+          // Select backend node
+          const backendId = data.current_node_id;
+          if (backendId) {
+            const expected = backendId.startsWith('node-') ? backendId : `node-${backendId}`;
+            setCurrentNodeId(expected);
+          }
+
+          // Update step index
+          setCurrentStepIndex(normalized.length - 1);
+          setActiveStepIndex(normalized.length - 1);
+
+          // Update preview image
+          const last = normalized[normalized.length - 1];
+          if (last && last.image_url) setCurrentImageUrl(last.image_url);
+
+          // Ensure async updates place correct final image
+          setTimeout(() => {
+            if (last?.image_url) setCurrentImageUrl(last.image_url);
+          }, 0);
+
+          setIsExecutingAI(false);
+
+        } catch (err) {
+          console.error('[WS] path_update handling failed:', err, data);
+        }
+        break;
+      }
+
+
+
+
+      case 'step_start': {
+        // visual cue that backend started a step/run
+        setIsExecutingAI(true);
+        break;
+      }
+
+      case 'macro_saved': {
+        Toast.show({
+          type: 'success',
+          text1: `Macro "${data.name}" saved`,
+          text2: `${data.steps ?? 0} steps`,
+        });
+        break;
+      }
+
+      case 'macro_list': {
+        if (data.macros) setMacros(data.macros);
+        break;
+      }
+
+
+      default: {
+        // Generic message handling
+        console.log('[WS] unhandled message:', data);
+      }
+    }
+  };
+
+
   // Image size for dynamic canvas sizing
   // Calculate proper initial dimensions based on passed canvas size or screen size
   const getInitialDimensions = () => {
     const maxWidth = SCREEN_WIDTH - 26;
     const maxHeight = SCREEN_HEIGHT * 0.55;
-    
+
     if (canvasWidth && canvasHeight) {
       // For blank canvas with specific dimensions, fit to screen while maintaining aspect ratio
       const aspectRatio = canvasWidth / canvasHeight;
       let newWidth = maxWidth;
       let newHeight = newWidth / aspectRatio;
-      
+
       if (newHeight > maxHeight) {
         newHeight = maxHeight;
         newWidth = newHeight * aspectRatio;
       }
-      
+
       return { width: newWidth, height: newHeight };
     }
-    
+
     return { width: maxWidth, height: 420 };
   };
-  
+
   const [imageDimensions, setImageDimensions] = useState<{ width: number; height: number }>(getInitialDimensions());
-  
+
   // Store the actual canvas dimensions (not display dimensions)
   const [actualCanvasDimensions, setActualCanvasDimensions] = useState<{ width: number; height: number }>({
     width: canvasWidth || 1080,
@@ -188,7 +607,7 @@ export default function EditorScreen({ route, navigation }: Props) {
 
   // History system for undo/redo
   const history = useImageHistory(imageUrl);
-  
+
   // Legacy layer manager for compatibility
   const legacyLayerManager = useLayerManager(imageUrl);
 
@@ -200,6 +619,22 @@ export default function EditorScreen({ route, navigation }: Props) {
   const timelineBottom = useRef(new Animated.Value(160)).current;
 
   useEffect(() => {
+    connectWebSocket();
+    return () => {
+      // clean up on unmount
+      try {
+        if (wsRef.current) {
+          wsRef.current.close();
+          wsRef.current = null;
+        }
+      } catch (e) {
+        console.warn('[WS] cleanup error', e);
+      }
+    };
+  }, []);
+
+
+  useEffect(() => {
     // Fade in animation - slow and smooth
     Animated.timing(fadeAnim, {
       toValue: 1,
@@ -208,7 +643,7 @@ export default function EditorScreen({ route, navigation }: Props) {
       useNativeDriver: true,
     }).start();
   }, []);
-  
+
   // Auto-select background layer if no layer is selected
   useEffect(() => {
     if (!layerManager.selectedLayerId && layerManager.layers.length > 0) {
@@ -219,7 +654,7 @@ export default function EditorScreen({ route, navigation }: Props) {
       }
     }
   }, [layerManager.layers.length, layerManager.selectedLayerId]);
-  
+
   // Cleanup localStorage on page unload (web only)
   useEffect(() => {
     if (Platform.OS === 'web') {
@@ -237,9 +672,9 @@ export default function EditorScreen({ route, navigation }: Props) {
           // Ignore errors
         }
       };
-      
+
       window.addEventListener('beforeunload', handleBeforeUnload);
-      
+
       return () => {
         window.removeEventListener('beforeunload', handleBeforeUnload);
         // Also clear on component unmount
@@ -252,18 +687,18 @@ export default function EditorScreen({ route, navigation }: Props) {
   useEffect(() => {
     const maxWidth = SCREEN_WIDTH - 26;
     const maxHeight = SCREEN_HEIGHT * 0.55;
-    
+
     if (isBlankCanvas && canvasWidth && canvasHeight) {
       // For blank canvas, use passed dimensions and fit to screen
       const aspectRatio = canvasWidth / canvasHeight;
       let newWidth = maxWidth;
       let newHeight = newWidth / aspectRatio;
-      
+
       if (newHeight > maxHeight) {
         newHeight = maxHeight;
         newWidth = newHeight * aspectRatio;
       }
-      
+
       setImageDimensions({ width: newWidth, height: newHeight });
       setActualCanvasDimensions({ width: canvasWidth, height: canvasHeight });
       console.log('📐 Blank canvas:', canvasWidth, 'x', canvasHeight, '→ display:', Math.round(newWidth), 'x', Math.round(newHeight));
@@ -275,12 +710,12 @@ export default function EditorScreen({ route, navigation }: Props) {
           const aspectRatio = width / height;
           let newWidth = maxWidth;
           let newHeight = newWidth / aspectRatio;
-          
+
           if (newHeight > maxHeight) {
             newHeight = maxHeight;
             newWidth = newHeight * aspectRatio;
           }
-          
+
           setImageDimensions({ width: newWidth, height: newHeight });
           setActualCanvasDimensions({ width, height });
           console.log('🖼️ Image:', width, 'x', height, '→ display:', Math.round(newWidth), 'x', Math.round(newHeight));
@@ -298,8 +733,8 @@ export default function EditorScreen({ route, navigation }: Props) {
   useEffect(() => {
     // Check if any panel is open
     const anyPanelOpen = editPanelOpen || adjustmentOpen || filtersOpen ||
-                         drawingToolsOpen || layersOpen || aiFeaturesOpen ||
-                         addMenuOpen || exportOpen;
+      drawingToolsOpen || layersOpen || aiFeaturesOpen ||
+      addMenuOpen || exportOpen;
 
     const toBottomChat = anyPanelOpen ? 300 : 237; // Move up when any panel active
     const toBottomFloating = anyPanelOpen ? 173 : 110; // Move up when any panel active
@@ -333,19 +768,19 @@ export default function EditorScreen({ route, navigation }: Props) {
       // Clear all localStorage/AsyncStorage for the editor
       await history.clearAllEditorStorage();
       await layerManager.clearAllLayers();
-      
+
       console.log('🏠 Navigating home - all editor storage cleared');
-      
-            if (navigation.canGoBack()) {
-              navigation.goBack();
-            } else {
-              navigation.reset({
-                index: 0,
-                routes: [{ name: 'Home' as any }],
-              });
-            }
+
+      if (navigation.canGoBack()) {
+        navigation.goBack();
+      } else {
+        navigation.reset({
+          index: 0,
+          routes: [{ name: 'Home' as any }],
+        });
+      }
     };
-    
+
     // Use confirm on web, Alert on native
     if (Platform.OS === 'web') {
       const confirmed = window.confirm('Return Home? All project data will be cleared.');
@@ -361,9 +796,9 @@ export default function EditorScreen({ route, navigation }: Props) {
           {
             text: 'Go Home',
             onPress: clearAndNavigate,
-        },
-      ]
-    );
+          },
+        ]
+      );
     }
   };
 
@@ -405,15 +840,15 @@ export default function EditorScreen({ route, navigation }: Props) {
   // Merge all layers into a single image (for export)
   const mergeAllLayersForExport = async (): Promise<string | null> => {
     const layers = layerManager.layers;
-    
+
     // Check for valid layers
     if (layers.length === 0 && !currentImageUrl) {
       console.log('❌ No layers or image to export');
       return null;
     }
-    
+
     console.log('📦 Exporting with', layers.length, 'layers');
-    
+
     // On web, use canvas-based merging
     if (Platform.OS === 'web') {
       try {
@@ -434,23 +869,23 @@ export default function EditorScreen({ route, navigation }: Props) {
           shape: layer.shape,
           adjustments: layer.adjustments,
         }));
-        
+
         // Merge using canvas - use actual dimensions, but pass display dimensions for scaling
         const exportWidth = actualCanvasDimensions.width || 1080;
         const exportHeight = actualCanvasDimensions.height || 1080;
         const displayWidth = imageDimensions.width || exportWidth;
         const displayHeight = imageDimensions.height || exportHeight;
         console.log('📦 Merging layers at', exportWidth, 'x', exportHeight, '(display:', displayWidth, 'x', displayHeight, ')');
-        
+
         const blob = await mergeAllLayers(
-          layersForMerge, 
-          exportWidth, 
+          layersForMerge,
+          exportWidth,
           exportHeight,
           'png',
           displayWidth,
           displayHeight
         );
-        
+
         if (blob) {
           // Create blob URL for download
           return URL.createObjectURL(blob);
@@ -459,16 +894,16 @@ export default function EditorScreen({ route, navigation }: Props) {
         console.error('Layer merge failed:', e);
       }
     }
-    
+
     // Fallback: Get the base layer source or currentImageUrl
     const baseLayer = layers.find(l => l.type === 'background');
     let resultUri = baseLayer?.source || currentImageUrl || '';
-    
+
     if (!resultUri) {
       console.log('❌ No valid image URI for export');
       return null;
     }
-    
+
     return resultUri;
   };
 
@@ -480,7 +915,7 @@ export default function EditorScreen({ route, navigation }: Props) {
 
       // Merge all layers first
       const mergedImageUri = await mergeAllLayersForExport();
-      
+
       if (!mergedImageUri) {
         Toast.show({
           type: 'error',
@@ -494,7 +929,7 @@ export default function EditorScreen({ route, navigation }: Props) {
       // Determine file extension
       const extension = format === 'jpg' ? 'jpg' : 'png';
       const fileName = `export_${Date.now()}.${extension}`;
-      
+
       // === WEB PLATFORM HANDLING ===
       if (Platform.OS === 'web') {
         try {
@@ -502,7 +937,7 @@ export default function EditorScreen({ route, navigation }: Props) {
           const link = document.createElement('a');
           link.href = mergedImageUri;
           link.download = fileName;
-          
+
           // For blob URLs or data URLs, we can directly download
           if (mergedImageUri.startsWith('blob:') || mergedImageUri.startsWith('data:')) {
             document.body.appendChild(link);
@@ -519,13 +954,13 @@ export default function EditorScreen({ route, navigation }: Props) {
             document.body.removeChild(link);
             URL.revokeObjectURL(blobUrl);
           }
-          
+
           Toast.show({
             type: 'success',
             text1: '✅ Download Started!',
             text2: `Saving ${fileName}`,
           });
-          
+
           // Save project metadata
           await saveProject({
             id: Date.now().toString(),
@@ -535,7 +970,7 @@ export default function EditorScreen({ route, navigation }: Props) {
             createdAt: new Date(),
             updatedAt: new Date(),
           });
-          
+
           setExporting(false);
           return;
         } catch (webError) {
@@ -552,7 +987,7 @@ export default function EditorScreen({ route, navigation }: Props) {
 
       // === NATIVE PLATFORM HANDLING ===
       let exportUri = mergedImageUri;
-      
+
       // If it's a remote URL, download it first for native
       if (mergedImageUri.startsWith('http')) {
         const downloadResult = await FileSystem.downloadAsync(
@@ -567,33 +1002,33 @@ export default function EditorScreen({ route, navigation }: Props) {
         case 'jpg':
         case 'gallery':
           // Save to gallery (native only)
-      const { status } = await MediaLibrary.requestPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert('Permission Required', 'Please grant permission to save images to your gallery.');
-        setExporting(false);
-        return;
-      }
+          const { status } = await MediaLibrary.requestPermissionsAsync();
+          if (status !== 'granted') {
+            Alert.alert('Permission Required', 'Please grant permission to save images to your gallery.');
+            setExporting(false);
+            return;
+          }
 
           const asset = await MediaLibrary.createAssetAsync(exportUri);
           console.log('✅ Saved to gallery:', asset.uri);
-          
+
           // Also save project
-      await saveProject({
-        id: Date.now().toString(),
-        name: `Project ${Date.now()}`,
+          await saveProject({
+            id: Date.now().toString(),
+            name: `Project ${Date.now()}`,
             imageUrl: mergedImageUri,
             thumbnail: mergedImageUri,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      });
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          });
 
-      Toast.show({
-        type: 'success',
+          Toast.show({
+            type: 'success',
             text1: '✅ Saved to Gallery!',
             text2: `Exported as ${extension.toUpperCase()}`,
           });
           break;
-          
+
         case 'files':
           // Share to files app (native only)
           const canShare = await Sharing.isAvailableAsync();
@@ -602,14 +1037,14 @@ export default function EditorScreen({ route, navigation }: Props) {
             setExporting(false);
             return;
           }
-          
+
           try {
             await Sharing.shareAsync(exportUri, {
               mimeType: extension === 'jpg' ? 'image/jpeg' : 'image/png',
               dialogTitle: 'Save Image',
               UTI: extension === 'jpg' ? 'public.jpeg' : 'public.png',
             });
-            
+
             Toast.show({
               type: 'success',
               text1: '✅ Shared!',
@@ -620,7 +1055,7 @@ export default function EditorScreen({ route, navigation }: Props) {
           }
           break;
       }
-      
+
       setExporting(false);
     } catch (error: any) {
       console.error('Export error:', error);
@@ -673,7 +1108,7 @@ export default function EditorScreen({ route, navigation }: Props) {
     if (exceptPanel !== 'watermark') watermarkToolRef.current?.close();
     if (exceptPanel !== 'proAdjustments') proAdjustmentsRef.current?.close();
     if (exceptPanel !== 'shapeCrop') shapeCropRef.current?.close();
-    
+
     // Clear filter preview when closing panels
     if (exceptPanel !== 'adjustment' && exceptPanel !== 'realTimeAdjustments') {
       setFilterPreview(undefined);
@@ -683,7 +1118,7 @@ export default function EditorScreen({ route, navigation }: Props) {
   // Open a specific panel (closes all others first)
   const openPanel = (panelName: string) => {
     closeAllPanels(panelName);
-    
+
     switch (panelName) {
       case 'layers':
         setLayersOpen(true);
@@ -761,12 +1196,12 @@ export default function EditorScreen({ route, navigation }: Props) {
     // Close all panels and return to normal state when canvas is tapped
     // Always close panels if any are open, regardless of current state
     const anyPanelOpen = editPanelOpen || adjustmentOpen || filtersOpen ||
-                         drawingToolsOpen || layersOpen || aiFeaturesOpen ||
-                         addMenuOpen || exportOpen || aiChatOpen ||
-                         realTimeAdjustmentsOpen || curveToolOpen || 
-                         textToolOpen || shapeToolOpen || cropToolOpen ||
-                         rotateToolOpen || flipToolOpen || resizeToolOpen ||
-                         selectedTool !== null;
+      drawingToolsOpen || layersOpen || aiFeaturesOpen ||
+      addMenuOpen || exportOpen || aiChatOpen ||
+      realTimeAdjustmentsOpen || curveToolOpen ||
+      textToolOpen || shapeToolOpen || cropToolOpen ||
+      rotateToolOpen || flipToolOpen || resizeToolOpen ||
+      selectedTool !== null;
 
     if (anyPanelOpen) {
       console.log('📱 Canvas tapped - closing all panels');
@@ -877,74 +1312,246 @@ export default function EditorScreen({ route, navigation }: Props) {
   const handleAIPromptSubmit = async () => {
     if (!aiPrompt.trim() || isExecutingAI) return;
 
+    if (!wsConnected) {
+      Toast.show({
+        type: 'error',
+        text1: 'Connection error',
+        text2: 'AI service not connected. Trying to reconnect...',
+      });
+      connectWebSocket();
+      return;
+    }
+
+    const sid = sessionId || clientIdRef.current;
+    setSessionId(sid);
     setIsExecutingAI(true);
-    setExecutedSteps([]);
-    setCurrentStepIndex(0);
 
-    // Get predefined sequence from JSON (for now, always use default)
-    const sequence = editingActionsData.predefinedSequences.default;
+    // --- NORMALIZE / UPLOAD IMAGE PATH (replace old normalization) ---
+    let imagePath = currentImageUrl || '';
 
-    // Execute steps one by one
-    for (let i = 0; i < sequence.length; i++) {
-      const step = sequence[i];
-      const actionDef = editingActionsData.actions.find((a) => a.id === step.action);
+    try {
+      // If imagePath is a blob or file URL -> upload it
+      const isBlobOrFile = imagePath.startsWith('blob:') || imagePath.startsWith('file:') || imagePath.includes('blob:http');
+      const isHttp = imagePath.startsWith('http://') || imagePath.startsWith('https://');
+      const isStaticRelative = imagePath.startsWith('/static/') || imagePath.startsWith('static/');
 
-      if (!actionDef) continue;
+      if (isBlobOrFile) {
+        // upload the local/blob uri and use returned url
+        Toast.show({ type: 'info', text1: 'Uploading image...', text2: 'Saving to server' });
+        const uploadedUrl = await uploadImageToServer(imagePath);
+        imagePath = uploadedUrl;
+        setCurrentImageUrl(imagePath);
+        Toast.show({ type: 'info', text1: 'Upload complete' });
+      } else if (!isHttp && !isStaticRelative) {
+        // Not http and not already /static/ — could be just a filename. Prefix /static/ ONLY if it's a filename
+        if (imagePath && !imagePath.startsWith('/')) {
+          imagePath = `/static/${imagePath}`;
+        } else if (!imagePath) {
+          Toast.show({ type: 'error', text1: 'No image selected', text2: 'Open an image before using AI.' });
+          setIsExecutingAI(false);
+          return;
+        }
+      }
+      // If it's http(s) or /static/ we leave it as-is
+    } catch (e) {
+      console.error('Failed to prepare image for AI:', e);
+      setIsExecutingAI(false);
+      Toast.show({ type: 'error', text1: 'Image error', text2: 'Failed to upload or prepare image.' });
+      return;
+    }
 
-      // Create step record with thumbnail
-      const executedStep = {
-        id: `step-${Date.now()}-${i}`,
-        actionId: step.action,
-        name: actionDef.name,
-        description: actionDef.description,
-        icon: getIconForTool(step.action), // Use icon mapping based on tool type
-        params: step.params,
-        timestamp: Date.now(),
-        thumbnailUri: currentImageUrl, // Store current image as thumbnail
-      };
 
-      // Add step to timeline
-      setExecutedSteps((prev) => [...prev, executedStep]);
-      setCurrentStepIndex(i + 1);
-
-      // Execute the actual editing action
-      try {
-        await executeAIStep(step.action, step.params);
-        // Wait to show transformation
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-
-        // TODO: In real implementation, capture canvas state here and update thumbnailUri
-        // For now, we use the same image for all steps
-      } catch (error) {
-        console.error(`Failed to execute step ${step.action}:`, error);
+    if (!imagePath.includes('/static/')) {
+      if (imagePath && !imagePath.startsWith('/')) imagePath = `/static/${imagePath}`;
+      else if (!imagePath) {
+        Toast.show({
+          type: 'error',
+          text1: 'No image selected',
+          text2: 'Please open an image to edit before using AI.',
+        });
+        setIsExecutingAI(false);
+        return;
       }
     }
 
-    // Send executed steps to backend
-    try {
-      await sendEditingWorkflowToBackend(sequence, currentImageUrl);
-      console.log('✅ Successfully sent editing workflow to backend');
-    } catch (error) {
-      console.error('❌ Failed to send workflow to backend:', error);
-      // Don't block the UI, just log the error
+    // If continueParentNodeRef is set -> send continue_processing
+    const parentNodeId = continueParentNodeRef.current;
+    let payload: any;
+    if (parentNodeId) {
+      payload = {
+        action: 'continue_processing',
+        session_id: sid,
+        parent_node_id: parentNodeId,
+        prompt: aiPrompt,
+        // optional: reference_image_path
+      };
+      // clear the ref so subsequent prompts are new sessions unless set again
+      continueParentNodeRef.current = null;
+    } else {
+      payload = {
+        action: 'start_processing',
+        session_id: sid,
+        prompt: aiPrompt,
+        image_path: imagePath,
+        // optional: reference_image_path
+      };
     }
 
-    // Set current node to the last executed step
-    if (sequence.length > 0) {
-      const lastStepId = `node-${Date.now()}-${sequence.length - 1}`;
-      setCurrentNodeId(lastStepId);
-      console.log('[AI Complete] Set current node to last step:', lastStepId);
+    const ok = sendWs(payload);
+    if (!ok) {
+      setIsExecutingAI(false);
+      Toast.show({
+        type: 'error',
+        text1: 'Send failed',
+        text2: 'Could not send prompt to AI service.',
+      });
+      return;
     }
 
-    setIsExecutingAI(false);
-    setAiPrompt('');
-    setAiChatOpen(false); // Close AI chat after completion
     Toast.show({
-      type: 'success',
-      text1: 'AI Editing Complete',
-      text2: `Applied ${sequence.length} transformations`,
+      type: 'info',
+      text1: parentNodeId ? 'Continuing with AI' : 'AI processing started',
+      text2: parentNodeId ? 'Adding edits to selected step.' : 'Applying edits — updates will appear shortly.',
+    });
+
+    setAiChatOpen(true);
+    // keep isExecutingAI true until backend sends finished/error
+  };
+
+
+  const handleStopProcessing = () => {
+    if (!wsConnected || !sessionId) {
+      // try using clientIdRef fallback
+      const sid = sessionId || clientIdRef.current;
+      if (!wsConnected) {
+        Toast.show({
+          type: 'error',
+          text1: 'Not connected',
+          text2: 'Unable to stop — connection not active.',
+        });
+        return;
+      }
+      // otherwise proceed with sid
+    }
+
+    const sid = sessionId || clientIdRef.current;
+    const payload = {
+      action: 'stop_processing',
+      session_id: sid,
+    };
+    const ok = sendWs(payload);
+    if (ok) {
+      Toast.show({
+        type: 'info',
+        text1: 'Stopping',
+        text2: 'Requested to stop AI processing.',
+      });
+    } else {
+      Toast.show({
+        type: 'error',
+        text1: 'Stop failed',
+        text2: 'Could not send stop request.',
+      });
+    }
+
+    // optimistic UI update
+    setIsExecutingAI(false);
+  };
+
+  const handleContinueProcessing = (parentNodeId: string, newPrompt: string) => {
+    if (!newPrompt.trim()) {
+      Toast.show({
+        type: 'info',
+        text1: 'Empty prompt',
+        text2: 'Please enter how you want to continue.',
+      });
+      return;
+    }
+
+    if (!wsConnected) {
+      Toast.show({
+        type: 'error',
+        text1: 'Connection error',
+        text2: 'AI service not connected.',
+      });
+      connectWebSocket();
+      return;
+    }
+
+    const sid = sessionId || clientIdRef.current;
+    setSessionId(sid);
+    setIsExecutingAI(true);
+
+    const payload = {
+      action: 'continue_processing',
+      session_id: sid,
+      parent_node_id: parentNodeId,
+      prompt: newPrompt,
+      // optional: reference_image_path if you add that later
+    };
+
+    const ok = sendWs(payload);
+    if (!ok) {
+      setIsExecutingAI(false);
+      Toast.show({
+        type: 'error',
+        text1: 'Send failed',
+        text2: 'Could not send continue request.',
+      });
+      return;
+    }
+
+    Toast.show({
+      type: 'info',
+      text1: 'Continuing with AI',
+      text2: 'Adding further edits from selected step.',
     });
   };
+
+  const handleSwitchNode = (nodeId: string) => {
+    if (!wsConnected) {
+      Toast.show({
+        type: 'error',
+        text1: 'Connection error',
+        text2: 'AI service not connected.',
+      });
+      connectWebSocket();
+      return;
+    }
+
+    const sid = sessionId || clientIdRef.current;
+    setSessionId(sid);
+
+    const payload = {
+      action: 'switch_node',
+      session_id: sid,
+      node_id: nodeId,
+    };
+
+    const ok = sendWs(payload);
+    if (ok) {
+      setCurrentNodeId(nodeId);
+      Toast.show({
+        type: 'info',
+        text1: 'Switched version',
+        text2: 'Showing edits from selected branch.',
+      });
+    } else {
+      Toast.show({
+        type: 'error',
+        text1: 'Switch failed',
+        text2: 'Could not switch to selected node.',
+      });
+    }
+  };
+
+  const openContinueFromStep = (nodeId: string, prefillPrompt = '') => {
+    continueParentNodeRef.current = nodeId;      // remember which node to continue from
+    setAiPrompt(prefillPrompt);                  // optional: prefill prompt
+    setAiChatOpen(true);                         // open the chat input for the user
+    // optionally focus the TextInput if you have a ref to it
+  };
+
 
   /**
    * Send editing workflow to backend
@@ -1354,22 +1961,22 @@ export default function EditorScreen({ route, navigation }: Props) {
       if (!result.canceled) {
         const asset = result.assets[0];
         const imageUri = asset.uri;
-        
+
         // Check if we have a background layer, if not create one
         const bgLayer = layerManager.getBackgroundLayer();
         if (!bgLayer) {
           // First image becomes locked background
           layerManager.createBackgroundLayer(imageUri);
           setCurrentImageUrl(imageUri);
-        Toast.show({
-          type: 'success',
+          Toast.show({
+            type: 'success',
             text1: 'Background Set',
             text2: 'Photo set as locked background layer',
           });
         } else {
           // Subsequent images become NEW MOVABLE layers with fit & center
           await layerManager.importImageLayerAsync(
-            imageUri, 
+            imageUri,
             `Photo ${layerManager.getLayerCount()}`,
             imageDimensions.width,
             imageDimensions.height
@@ -1380,7 +1987,7 @@ export default function EditorScreen({ route, navigation }: Props) {
             text2: '📷 New movable image layer (fit & centered)',
           });
         }
-        
+
         // Push to history (skip blob URLs - they're temporary)
         if (!imageUri.startsWith('blob:')) {
           history.pushHistory(imageUri, 'Camera capture');
@@ -1419,22 +2026,22 @@ export default function EditorScreen({ route, navigation }: Props) {
       if (!result.canceled) {
         const asset = result.assets[0];
         const imageUri = asset.uri;
-        
+
         // Check if we have a background layer, if not create one
         const bgLayer = layerManager.getBackgroundLayer();
         if (!bgLayer) {
           // First image becomes locked background
           layerManager.createBackgroundLayer(imageUri);
           setCurrentImageUrl(imageUri);
-        Toast.show({
-          type: 'success',
+          Toast.show({
+            type: 'success',
             text1: 'Background Set',
             text2: '🔐 Photo set as locked background layer',
           });
         } else {
           // Subsequent images become NEW MOVABLE layers with fit & center
           await layerManager.importImageLayerAsync(
-            imageUri, 
+            imageUri,
             `Image ${layerManager.getLayerCount()}`,
             imageDimensions.width,
             imageDimensions.height
@@ -1445,7 +2052,7 @@ export default function EditorScreen({ route, navigation }: Props) {
             text2: '🖼️ New movable image layer (fit & centered)',
           });
         }
-        
+
         // Push to history (skip blob URLs - they're temporary)
         if (!imageUri.startsWith('blob:')) {
           history.pushHistory(imageUri, 'Gallery import');
@@ -1487,7 +2094,7 @@ export default function EditorScreen({ route, navigation }: Props) {
 
   // Validate that a layer is selected before opening tool
   const validateLayerAndOpenTool = useCallback((
-    toolSetter: (open: boolean) => void, 
+    toolSetter: (open: boolean) => void,
     toolName: string,
     requireImage: boolean = false
   ) => {
@@ -1501,7 +2108,7 @@ export default function EditorScreen({ route, navigation }: Props) {
       });
       return;
     }
-    
+
     // Optionally check for image
     if (requireImage && !hasValidImage()) {
       Toast.show({
@@ -1512,7 +2119,7 @@ export default function EditorScreen({ route, navigation }: Props) {
       });
       return;
     }
-    
+
     closeAllPanels();
     toolSetter(true);
   }, [hasSelectedLayer, hasValidImage, closeAllPanels]);
@@ -1540,7 +2147,7 @@ export default function EditorScreen({ route, navigation }: Props) {
 
       // Get the selected layer or default to background
       let selectedLayer = layerManager.getSelectedLayer();
-      
+
       // If no layer selected, auto-select and use background
       if (!selectedLayer) {
         const bgLayer = layerManager.getBackgroundLayer();
@@ -1549,7 +2156,7 @@ export default function EditorScreen({ route, navigation }: Props) {
           selectedLayer = bgLayer;
         }
       }
-      
+
       // Check if layer is locked
       if (selectedLayer?.locked) {
         Toast.show({
@@ -1560,7 +2167,7 @@ export default function EditorScreen({ route, navigation }: Props) {
         setProcessing(false);
         return;
       }
-      
+
       const imageToProcess = selectedLayer?.source || selectedLayer?.imageUri || currentImageUrl;
 
       if (!imageToProcess) {
@@ -1589,27 +2196,27 @@ export default function EditorScreen({ route, navigation }: Props) {
       );
 
       // Update the selected layer's source (in-place edit)
-      layerManager.updateLayer(layerManager.selectedLayerId!, { 
+      layerManager.updateLayer(layerManager.selectedLayerId!, {
         source: result.uri,
         imageUri: result.uri,
       });
-      
+
       // Also store crop params for non-destructive reference
-      layerManager.cropSelectedLayer({ 
-        x: cropData.x, 
-        y: cropData.y, 
-        w: cropData.width, 
-        h: cropData.height 
+      layerManager.cropSelectedLayer({
+        x: cropData.x,
+        y: cropData.y,
+        w: cropData.width,
+        h: cropData.height
       });
-      
+
       const layerName = selectedLayer?.name || 'Layer';
-      
+
       // If background layer was cropped, also update the main image URL
       if (selectedLayer?.type === 'background') {
-      setCurrentImageUrl(result.uri);
+        setCurrentImageUrl(result.uri);
         console.log('📐 Background layer cropped, updating main image URL');
       }
-      
+
       history.pushHistory(result.uri, `Crop ${layerName}`, cropData);
 
       Toast.show({
@@ -1640,23 +2247,23 @@ export default function EditorScreen({ route, navigation }: Props) {
     const imageToProcess = selectedLayer?.source || selectedLayer?.imageUri || currentImageUrl;
 
     if (!imageToProcess) {
-          Toast.show({
+      Toast.show({
         type: 'error',
         text1: 'No Image',
         text2: 'Please load an image first to apply filters',
       });
-          return;
-      }
+      return;
+    }
 
     try {
       setProcessing(true);
 
       // Apply filter to the selected layer's image
       const result = await applyFilter(imageToProcess, filter.id);
-      
+
       if (result.success && result.uri) {
         const layerName = selectedLayer?.name || 'Layer';
-        
+
         // Update the SELECTED layer's source (in-place edit, preserves adjustments)
         if (layerManager.selectedLayerId || selectedLayer?.id) {
           const targetLayerId = layerManager.selectedLayerId || selectedLayer?.id;
@@ -1666,12 +2273,12 @@ export default function EditorScreen({ route, navigation }: Props) {
           });
           console.log('🎨 Filter applied to layer:', layerName);
         }
-        
+
         // If background layer, also update currentImageUrl
         if (selectedLayer?.type === 'background') {
           setCurrentImageUrl(result.uri);
         }
-        
+
         history.pushHistory(result.uri, `${filter.name} on ${layerName}`, { filterId: filter.id });
 
         Toast.show({
@@ -1726,11 +2333,11 @@ export default function EditorScreen({ route, navigation }: Props) {
       };
 
       const result = await applyAdjustments(currentImageUrl, adjustmentParams);
-      
+
       if (result.success && result.uri) {
         setCurrentImageUrl(result.uri);
         history.pushHistory(result.uri, 'Adjustments', adjustments);
-        
+
         // Create an adjustment layer with the processed image
         layerManager.createAdjustmentLayer(adjustmentParams, 'Adjustments', result.uri);
 
@@ -1765,16 +2372,16 @@ export default function EditorScreen({ route, navigation }: Props) {
       <View style={styles.container}>
         <Animated.View style={[styles.content, { opacity: fadeAnim }]}>
           {/* Background tap handler for when no panels are open */}
-            <View style={styles.tapOverlay} />
-          
+          <View style={styles.tapOverlay} />
+
           {/* Dismiss overlay - appears when edit panel or other panels are open */}
-          {(editPanelOpen || adjustmentOpen || filtersOpen || drawingToolsOpen || 
-            realTimeAdjustmentsOpen || curveToolOpen || textToolOpen || 
+          {(editPanelOpen || adjustmentOpen || filtersOpen || drawingToolsOpen ||
+            realTimeAdjustmentsOpen || curveToolOpen || textToolOpen ||
             shapeToolOpen || drawingPopupOpen) && (
-            <TouchableWithoutFeedback onPress={handleCanvasTap}>
-              <View style={styles.dismissOverlay} />
-          </TouchableWithoutFeedback>
-          )}
+              <TouchableWithoutFeedback onPress={handleCanvasTap}>
+                <View style={styles.dismissOverlay} />
+              </TouchableWithoutFeedback>
+            )}
 
           {/* Top Bar */}
           <View style={styles.topBar}>
@@ -1807,146 +2414,146 @@ export default function EditorScreen({ route, navigation }: Props) {
 
           {/* Canvas Area - dynamically sized to image */}
           <View style={[styles.canvasArea, { height: imageDimensions.height + 20 }]}>
-              {!imageLoaded && !isBlankCanvas && (
-                <View style={styles.loadingContainer}>
-                  <ActivityIndicator size="large" color="#FFFFFF" />
-                  <Text style={styles.loadingText}>Loading image...</Text>
-                </View>
-              )}
+            {!imageLoaded && !isBlankCanvas && (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color="#FFFFFF" />
+                <Text style={styles.loadingText}>Loading image...</Text>
+              </View>
+            )}
 
-              {isBlankCanvas ? (
-                <View style={[styles.blankCanvas]}>
-                  <Ionicons name="create-outline" size={60} color="#666666" />
-                  <Text style={styles.blankCanvasText}>
-                    Start creating on your blank canvas
-                  </Text>
-                </View>
-              ) : (
-                <View style={styles.canvasContainer}>
-                  <InteractiveCanvas
-                    imageUri={currentImageUrl}
-                    layers={layerManager.layers} // Pass ALL layers including background for adjustments
-                    drawingPaths={currentDrawingPaths}
-                    filterPreview={filterPreview}
-                    isBaseImageLocked={true}
-                    selectedLayerId={layerManager.selectedLayerId}
-                    canvasWidth={imageDimensions.width}
-                    canvasHeight={imageDimensions.height}
-                    onLayerSelect={(layerId) => {
-                      console.log('🎯 Layer selected:', layerId);
-                      layerManager.selectLayer(layerId);
-                    }}
-                    onLayerMove={(layerId, dx, dy) => {
-                      // Forward drag deltas from canvas to the layer manager
-                      layerManager.moveLayer(layerId, dx, dy);
-                    }}
-                    onImageLoad={() => setImageLoaded(true)}
-                    onImageError={(error: any) => {
-                      console.error('Image load error:', error);
-                      Alert.alert(
-                        'Error',
-                        'Failed to load image. Please try again.',
-                        [{ text: 'Go Back', onPress: () => navigation.goBack() }]
-                      );
-                    }}
-                  />
-                </View>
-              )}
-              
-              {/* Drawing Overlay - appears on top of canvas (works for both blank and image canvas) */}
-              {drawingOverlayOpen && (
-                <View style={StyleSheet.absoluteFill}>
-                  <DrawingOverlay
-                    visible={drawingOverlayOpen}
-                    canvasWidth={imageDimensions.width}
-                    canvasHeight={imageDimensions.height}
-                    onConfirm={(paths: DrawingOverlayPath[]) => {
-                      if (paths.length === 0) {
-                        setDrawingOverlayOpen(false);
-                        return;
-                      }
-                      
-                      // Convert paths for layer storage
-                      const convertedPaths = paths.map((p: DrawingOverlayPath) => ({
-                        ...p,
-                        points: p.points,
-                      }));
-                      
-                      // Create a new drawing layer with unique name
-                      const layerCount = layerManager.layers.filter(l => l.type === 'drawing').length;
-                      const layerName = `Drawing ${layerCount + 1}`;
-                      const layerId = layerManager.createDrawingLayer(layerName);
-                      
-                      // Update layer with drawing data
-                      layerManager.updateLayer(layerId, {
-                        drawing: {
-                          paths: convertedPaths,
-                          tool: currentDrawingTool?.id || 'pen',
-                          color: paths[0]?.color || '#FF0000',
-                          strokeWidth: paths[0]?.strokeWidth || 5,
-                        },
-                      });
-                      
-                      // Store in history for undo/redo
-                      history.pushHistory(
-                        currentImageUrl || 'blank-canvas', 
-                        `Drawing: ${paths.length} stroke(s)`,
-                        { layerId, paths: convertedPaths }
-                      );
-                      
-                      // Add paths to display
-                      setCurrentDrawingPaths(prev => [...prev, ...convertedPaths]);
+            {isBlankCanvas ? (
+              <View style={[styles.blankCanvas]}>
+                <Ionicons name="create-outline" size={60} color="#666666" />
+                <Text style={styles.blankCanvasText}>
+                  Start creating on your blank canvas
+                </Text>
+              </View>
+            ) : (
+              <View style={styles.canvasContainer}>
+                <InteractiveCanvas
+                  imageUri={currentImageUrl}
+                  layers={layerManager.layers} // Pass ALL layers including background for adjustments
+                  drawingPaths={currentDrawingPaths}
+                  filterPreview={filterPreview}
+                  isBaseImageLocked={true}
+                  selectedLayerId={layerManager.selectedLayerId}
+                  canvasWidth={imageDimensions.width}
+                  canvasHeight={imageDimensions.height}
+                  onLayerSelect={(layerId) => {
+                    console.log('🎯 Layer selected:', layerId);
+                    layerManager.selectLayer(layerId);
+                  }}
+                  onLayerMove={(layerId, dx, dy) => {
+                    // Forward drag deltas from canvas to the layer manager
+                    layerManager.moveLayer(layerId, dx, dy);
+                  }}
+                  onImageLoad={() => setImageLoaded(true)}
+                  onImageError={(error: any) => {
+                    console.error('Image load error:', error);
+                    Alert.alert(
+                      'Error',
+                      'Failed to load image. Please try again.',
+                      [{ text: 'Go Back', onPress: () => navigation.goBack() }]
+                    );
+                  }}
+                />
+              </View>
+            )}
+
+            {/* Drawing Overlay - appears on top of canvas (works for both blank and image canvas) */}
+            {drawingOverlayOpen && (
+              <View style={StyleSheet.absoluteFill}>
+                <DrawingOverlay
+                  visible={drawingOverlayOpen}
+                  canvasWidth={imageDimensions.width}
+                  canvasHeight={imageDimensions.height}
+                  onConfirm={(paths: DrawingOverlayPath[]) => {
+                    if (paths.length === 0) {
                       setDrawingOverlayOpen(false);
-                      
-                      Toast.show({
-                        type: 'success',
-                        text1: 'Drawing Applied',
-                        text2: `${paths.length} stroke(s) saved as "${layerName}"`,
-                      });
-                    }}
-                    onCancel={() => {
-                      setDrawingOverlayOpen(false);
-                      Toast.show({
-                        type: 'info',
-                        text1: 'Drawing Cancelled',
-                        text2: 'No changes made',
-                      });
-                    }}
-                    initialTool={currentDrawingTool?.id as any || 'pen'}
-                    initialColor={drawingSettings.color}
-                    initialSize={drawingSettings.size}
-                  />
-                </View>
-              )}
+                      return;
+                    }
+
+                    // Convert paths for layer storage
+                    const convertedPaths = paths.map((p: DrawingOverlayPath) => ({
+                      ...p,
+                      points: p.points,
+                    }));
+
+                    // Create a new drawing layer with unique name
+                    const layerCount = layerManager.layers.filter(l => l.type === 'drawing').length;
+                    const layerName = `Drawing ${layerCount + 1}`;
+                    const layerId = layerManager.createDrawingLayer(layerName);
+
+                    // Update layer with drawing data
+                    layerManager.updateLayer(layerId, {
+                      drawing: {
+                        paths: convertedPaths,
+                        tool: currentDrawingTool?.id || 'pen',
+                        color: paths[0]?.color || '#FF0000',
+                        strokeWidth: paths[0]?.strokeWidth || 5,
+                      },
+                    });
+
+                    // Store in history for undo/redo
+                    history.pushHistory(
+                      currentImageUrl || 'blank-canvas',
+                      `Drawing: ${paths.length} stroke(s)`,
+                      { layerId, paths: convertedPaths }
+                    );
+
+                    // Add paths to display
+                    setCurrentDrawingPaths(prev => [...prev, ...convertedPaths]);
+                    setDrawingOverlayOpen(false);
+
+                    Toast.show({
+                      type: 'success',
+                      text1: 'Drawing Applied',
+                      text2: `${paths.length} stroke(s) saved as "${layerName}"`,
+                    });
+                  }}
+                  onCancel={() => {
+                    setDrawingOverlayOpen(false);
+                    Toast.show({
+                      type: 'info',
+                      text1: 'Drawing Cancelled',
+                      text2: 'No changes made',
+                    });
+                  }}
+                  initialTool={currentDrawingTool?.id as any || 'pen'}
+                  initialColor={drawingSettings.color}
+                  initialSize={drawingSettings.size}
+                />
+              </View>
+            )}
           </View>
 
           {/* Undo/Redo Controls (Below Canvas) */}
           <View style={styles.undoRedoControls}>
-              <TouchableOpacity
-                style={[styles.undoRedoButton, !history.canUndo && styles.undoRedoButtonDisabled]}
-                onPress={handleUndo}
-                disabled={!history.canUndo}
-                activeOpacity={0.7}
-              >
-                <Ionicons
-                  name="arrow-undo"
-                  size={20}
-                  color={history.canUndo ? '#FFFFFF' : '#666666'}
-                />
-              </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.undoRedoButton, !history.canUndo && styles.undoRedoButtonDisabled]}
+              onPress={handleUndo}
+              disabled={!history.canUndo}
+              activeOpacity={0.7}
+            >
+              <Ionicons
+                name="arrow-undo"
+                size={20}
+                color={history.canUndo ? '#FFFFFF' : '#666666'}
+              />
+            </TouchableOpacity>
 
-              <TouchableOpacity
-                style={[styles.undoRedoButton, !history.canRedo && styles.undoRedoButtonDisabled]}
-                onPress={handleRedo}
-                disabled={!history.canRedo}
-                activeOpacity={0.7}
-              >
-                <Ionicons
-                  name="arrow-redo"
-                  size={20}
-                  color={history.canRedo ? '#FFFFFF' : '#666666'}
-                />
-              </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.undoRedoButton, !history.canRedo && styles.undoRedoButtonDisabled]}
+              onPress={handleRedo}
+              disabled={!history.canRedo}
+              activeOpacity={0.7}
+            >
+              <Ionicons
+                name="arrow-redo"
+                size={20}
+                color={history.canRedo ? '#FFFFFF' : '#666666'}
+              />
+            </TouchableOpacity>
           </View>
 
           {/* Global AI Chat Panel - Animated position */}
@@ -1965,24 +2572,42 @@ export default function EditorScreen({ route, navigation }: Props) {
                 onSubmitEditing={handleAIPromptSubmit}
                 returnKeyType="send"
               />
-              <TouchableOpacity
-                style={[styles.aiSendButton, !aiPrompt.trim() && styles.aiSendButtonDisabled]}
-                onPress={handleAIPromptSubmit}
-                disabled={!aiPrompt.trim() || isExecutingAI}
-                activeOpacity={0.7}
-              >
-                {isExecutingAI ? (
-                  <ActivityIndicator size="small" color="#FFFFFF" />
-                ) : (
-                  <Ionicons name="send" size={20} color="#FFFFFF" />
+              {/* Send / Stop area */}
+              <View style={styles.aiActionRow}>
+                {/* Send button */}
+                <TouchableOpacity
+                  style={[styles.aiSendButton, !aiPrompt.trim() && styles.aiSendButtonDisabled]}
+                  onPress={handleAIPromptSubmit}
+                  disabled={!aiPrompt.trim() || isExecutingAI}
+                  activeOpacity={0.7}
+                >
+                  {isExecutingAI ? (
+                    <ActivityIndicator size="small" color="#FFFFFF" />
+                  ) : (
+                    <Ionicons name="send" size={20} color="#FFFFFF" />
+                  )}
+                </TouchableOpacity>
+
+                {/* Stop button - only while executing */}
+                {isExecutingAI && (
+                  <TouchableOpacity
+                    style={styles.aiStopButton}
+                    onPress={() => handleStopProcessing()}
+                    activeOpacity={0.8}
+                  >
+                    <Ionicons name="stop" size={18} color="#FFFFFF" />
+                  </TouchableOpacity>
                 )}
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.aiChatCloseButton}
-                onPress={() => setAiChatOpen(false)}
-              >
-                <Ionicons name="close" size={20} color="#FFFFFF" />
-              </TouchableOpacity>
+
+                {/* Close chat */}
+                <TouchableOpacity
+                  style={styles.aiChatCloseButton}
+                  onPress={() => setAiChatOpen(false)}
+                >
+                  <Ionicons name="close" size={20} color="#FFFFFF" />
+                </TouchableOpacity>
+              </View>
+
             </Animated.View>
           )}
 
@@ -2045,53 +2670,53 @@ export default function EditorScreen({ route, navigation }: Props) {
                   </TouchableOpacity>
                 </Animated.View>
 
-              {/* Executed Steps - Only showing path from root to current node */}
-              {timelineSteps.map((step, index) => (
-                <Animated.View
-                  key={step.id}
-                  style={[
-                    styles.stepIcon,
-                    {
-                      opacity: fadeAnim,
-                      transform: [{
-                        scale: fadeAnim.interpolate({
-                          inputRange: [0, 1],
-                          outputRange: [0.3, 1],
-                        }),
-                      }],
-                    },
-                  ]}
-                >
-                  <TouchableOpacity
+                {/* Executed Steps - Only showing path from root to current node */}
+                {timelineSteps.map((step, index) => (
+                  <Animated.View
+                    key={step.id}
                     style={[
-                      styles.stepIconButton,
-                      index === currentStepIndex - 1 && isExecutingAI && styles.stepIconActive,
+                      styles.stepIcon,
+                      {
+                        opacity: fadeAnim,
+                        transform: [{
+                          scale: fadeAnim.interpolate({
+                            inputRange: [0, 1],
+                            outputRange: [0.3, 1],
+                          }),
+                        }],
+                      },
                     ]}
-                    onPress={() => handleStepIconTap(step)}
+                  >
+                    <TouchableOpacity
+                      style={[
+                        styles.stepIconButton,
+                        index === currentStepIndex - 1 && isExecutingAI && styles.stepIconActive,
+                      ]}
+                      onPress={() => handleStepIconTap(step)}
+                      activeOpacity={0.7}
+                    >
+                      <Ionicons name={step.icon as any} size={18} color="#E0E0E0" />
+                      {index === currentStepIndex - 1 && isExecutingAI && (
+                        <View style={styles.stepPulse}>
+                          <ActivityIndicator size="small" color="#FFFFFF" />
+                        </View>
+                      )}
+                    </TouchableOpacity>
+                  </Animated.View>
+                ))}
+
+                {/* Clear Steps Button */}
+                {!isExecutingAI && (
+                  <TouchableOpacity
+                    style={styles.clearStepsButton}
+                    onPress={() => setExecutedSteps([])}
                     activeOpacity={0.7}
                   >
-                    <Ionicons name={step.icon as any} size={18} color="#E0E0E0" />
-                    {index === currentStepIndex - 1 && isExecutingAI && (
-                      <View style={styles.stepPulse}>
-                        <ActivityIndicator size="small" color="#FFFFFF" />
-                      </View>
-                    )}
+                    <Ionicons name="close-circle" size={16} color="#666666" />
                   </TouchableOpacity>
-                </Animated.View>
-              ))}
-
-              {/* Clear Steps Button */}
-              {!isExecutingAI && (
-                <TouchableOpacity
-                  style={styles.clearStepsButton}
-                  onPress={() => setExecutedSteps([])}
-                  activeOpacity={0.7}
-                >
-                  <Ionicons name="close-circle" size={16} color="#666666" />
-                </TouchableOpacity>
-              )}
-            </ScrollView>
-          </Animated.View>
+                )}
+              </ScrollView>
+            </Animated.View>
           )}
 
           {/* Plus Button (Elevated) - Hide when other tool is active */}
@@ -2382,17 +3007,17 @@ export default function EditorScreen({ route, navigation }: Props) {
               if (currentImageUrl && !currentImageUrl.startsWith('blob:')) {
                 history.pushHistory(currentImageUrl, 'Adjustment applied', filterPreview);
               }
-              
-            Toast.show({
-              type: 'success',
+
+              Toast.show({
+                type: 'success',
                 text1: '✨ Adjustments Applied',
                 text2: `Applied to ${layerManager.getSelectedLayer()?.name || 'layer'}`,
                 visibilityTime: 2000,
-            });
+              });
             }
           }}
         />
-        
+
         {/* Old RealTimeAdjustments removed - using RealTimeAdjustPanel above */}
 
         {/* Filters Panel */}
@@ -2414,12 +3039,12 @@ export default function EditorScreen({ route, navigation }: Props) {
           bottomSheetRef={drawingToolsRef}
           onToolSelect={(tool: DrawingTool) => {
             console.log('Drawing tool selected:', tool.name);
-            
+
             // Close the tools panel and open the drawing overlay
             closeAllPanels('drawingOverlay');
             setCurrentDrawingTool(tool);
             setDrawingOverlayOpen(true);
-            
+
             Toast.show({
               type: 'info',
               text1: `${tool.name} Tool Active`,
@@ -2444,10 +3069,10 @@ export default function EditorScreen({ route, navigation }: Props) {
             onApply={(drawingData: DrawingData) => {
               setDrawingModalOpen(false);
               console.log('Drawing applied:', drawingData);
-              
+
               // Create a drawing layer
               const layerId = layerManager.createDrawingLayer(currentDrawingTool?.name || 'Drawing');
-              
+
               // Update the layer with drawing data
               layerManager.updateLayer(layerId, {
                 drawing: {
@@ -2457,7 +3082,7 @@ export default function EditorScreen({ route, navigation }: Props) {
                   strokeWidth: drawingData.settings?.size || 5,
                 },
               });
-              
+
               Toast.show({
                 type: 'success',
                 text1: `${currentDrawingTool?.name || 'Drawing'} Applied`,
@@ -2469,7 +3094,7 @@ export default function EditorScreen({ route, navigation }: Props) {
         )}
 
         {/* ===== Transform Tools (Layer-aware) ===== */}
-        
+
         {/* Crop Tool - works on selected layer */}
         <CropTool
           visible={cropToolOpen}
@@ -2490,10 +3115,10 @@ export default function EditorScreen({ route, navigation }: Props) {
           currentRotation={layerManager.getSelectedLayer()?.transform?.rotate || layerManager.getBackgroundLayer()?.transform?.rotate || 0}
           onApply={(rotation: number) => {
             setRotateToolOpen(false);
-            
+
             // Get the selected layer or default to background
             let selectedLayer = layerManager.getSelectedLayer();
-            
+
             // If no layer selected, auto-select background
             if (!selectedLayer) {
               const bgLayer = layerManager.getBackgroundLayer();
@@ -2502,7 +3127,7 @@ export default function EditorScreen({ route, navigation }: Props) {
                 selectedLayer = bgLayer;
               }
             }
-            
+
             // Check if layer is locked
             if (selectedLayer?.locked) {
               Toast.show({
@@ -2512,7 +3137,7 @@ export default function EditorScreen({ route, navigation }: Props) {
               });
               return;
             }
-            
+
             if (!selectedLayer) {
               Toast.show({
                 type: 'info',
@@ -2521,13 +3146,13 @@ export default function EditorScreen({ route, navigation }: Props) {
               });
               return;
             }
-            
+
             // Apply rotation to selected layer's transform (NON-DESTRUCTIVE)
             layerManager.rotateSelectedLayer(rotation);
-            
+
             const layerName = selectedLayer?.name || 'Layer';
             history.pushHistory(currentImageUrl, `Rotate ${layerName}`, { rotation });
-            
+
             Toast.show({
               type: 'success',
               text1: '🔄 Rotation Applied',
@@ -2545,7 +3170,7 @@ export default function EditorScreen({ route, navigation }: Props) {
           onApply={async (flipData: FlipData) => {
             setFlipToolOpen(false);
             if (!flipData.horizontal && !flipData.vertical) return;
-            
+
             // Check if layer selected and can be transformed
             if (!layerManager.canTransformSelectedLayer()) {
               const selectedLayer = layerManager.getSelectedLayer();
@@ -2564,14 +3189,14 @@ export default function EditorScreen({ route, navigation }: Props) {
               }
               return;
             }
-            
+
             try {
               setProcessing(true);
-              
+
               // Get the selected layer's source image
               const selectedLayer = layerManager.getSelectedLayer();
               const imageToProcess = selectedLayer?.source || selectedLayer?.imageUri || currentImageUrl;
-              
+
               if (!imageToProcess) {
                 Toast.show({
                   type: 'error',
@@ -2581,7 +3206,7 @@ export default function EditorScreen({ route, navigation }: Props) {
                 setProcessing(false);
                 return;
               }
-              
+
               const actions: ImageManipulator.Action[] = [];
               if (flipData.horizontal) {
                 actions.push({ flip: ImageManipulator.FlipType.Horizontal });
@@ -2589,39 +3214,39 @@ export default function EditorScreen({ route, navigation }: Props) {
               if (flipData.vertical) {
                 actions.push({ flip: ImageManipulator.FlipType.Vertical });
               }
-              
+
               const result = await ImageManipulator.manipulateAsync(
                 imageToProcess,
                 actions,
                 { compress: 1, format: ImageManipulator.SaveFormat.PNG }
               );
-              
-              const flipType = flipData.horizontal && flipData.vertical 
-                ? 'Both' 
+
+              const flipType = flipData.horizontal && flipData.vertical
+                ? 'Both'
                 : flipData.horizontal ? 'Horizontal' : 'Vertical';
-              
+
               // Update the selected layer's source (in-place edit)
-              layerManager.updateLayer(layerManager.selectedLayerId!, { 
+              layerManager.updateLayer(layerManager.selectedLayerId!, {
                 source: result.uri,
                 imageUri: result.uri,
               });
-              
+
               const layerName = selectedLayer?.name || 'Layer';
-              
+
               // If background layer was flipped, also update main image URL
               if (selectedLayer?.type === 'background') {
                 setCurrentImageUrl(result.uri);
                 console.log('↔️ Background layer flipped, updating main image URL');
               }
-              
+
               history.pushHistory(result.uri, `Flip ${layerName}`, flipData);
-              
+
               Toast.show({
                 type: 'success',
                 text1: '↔️ Flip Applied',
                 text2: `${layerName} flipped ${flipType}`,
               });
-              
+
               setProcessing(false);
             } catch (error: any) {
               console.error('Flip error:', error);
@@ -2645,13 +3270,13 @@ export default function EditorScreen({ route, navigation }: Props) {
           currentHeight={actualCanvasDimensions.height}
           onApply={async (resizeData: ResizeData) => {
             setResizeToolOpen(false);
-            
+
             try {
               setProcessing(true);
-              
+
               // Get the selected layer or default to background
               let selectedLayer = layerManager.getSelectedLayer();
-              
+
               // If no layer selected, auto-select and use background
               if (!selectedLayer) {
                 const bgLayer = layerManager.getBackgroundLayer();
@@ -2660,9 +3285,9 @@ export default function EditorScreen({ route, navigation }: Props) {
                   selectedLayer = bgLayer;
                 }
               }
-              
+
               const imageToProcess = selectedLayer?.source || selectedLayer?.imageUri || currentImageUrl;
-              
+
               if (!imageToProcess) {
                 Toast.show({
                   type: 'error',
@@ -2672,7 +3297,7 @@ export default function EditorScreen({ route, navigation }: Props) {
                 setProcessing(false);
                 return;
               }
-              
+
               // Check if layer is locked
               if (selectedLayer?.locked) {
                 Toast.show({
@@ -2683,17 +3308,17 @@ export default function EditorScreen({ route, navigation }: Props) {
                 setProcessing(false);
                 return;
               }
-              
+
               const result = await ImageManipulator.manipulateAsync(
                 imageToProcess,
                 [{ resize: { width: resizeData.width, height: resizeData.height } }],
                 { compress: 1, format: ImageManipulator.SaveFormat.PNG }
               );
-              
+
               const presetName = resizeData.preset || `${resizeData.width}x${resizeData.height}`;
               const layerName = selectedLayer?.name || 'Layer';
               const targetLayerId = selectedLayer?.id || layerManager.selectedLayerId;
-              
+
               // Update the layer's source
               if (targetLayerId) {
                 layerManager.updateLayer(targetLayerId, {
@@ -2701,12 +3326,12 @@ export default function EditorScreen({ route, navigation }: Props) {
                   imageUri: result.uri,
                 });
               }
-              
+
               // If background layer was resized, also update main image URL and canvas dimensions
               if (selectedLayer?.type === 'background') {
                 setCurrentImageUrl(result.uri);
                 setActualCanvasDimensions({ width: resizeData.width, height: resizeData.height });
-                
+
                 // Recalculate display dimensions
                 const maxWidth = SCREEN_WIDTH - 26;
                 const maxHeight = SCREEN_HEIGHT * 0.55;
@@ -2720,15 +3345,15 @@ export default function EditorScreen({ route, navigation }: Props) {
                 setImageDimensions({ width: newWidth, height: newHeight });
                 console.log('📐 Background resized:', resizeData.width, 'x', resizeData.height);
               }
-              
+
               history.pushHistory(result.uri, `Resize ${layerName} to ${presetName}`, resizeData);
-              
+
               Toast.show({
                 type: 'success',
                 text1: '📐 Resize Applied',
                 text2: `${layerName} resized to ${presetName}`,
               });
-              
+
               setProcessing(false);
             } catch (error: any) {
               console.error('Resize error:', error);
@@ -2746,7 +3371,7 @@ export default function EditorScreen({ route, navigation }: Props) {
         />
 
         {/* ===== NEW ImageToolbox-inspired Tools ===== */}
-        
+
         {/* Before/After Comparison Slider */}
         {beforeAfterOpen && (
           <View style={StyleSheet.absoluteFill}>
@@ -2786,7 +3411,7 @@ export default function EditorScreen({ route, navigation }: Props) {
             console.log('Watermark applied:', watermark);
             setWatermarkOpen(false);
             watermarkToolRef.current?.close();
-            
+
             // Create a text layer for the watermark
             if (watermark.text) {
               layerManager.createTextLayer(watermark.text, {
@@ -2797,7 +3422,7 @@ export default function EditorScreen({ route, navigation }: Props) {
                 bold: watermark.fontWeight === 'bold',
                 italic: false,
               });
-              
+
               Toast.show({
                 type: 'success',
                 text1: 'Watermark Added',
@@ -2831,10 +3456,10 @@ export default function EditorScreen({ route, navigation }: Props) {
             console.log('Pro adjustments applied:', values);
             setProAdjustmentsOpen(false);
             proAdjustmentsRef.current?.close();
-            
+
             try {
               setProcessing(true);
-              
+
               // Apply the adjustments using canvas filters
               const adjustmentParams = {
                 brightness: values.brightness,
@@ -2852,14 +3477,14 @@ export default function EditorScreen({ route, navigation }: Props) {
                 dehaze: values.dehaze,
                 grain: values.grain,
               };
-              
+
               const result = await applyAdjustments(currentImageUrl, adjustmentParams);
-              
+
               if (result.success && result.uri) {
                 setCurrentImageUrl(result.uri);
                 history.pushHistory(result.uri, 'Pro Adjustments', values);
                 layerManager.createAdjustmentLayer(adjustmentParams, 'Pro Adjustments', result.uri);
-                
+
                 Toast.show({
                   type: 'success',
                   text1: 'Adjustments Applied',
@@ -2872,7 +3497,7 @@ export default function EditorScreen({ route, navigation }: Props) {
                   text2: result.error || 'Could not apply adjustments',
                 });
               }
-              
+
               setProcessing(false);
             } catch (error: any) {
               console.error('Pro adjustments error:', error);
@@ -2898,7 +3523,7 @@ export default function EditorScreen({ route, navigation }: Props) {
             console.log('Shape crop applied:', shape);
             setShapeCropOpen(false);
             shapeCropRef.current?.close();
-            
+
             // Shape cropping creates a mask layer
             // For now, show success and note that actual shape masking would require canvas
             Toast.show({
@@ -2906,7 +3531,7 @@ export default function EditorScreen({ route, navigation }: Props) {
               text1: 'Shape Crop Applied',
               text2: `${shape.shapeName} mask applied as layer`,
             });
-            
+
             // Create a shape layer (placeholder for actual implementation)
             // In a full implementation, this would apply a mask to the image
             history.pushHistory(currentImageUrl, `Shape Crop: ${shape.shapeName}`, shape);
@@ -2919,7 +3544,7 @@ export default function EditorScreen({ route, navigation }: Props) {
           onToolSelect={(tool: DrawingToolOption, settings: DrawingSettings) => {
             setDrawingPopupOpen(false);
             setDrawingSettings(settings);
-            
+
             // Convert to DrawingTool format
             const drawingTool: DrawingTool = {
               id: tool.id,
@@ -2932,10 +3557,10 @@ export default function EditorScreen({ route, navigation }: Props) {
                 opacity: settings.opacity,
               },
             };
-            
+
             setCurrentDrawingTool(drawingTool);
             setDrawingOverlayOpen(true);
-            
+
             Toast.show({
               type: 'info',
               text1: `${tool.name} Tool Active`,
@@ -2956,7 +3581,7 @@ export default function EditorScreen({ route, navigation }: Props) {
               onConfirm={(config: TextLayerConfig) => {
                 console.log('Text layer created:', config);
                 setTextToolOpen(false);
-                
+
                 // Create text layer with position
                 const layerId = layerManager.createTextLayer(config.text, {
                   fontSize: config.fontSize,
@@ -2969,14 +3594,14 @@ export default function EditorScreen({ route, navigation }: Props) {
                   y: config.position?.y || imageDimensions.height / 2,
                 });
                 console.log('📝 Text layer created:', layerId, config);
-                
+
                 // Save to history
                 history.pushHistory(
                   currentImageUrl || 'blank-canvas',
                   `Text: "${config.text.substring(0, 20)}${config.text.length > 20 ? '...' : ''}"`,
                   config
                 );
-                
+
                 Toast.show({
                   type: 'success',
                   text1: 'Text Added',
@@ -3000,7 +3625,7 @@ export default function EditorScreen({ route, navigation }: Props) {
               onConfirm={(config: ShapeConfig) => {
                 console.log('Shape created:', config);
                 setShapeToolOpen(false);
-                
+
                 // Create shape layer
                 layerManager.createShapeLayer(
                   config.shapeType,
@@ -3010,14 +3635,14 @@ export default function EditorScreen({ route, navigation }: Props) {
                   { x: config.startX, y: config.startY },
                   { x: config.endX, y: config.endY }
                 );
-                
+
                 // Save to history
                 history.pushHistory(
                   currentImageUrl || 'blank-canvas',
                   `Shape: ${config.shapeType}`,
                   config
                 );
-                
+
                 Toast.show({
                   type: 'success',
                   text1: 'Shape Added',
@@ -3043,7 +3668,7 @@ export default function EditorScreen({ route, navigation }: Props) {
           }}
           onApply={(curves: CurveConfig) => {
             console.log('Curves applied:', curves);
-            
+
             // Store curve data in selected layer
             if (layerManager.selectedLayerId) {
               layerManager.updateLayer(layerManager.selectedLayerId, {
@@ -3053,13 +3678,13 @@ export default function EditorScreen({ route, navigation }: Props) {
                 },
               });
             }
-            
+
             Toast.show({
               type: 'success',
               text1: '📈 Curves Applied',
               text2: `Applied to ${layerManager.getSelectedLayer()?.name || 'layer'}`,
             });
-            
+
             // Push to history
             if (currentImageUrl && !currentImageUrl.startsWith('blob:')) {
               history.pushHistory(currentImageUrl, 'Curve adjustment', curves);
@@ -3093,6 +3718,18 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#000000',
     paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 44,
+  },
+  aiActionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  aiStopButton: {
+    marginLeft: 8,
+    backgroundColor: '#D9534F', // red-ish
+    padding: 8,
+    borderRadius: 6,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   content: {
     flex: 1,
@@ -3266,6 +3903,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 10,
   },
+  timelineActionButton: {
+    padding: 6,
+    borderRadius: 6,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  timelineThumbFallback: {
+    width: 64,
+    height: 40,
+    borderRadius: 6,
+    backgroundColor: '#2a2a2a',
+  },
+
   stepIcon: {
     marginRight: 0,
   },
