@@ -789,15 +789,6 @@ const InteractiveCanvas: React.FC<InteractiveCanvasProps> = ({
             {renderDrawingPaths()}
           </Animated.View>
         </GestureDetector>
-
-        {/* Helper text */}
-        {imageLoaded && (
-          <View style={styles.helperContainer}>
-            <Text style={styles.helperText}>
-              Pinch to zoom • Double tap to reset • Drag to pan
-            </Text>
-          </View>
-        )}
       </View>
     </View>
   );
