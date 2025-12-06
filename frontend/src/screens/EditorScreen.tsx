@@ -155,11 +155,11 @@ export default function EditorScreen({ route, navigation }: Props) {
   const [mainReferenceImagePath, setMainReferenceImagePath] = useState<string | null>(null);
 
 
-  // configurable WS base URL - set via env or fallback to localhost
+  // configurable WS base URL - set via env or fallback to 172.30.1.252
   const WS_BASE =
     (process.env.REACT_NATIVE_WS_URL && process.env.REACT_NATIVE_WS_URL) ||
     (process.env.REACT_APP_WS_URL && process.env.REACT_APP_WS_URL) ||
-    'ws://localhost:8000'; // change for prod to wss://...
+    'ws://172.30.1.252:8000'; // change for prod to wss://...
 
   const connectWebSocket = () => {
     if (wsRef.current && (wsRef.current.readyState === 1 || wsRef.current.readyState === 0)) {
@@ -234,7 +234,7 @@ export default function EditorScreen({ route, navigation }: Props) {
   // ---------- Add this helper near your other helpers (sendWs / connectWebSocket) ----------
   /**
    * Upload a local image (file:// or blob:) or a File object to backend /upload.
-   * Returns an absolute URL (e.g. https://localhost:8000/static/xxx) or the original http(s) URL.
+   * Returns an absolute URL (e.g. https://172.30.1.252:8000/static/xxx) or the original http(s) URL.
    */
   // ---------- uploadImageToServer (improved filename handling) ----------
   const uploadImageToServer = async (fileUriOrFile: string | File, fileName?: string) => {
@@ -289,7 +289,7 @@ export default function EditorScreen({ route, navigation }: Props) {
         throw new Error('Unsupported file parameter for uploadImageToServer');
       }
 
-      const apiBase = (process.env.REACT_NATIVE_API_URL || process.env.REACT_APP_API_URL || 'http://localhost:8000').replace(/\/$/, '');
+      const apiBase = (process.env.REACT_NATIVE_API_URL || process.env.REACT_APP_API_URL || 'http://172.30.1.252:8000').replace(/\/$/, '');
       const uploadUrl = `${apiBase}/upload`;
 
       const res = await fetch(uploadUrl, {
@@ -457,8 +457,9 @@ export default function EditorScreen({ route, navigation }: Props) {
 
       case 'path_update': {
         try {
-          const rawPath = Array.isArray(data.path) ? data.path : [];
-          const API_ORIGIN = (process.env.REACT_NATIVE_API_URL || process.env.REACT_APP_API_URL || 'http://localhost:8000').replace(/\/$/, '');
+          let rawPath = Array.isArray(data.path) ? data.path : [];
+          rawPath = Object.values(data.tree)
+          const API_ORIGIN = (process.env.REACT_NATIVE_API_URL || process.env.REACT_APP_API_URL || 'http://172.30.1.252:8000').replace(/\/$/, '');
 
           const normalized = rawPath.map((p: any, idx: number) => {
             const id = p.id || `step-${idx}-${Date.now()}`;
@@ -1311,6 +1312,7 @@ export default function EditorScreen({ route, navigation }: Props) {
   // AI Editing System Functions
   const handleAIPromptSubmit = async () => {
     if (!aiPrompt.trim() || isExecutingAI) return;
+    console.log('handleAIPromptSubmit - initial continueParentNodeRef:', continueParentNodeRef.current);
 
     if (!wsConnected) {
       Toast.show({
@@ -1392,6 +1394,7 @@ export default function EditorScreen({ route, navigation }: Props) {
 
     // If continueParentNodeRef is set -> send continue_processing
     const parentNodeId = continueParentNodeRef.current;
+    console.log("Parent Node ID:", parentNodeId);
     let payload: any;
     if (parentNodeId) {
       payload = {
@@ -1402,7 +1405,6 @@ export default function EditorScreen({ route, navigation }: Props) {
         // optional: reference_image_path
       };
       // clear the ref so subsequent prompts are new sessions unless set again
-      continueParentNodeRef.current = null;
     } else {
       payload = {
         action: 'start_processing',
@@ -1423,6 +1425,9 @@ export default function EditorScreen({ route, navigation }: Props) {
         text2: 'Could not send prompt to AI service.',
       });
       return;
+    }
+    if (parentNodeId) {
+      continueParentNodeRef.current = null;
     }
 
     Toast.show({
@@ -1926,6 +1931,10 @@ export default function EditorScreen({ route, navigation }: Props) {
         text2: 'Loaded original state',
       });
       return;
+    }
+
+    if(node.id.startsWith('node-')){
+      continueParentNodeRef.current = node.id.slice('node-'.length);
     }
 
     // Load the node's image if available

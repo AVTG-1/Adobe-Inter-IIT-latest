@@ -89,6 +89,7 @@ class ApiClient {
     }
 
     try {
+      console.log("Calling http post to edit/general")
       const response = await this.client.post<WorkflowResponse>(
         '/edit/general',
         request

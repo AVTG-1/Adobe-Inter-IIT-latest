@@ -93,27 +93,30 @@ export function getIconForTool(tool: string): string {
 export function buildTreeStructure(executedSteps: any[], rootImageUrl: string): TreeStructure {
   const tree: TreeStructure = {};
 
-  // Create root node (original image)
-  const rootNode: TreeNode = {
-    id: 'node-root',
-    tool: 'input',
-    image_url: rootImageUrl,
-    parent_id: null,
-    children_ids: executedSteps.length > 0 ? [`node-${executedSteps[0].id}`] : [],
-    intent: 'Original image',
-    icon: getIconForTool('input'),
-    params: {},
-    timestamp: Date.now(),
-  };
+  console.log("building tree structure with received steps: ", executedSteps)
 
-  tree['node-root'] = rootNode;
+  // Create root node (original image)
+  // const rootNode: TreeNode = {
+  //   id: 'node-root',
+  //   tool: 'input',
+  //   image_url: rootImageUrl,
+  //   parent_id: null,
+  //   children_ids: executedSteps.length > 0 ? [`node-${executedSteps[0].id}`] : [],
+  //   intent: 'Original image',
+  //   icon: getIconForTool('input'),
+  //   params: {},
+  //   timestamp: Date.now(),
+  // };
+
+  // tree['node-root'] = rootNode;
 
   // Convert each step to a tree node
   executedSteps.forEach((step, index) => {
-    const nodeId = `node-${step.id}`;
-    const parentId = index === 0 ? 'node-root' : `node-${executedSteps[index - 1].id}`;
-    const childrenIds = index < executedSteps.length - 1 ? [`node-${executedSteps[index + 1].id}`] : [];
+    const nodeId = index === 0 ? 'node-root' : `node-${step.id}`;
+    const parentId = index === 1 ? 'node-root' : `node-${executedSteps[index].raw.parent_id}`;
+    const nonAppendedChildrenIds = executedSteps[index].raw.children_ids;
 
+    const childrenIds = nonAppendedChildrenIds.map((childId: string) => `node-${childId}`);
     const node: TreeNode = {
       id: nodeId,
       tool: step.actionId,
