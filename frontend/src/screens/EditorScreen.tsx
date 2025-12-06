@@ -1792,9 +1792,9 @@ export default function EditorScreen({ route, navigation }: Props) {
     setHasParameterChanges(false);
     setModifiedParameters(step.params); // Start with current params
 
-    // Update current node for timeline filtering
+    // Don't update currentNodeId here - it would filter the timeline
+    // currentNodeId should only change when switching tree branches or executing new actions
     const nodeId = `node-${step.id}`;
-    setCurrentNodeId(nodeId);
 
     console.log('[Step Tapped]', { stepId: step.id, nodeId, action: step.actionId, params: step.params });
 
