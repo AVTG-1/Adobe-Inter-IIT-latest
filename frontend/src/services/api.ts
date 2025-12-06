@@ -4,6 +4,8 @@ import {
   WorkflowResponse,
   HealthResponse,
   JobStatus,
+  RelightRequest,
+  RelightResponse,
 } from '../types/api';
 
 /**
@@ -119,6 +121,38 @@ class ApiClient {
     }
   }
 
+  /**
+   * Relight Image
+   * POST /api/v1/relight
+   *
+   * @param request - Relight parameters (x, y, z_depth, warmth, intensity, image_url)
+   * @returns Relight response with processed image URL
+   */
+  async relightImage(request: RelightRequest): Promise<RelightResponse> {
+    if (this.useMockData) {
+      return this.mockRelightImage(request);
+    }
+
+    try {
+      console.log('Calling POST to /relight with params:', {
+        x: request.x,
+        y: request.y,
+        z_depth: request.z_depth,
+        warmth: request.warmth,
+        intensity: request.intensity,
+      });
+      
+      const response = await this.client.post<RelightResponse>(
+        '/relight',
+        request
+      );
+      return response.data;
+    } catch (error) {
+      console.error('Relight API failed:', error);
+      throw error;
+    }
+  }
+
   // ============================================================================
   // MOCK DATA METHODS (for Phase 1)
   // ============================================================================
@@ -165,6 +199,28 @@ class ApiClient {
           processing_time_ms: 2000,
         });
       }, 500);
+    });
+  }
+
+  private mockRelightImage(request: RelightRequest): Promise<RelightResponse> {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        const jobId = `relight-job-${Date.now()}`;
+        // For mock, return the original image URL
+        // In real implementation, this would be the processed image URL
+        resolve({
+          job_id: jobId,
+          status: JobStatus.COMPLETED,
+          result_url: request.image_url, // Mock: return original image, real API will return processed image
+          agent_thoughts: [
+            'Relight workflow initiated',
+            `Processing with coordinates (${request.x}, ${request.y})`,
+            `Z-depth: ${request.z_depth}, Warmth: ${request.warmth}, Intensity: ${request.intensity}`,
+            'Image relighting completed successfully',
+          ],
+          processing_time_ms: 2000,
+        });
+      }, 2000); // Simulate 2 second processing time
     });
   }
 

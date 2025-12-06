@@ -6,6 +6,7 @@ import HomeScreen from '../screens/HomeScreen';
 import EditorScreen from '../screens/EditorScreen';
 import LayersScreen from '../screens/LayersScreen';
 import EffectsScreen from '../screens/EffectsScreen';
+import RelightScreen from '../screens/RelightScreen';
 
 export type RootStackParamList = {
   Splash1: undefined;
@@ -20,6 +21,9 @@ export type RootStackParamList = {
   };
   Layers: undefined;
   Effects: undefined;
+  Relight: {
+    imageUrl?: string;
+  };
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -39,6 +43,7 @@ const AppNavigator: React.FC = () => {
         <Stack.Screen name="Editor" component={EditorScreen} />
         <Stack.Screen name="Layers" component={LayersScreen} />
         <Stack.Screen name="Effects" component={EffectsScreen} />
+        <Stack.Screen name="Relight" component={RelightScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

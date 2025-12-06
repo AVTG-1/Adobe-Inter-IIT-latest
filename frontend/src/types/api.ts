@@ -61,3 +61,21 @@ export interface HealthResponse {
   version: string;
   timestamp: string;
 }
+
+export interface RelightRequest {
+  image_url: string;
+  x: number; // X coordinate of the circle on the image
+  y: number; // Y coordinate of the circle on the image
+  z_depth: number; // Z-depth value (0-100)
+  warmth: number; // Warmth/Color temperature value (0-100)
+  intensity: number; // Intensity value (1-100)
+}
+
+export interface RelightResponse {
+  job_id: string;
+  status: JobStatus;
+  result_url?: string; // URL of the processed image
+  agent_thoughts: string[];
+  processing_time_ms?: number;
+  error?: string;
+}
