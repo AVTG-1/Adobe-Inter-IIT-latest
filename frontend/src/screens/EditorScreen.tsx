@@ -2752,7 +2752,7 @@ export default function EditorScreen({ route, navigation }: Props) {
               </TouchableOpacity>
               <TextInput
                 style={styles.aiChatInput}
-                placeholder="Describe how to edit..."
+                placeholder="Ask Obi-wan"
                 placeholderTextColor="#888888"
                 value={aiPrompt}
                 onChangeText={setAiPrompt}
@@ -4019,20 +4019,38 @@ const styles = StyleSheet.create({
   undoRedoButtonDisabled: {
     opacity: 0.5,
   },
-  globalAIChatPanel: {
-    position: 'absolute',
-    left: 18,
-    width: 405,
-    height: 72,
-    borderRadius: 30,
-    borderWidth: 1,
-    borderColor: '#9c9c9c',
-    backgroundColor: '#242428',
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 13,
-    zIndex: 3,
-  },
+globalAIChatPanel: {
+  position: 'absolute',
+
+  // ✅ Dono side se equal responsive gap
+  left: 12,
+  right: 12,
+
+  // ✅ Fixed width hata diya — now fully responsive
+  height: 72,
+
+  // ✅ Thoda sa niche natural spacing
+  bottom: 16,
+
+  borderRadius: 30,
+  borderWidth: 1,
+  borderColor: '#9c9c9c',
+  backgroundColor: '#242428',
+
+  flexDirection: 'row',
+  alignItems: 'center',
+  paddingHorizontal: 13,
+
+  zIndex: 3,
+
+  // ✅ Shadow polish
+  elevation: 10,
+  shadowColor: '#000',
+  shadowOpacity: 0.3,
+  shadowOffset: { width: 0, height: 4 },
+  shadowRadius: 10,
+},
+
   aiAssistantButton: {
     width: 46,
     height: 46,

@@ -69,7 +69,7 @@ const Splash2Screen: React.FC<Props> = ({ navigation }) => {
             <Ionicons name="brush" size={40} color="#FFFFFF" />
           </View>
           <View style={styles.textContainer}>
-            <Text style={styles.title}>Auralite</Text>
+            <Text style={styles.title}>Oblique</Text>
             <Text style={styles.subtitle}>The best editing mobile app</Text>
           </View>
         </Animated.View>
