@@ -67,8 +67,8 @@ export interface RelightRequest {
   x: number; // X coordinate of the circle on the image
   y: number; // Y coordinate of the circle on the image
   z_depth: number; // Z-depth value (0-100)
-  warmth: number; // Warmth/Color temperature value (0-100)
-  intensity: number; // Intensity value (1-100)
+  steps: number; // Warmth/Color temperature value (0-100)
+  prompt: string; // Intensity value (1-100)
 }
 
 export interface RelightResponse {

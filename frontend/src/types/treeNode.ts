@@ -93,7 +93,6 @@ export function getIconForTool(tool: string): string {
 export function buildTreeStructure(executedSteps: any[], rootImageUrl: string): TreeStructure {
   const tree: TreeStructure = {};
 
-  console.log("building tree structure with received steps: ", executedSteps)
 
   // Create root node (original image)
   // const rootNode: TreeNode = {

@@ -85,7 +85,7 @@ export default function RelightScreen({ navigation, route }: Props) {
       });
 
       if (!result.canceled && result.assets[0]) {
-        setImageUri(result.assets[0].uri);
+        (result.assets[0].uri);
       } else if (result.canceled) {
         // User cancelled, go back
         navigation.goBack();
