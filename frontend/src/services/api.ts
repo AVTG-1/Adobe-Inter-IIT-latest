@@ -6,6 +6,8 @@ import {
   JobStatus,
   RelightRequest,
   RelightResponse,
+  PoseRequest,
+  PoseResponse,
 } from '../types/api';
 
 /**
@@ -141,7 +143,7 @@ class ApiClient {
         warmth: request.warmth,
         intensity: request.intensity,
       });
-      
+
       const response = await this.client.post<RelightResponse>(
         '/relight',
         request
@@ -149,6 +151,35 @@ class ApiClient {
       return response.data;
     } catch (error) {
       console.error('Relight API failed:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Pose Change
+   * POST /api/v1/pose
+   *
+   * @param request - Pose parameters (image_url, keypoints, confidence_threshold)
+   * @returns Pose response with processed image URL
+   */
+  async poseChange(request: PoseRequest): Promise<PoseResponse> {
+    if (this.useMockData) {
+      return this.mockPoseChange(request);
+    }
+
+    try {
+      console.log('Calling POST to /pose with params:', {
+        keypoints_count: request.keypoints.length,
+        confidence_threshold: request.confidence_threshold,
+      });
+
+      const response = await this.client.post<PoseResponse>(
+        '/pose',
+        request
+      );
+      return response.data;
+    } catch (error) {
+      console.error('Pose API failed:', error);
       throw error;
     }
   }
@@ -221,6 +252,32 @@ class ApiClient {
           processing_time_ms: 2000,
         });
       }, 2000); // Simulate 2 second processing time
+    });
+  }
+
+  private mockPoseChange(request: PoseRequest): Promise<PoseResponse> {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        const jobId = `pose-job-${Date.now()}`;
+        // For mock, return the original image URL
+        // In real implementation, this would be the processed image URL with new pose
+        resolve({
+          job_id: jobId,
+          status: JobStatus.COMPLETED,
+          result_url: request.image_url, // Mock: return original image, real API will return processed image
+          detected_keypoints: request.keypoints, // Mock: echo back the keypoints
+          agent_thoughts: [
+            'Pose change workflow initiated',
+            `Processing ${request.keypoints.length} keypoints`,
+            `Confidence threshold: ${request.confidence_threshold || 0.7}`,
+            'Detecting source pose...',
+            'Generating target pose transformation...',
+            'Applying pose-conditional diffusion...',
+            'Image pose transformation completed successfully',
+          ],
+          processing_time_ms: 2500,
+        });
+      }, 2500); // Simulate 2.5 second processing time
     });
   }
 

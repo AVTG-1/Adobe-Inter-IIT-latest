@@ -240,7 +240,51 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
       }
       return;
     }
-    
+
+    if (featureName === 'Pose') {
+      // Open image picker for Pose feature
+      try {
+        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+        if (status !== 'granted') {
+          Alert.alert(
+            'Permission Required',
+            'Please grant permission to access your photo library to use Pose Change.',
+            [{ text: 'OK' }]
+          );
+          return;
+        }
+
+        const result = await ImagePicker.launchImageLibraryAsync({
+          mediaTypes: ImagePicker.MediaTypeOptions.Images,
+          allowsEditing: false,
+          quality: 1,
+          exif: false,
+        });
+
+        if (!result.canceled && result.assets[0]) {
+          const asset = result.assets[0];
+          const { uri, fileSize, mimeType } = asset;
+
+          // Validate image
+          const validation = validateImage(uri, fileSize, mimeType);
+          if (!validation.valid) {
+            Alert.alert('Invalid Image', validation.error || 'Please select a valid image');
+            return;
+          }
+
+          // Navigate to Pose screen with selected image
+          navigation.navigate('Pose', {
+            imageUrl: uri,
+          });
+        }
+      } catch (error: any) {
+        console.error('Pose image picker error:', error);
+        Alert.alert('Error', 'Failed to open gallery. Please try again.');
+      }
+      return;
+    }
+
     Toast.show({
       type: 'info',
       text1: featureName,
@@ -431,6 +475,15 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
               >
                 <Ionicons name="color-filter" size={32} color="#FFFFFF" />
                 <Text style={styles.featureCardText}>Filters</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.featureCard}
+                onPress={() => handleFeaturePress('Pose')}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="body" size={32} color="#FFFFFF" />
+                <Text style={styles.featureCardText}>Pose</Text>
               </TouchableOpacity>
             </ScrollView>
           </View>

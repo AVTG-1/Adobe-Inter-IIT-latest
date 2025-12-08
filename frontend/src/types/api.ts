@@ -79,3 +79,26 @@ export interface RelightResponse {
   processing_time_ms?: number;
   error?: string;
 }
+
+export interface PoseKeypoint {
+  id: number;
+  name: string;
+  x: number; // Normalized 0-1
+  y: number; // Normalized 0-1
+}
+
+export interface PoseRequest {
+  image_url: string;
+  keypoints: PoseKeypoint[]; // Array of 17 COCO keypoints
+  confidence_threshold?: number; // Optional confidence threshold (0.3-1.0)
+}
+
+export interface PoseResponse {
+  job_id: string;
+  status: JobStatus;
+  result_url?: string; // URL of the processed image with new pose
+  detected_keypoints?: PoseKeypoint[]; // Detected keypoints from source image
+  agent_thoughts: string[];
+  processing_time_ms?: number;
+  error?: string;
+}
