@@ -107,6 +107,90 @@ export default function RelightScreen({ navigation, route }: Props) {
     }
   }, [route.params, handleSelectImage]);
 
+  const uploadImageToServer = async (fileUriOrFile: string | File, fileName?: string) => {
+    try {
+      // If it's already a remote URL, return as-is
+      if (typeof fileUriOrFile === 'string') {
+        const s = fileUriOrFile;
+        if (s.startsWith('http://') || s.startsWith('https://')) return s;
+        // else we will upload the blob/file below
+      }
+
+      const formData = new FormData();
+
+      // If caller passed a File object (web input), use that directly but ensure filename has extension
+      if (fileUriOrFile instanceof File) {
+        let useFile = fileUriOrFile;
+        // ensure filename has extension — otherwise append .jpg
+        if (!/\.[a-zA-Z0-9]{1,5}$/.test(useFile.name)) {
+          // create a new File with .jpg name
+          // @ts-ignore
+          useFile = new File([useFile], `${useFile.name || 'upload'} .jpg`.replace(/\s+/g, ''), { type: useFile.type || 'image/jpeg' });
+        }
+        formData.append('file', useFile, useFile.name);
+      } else if (typeof fileUriOrFile === 'string') {
+        const uri = fileUriOrFile;
+        // pick a sensible name with extension
+        const derivedName = fileName || (() => {
+          // try to extract extension from uri
+          const maybe = uri.split('/').pop() || `upload-${Date.now()}`;
+          if (/\.[a-zA-Z0-9]{1,5}$/.test(maybe)) return maybe;
+          // default to .jpg if no extension
+          return `${maybe}.jpg`;
+        })();
+
+        if (uri.startsWith('blob:') || uri.startsWith('file:') || uri.includes('blob:http')) {
+          // Fetch the blob and convert to File with safe name
+          const resp = await fetch(uri);
+          const blob = await resp.blob();
+          // force a content type fallback
+          const contentType = blob.type || 'image/jpeg';
+          // Ensure name has extension
+          const safeName = /\.[a-zA-Z0-9]{1,5}$/.test(derivedName) ? derivedName : `${derivedName}.jpg`;
+          // @ts-ignore
+          const fileObj = new File([blob], safeName, { type: contentType });
+          formData.append('file', fileObj);
+        } else {
+          // Not a blob and not http(s). Likely a relative path; cannot upload file contents.
+          // Let caller handle this case (we'll error)
+          throw new Error('uploadImageToServer expects a blob/file URI or File object for upload.');
+        }
+      } else {
+        throw new Error('Unsupported file parameter for uploadImageToServer');
+      }
+
+      const apiBase = (process.env.REACT_NATIVE_API_URL || process.env.REACT_APP_API_URL || 'http://172.30.1.252:8000').replace(/\/$/, '');
+      const uploadUrl = `${apiBase}/upload`;
+
+      const res = await fetch(uploadUrl, {
+        method: 'POST',
+        body: formData,
+        headers: {
+          Accept: 'application/json',
+        },
+      });
+
+      if (!res.ok) {
+        const t = await res.text().catch(() => '');
+        throw new Error(`Upload failed: ${res.status} ${t}`);
+      }
+
+      const json = await res.json();
+      if (!json || !json.url) throw new Error('Upload succeeded but response missing url');
+
+      let returnedUrl = json.url as string;
+      if (returnedUrl.startsWith('/')) {
+        returnedUrl = `${apiBase}${returnedUrl}`;
+      }
+      return returnedUrl;
+    } catch (err) {
+      console.error('[uploadImageToServer]', err);
+      throw err;
+    }
+  };
+
+
+
   // Call relight API when parameters change (debounced)
   const callRelightAPI = useCallback(async () => {
     if (!imageUri) {
@@ -123,17 +207,19 @@ export default function RelightScreen({ navigation, route }: Props) {
       clearTimeout(apiCallTimer.current);
     }
 
+    const uploadedUri = await uploadImageToServer(imageUri);
+
     // Debounce API call by 500ms
     apiCallTimer.current = setTimeout(async () => {
       setIsProcessing(true);
       try {
         const response = await apiClient.relightImage({
-          image_url: imageUri,
+          image_url: uploadedUri,
           x: selectorX,
           y: selectorY,
           z_depth: zDepth,
-          warmth: colorTemperature, // Using colorTemperature as warmth value
-          intensity: intensity,
+          steps: 25, // Using colorTemperature as warmth value
+          prompt: "a scene",
         });
 
         if (response.result_url) {

@@ -10,6 +10,7 @@ from io import BytesIO
 import random
 from PIL import ImageFilter, ImageDraw
 from app.core.services.third_party.relighting.client import RelightingClient
+from app.core.services.third_party.repositioning.client import RepositioningClient
 
 
 from app.core.services.app.storage_service import StorageService
@@ -22,6 +23,7 @@ class ImageProcessor:
         self.storage = storage or StorageService()
         # Initialize relighting client
         self._relighting_client = None
+        self._repositioning_client = None
 
     @property
     def relighting_client(self) -> RelightingClient:
@@ -32,6 +34,16 @@ class ImageProcessor:
                 print(f"Warning: Relighting model not found: {e}")
                 return None
         return self._relighting_client
+
+    @property
+    def repositioning_client(self) -> RepositioningClient:
+        if self._repositioning_client is None:
+            try:
+                self._repositioning_client = RepositioningClient()
+            except FileNotFoundError as e:
+                print(f"Warning: Repositioning model not found: {e}")
+                return None
+        return self._repositioning_client
 
     def _save_image(self, image: Image.Image) -> str:
         """Save image to local disk and return filesystem path."""
@@ -96,6 +108,7 @@ class ImageProcessor:
         Executes a tool on an image and returns the path to the result.
         input_image_path: can be local path, gs://, https://, or http:// URL
         """
+        print("processing step")
         try:
             # Download image bytes (handles all URL types and local paths)
             image_bytes = await self._download_image_bytes(input_image_path)
@@ -103,7 +116,7 @@ class ImageProcessor:
             loop = asyncio.get_running_loop()
             # Run blocking image processing in separate thread
             # if tool is relighting, call async relighting client
-            if tool == "relighting":
+            if tool == "relighting" or tool == "repositioning":
                 result_bytes = await self._process_image_bytes_async(image_bytes, tool, params, input_image_path)
             else:
                 result_bytes = await loop.run_in_executor(
@@ -302,25 +315,46 @@ class ImageProcessor:
             print(f"Error processing image bytes: {e}")
             raise
     async def _process_image_bytes_async(self, image_bytes: bytes, tool: str, params: dict, input_image_path: str) -> bytes:
-        if self.relighting_client is None:
-            raise RuntimeError("Relighting model not available")
+        if tool == "relighting":
+            if self.relighting_client is None:
+                raise RuntimeError("Relighting model not available")
 
-        img = Image.open(BytesIO(image_bytes))
-        img = img.convert("RGB")
+            img = Image.open(BytesIO(image_bytes))
+            img = img.convert("RGB")
 
-        # Call relighting model directly
-        output_path = await self.relighting_client.relight(
-            img,
-            light_pos=(
-                float(params.get("light_x", 0.0)),
-                float(params.get("light_y", 100.0)),
-                float(params.get("light_z", 1.0))
-            ),
-            steps=int(params.get("steps", 25)),
-            prompt=params.get("prompt", "a scene")
-        )
+            print("calling relighting model")
+            # Call relighting model directly
+            output_path = await self.relighting_client.relight(
+                img,
+                light_pos=(
+                    float(params.get("light_x", 0.0)),
+                    float(params.get("light_y", 100.0)),
+                    float(params.get("light_z", 1.0))
+                ),
+                steps=int(params.get("steps", 25)),
+                prompt=params.get("prompt", "a scene")
+            )
 
-        # Read output image
-        with open(output_path, "rb") as f:
-            result_bytes = f.read()
-            return result_bytes
+            # Read output image
+            with open(output_path, "rb") as f:
+                result_bytes = f.read()
+                return result_bytes
+        elif tool == "repositioning":
+            if self.repositioning_client is None:
+                raise RuntimeError("Repositioning model not available")
+
+            img = Image.open(BytesIO(image_bytes))
+            img = img.convert("RGB")
+
+            mock_json_path = "./points.json"
+            print("calling repositioning model")
+            # Call repositioning model directly
+            output_path = await self.repositioning_client.reposition(
+                img,
+                json_path=params.get("json_path", mock_json_path)
+            )
+
+            # Read output image
+            with open(output_path, "rb") as f:
+                result_bytes = f.read()
+                return result_bytes

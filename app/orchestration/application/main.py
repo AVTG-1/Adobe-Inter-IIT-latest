@@ -13,6 +13,11 @@ import json
 from typing import List
 from fastapi import Request
 
+from fastapi import HTTPException
+import httpx
+from typing import Dict, Any
+import logging
+import base64
 
 from .config import get_settings
 from app.orchestration.application.resources import health_router, edit_router
@@ -20,6 +25,7 @@ from app.orchestration.application.resources import health_router, edit_router
 from app.orchestration.application.manager import ConnectionManager
 from app.orchestration.application.engine import ExecutionEngine
 from app.orchestration.application.state_store import StateStore
+from app.orchestration.application.image_processor import ImageProcessor
 
 # Configure logging
 logging.basicConfig(
@@ -219,3 +225,114 @@ async def upload_image(request: Request, file: UploadFile = File(...)):
     public_url = f"{base}/static/{filename}"
 
     return {"filename": filename, "url": public_url}
+
+RELIGHT_SERVICE_URL = "http://localhost:5000/relight"
+
+
+@app.post("/api/v1/relight")
+
+async def relight_image(request: Dict[str, Any]):
+    # async def _download_image_bytes(image_url: str) -> bytes:
+    #     """Download image from remote URL (GCS, HTTP, etc.) and return bytes.
+        
+    #     Args:
+    #         image_url: URL to download from (gs://, https://, http://, or file://)
+            
+    #     Returns:
+    #         Image data as bytes
+            
+    #     Raises:
+    #         ValueError: If URL format is unsupported
+    #         httpx.HTTPError: If HTTP request fails
+    #         FileNotFoundError: If local file not found
+    #     """
+    #     # Handle local file paths
+    #     if image_url.startswith("file://"):
+    #         file_path = image_url.replace("file://", "")
+    #         if not os.path.exists(file_path):
+    #             raise FileNotFoundError(f"Local file not found: {file_path}")
+    #         async with aiofiles.open(file_path, "rb") as f:
+    #             return await f.read()
+        
+    #     # Handle local filesystem paths (no protocol)
+    #     if not image_url.startswith(("http://", "https://", "gs://")):
+    #         # Treat as local path
+    #         local_path = image_url.lstrip("/")
+    #         if not os.path.exists(local_path):
+    #             raise FileNotFoundError(f"Local file not found: {local_path}")
+    #         async with aiofiles.open(local_path, "rb") as f:
+    #             return await f.read()
+        
+    #     # Handle GCS URLs (gs:// and https://storage.googleapis.com)
+    #     if image_url.startswith("gs://") or "storage.googleapis.com" in image_url:
+    #         # Use StorageService to download from GCS
+    #         try:
+    #             return await self.storage.get_image(image_url)
+    #         except Exception as e:
+    #             print(f"Failed to download from GCS: {e}")
+    #             raise
+        
+    #     # Handle HTTP(S) URLs
+    #     if image_url.startswith(("http://", "https://")):
+    #         async with httpx.AsyncClient(timeout=30.0) as client:
+    #             response = await client.get(image_url)
+    #             response.raise_for_status()
+    #             return response.content
+        
+    #     raise ValueError(f"Unsupported URL format: {image_url}")
+    # """
+    # Forward relighting request to the relighting service at localhost:5000
+    # """
+
+    # image_url = request.get("image_url")
+    # # convert cloud image_url to base64 
+    # image_bytes = await _download_image_bytes(image_url)
+    # image = base64.b64encode(image_bytes).decode("utf-8")
+
+    # light_pos = list([request.get("x"), request.get("y"), request.get("z_depth")])
+    # steps = request.get("steps")
+    # prompt = request.get("prompt")
+    # payload = {
+    #             "image_base64": image,
+    #             "light_pos": light_pos,
+    #             "steps": steps,
+    #             "prompt": prompt
+    #         }
+    # try:
+    #     async with httpx.AsyncClient() as client:
+    #         # Forward the request to the relighting service
+    #         response = await client.post(
+    #             RELIGHT_SERVICE_URL,
+    #             json=payload,
+    #             timeout=90.0  # 90 seconds timeout
+    #         )
+    #         response.raise_for_status()  # Raise exception for 4XX/5XX responses
+    #         print(f"Relighting response: {response.json()}")
+    #         return response.json()
+            
+    # except httpx.HTTPStatusError as e:
+    #     raise HTTPException(
+    #         status_code=e.response.status_code,
+    #         detail=f"Relighting service error: {e.response.text}"
+    #     )
+    # except httpx.RequestError as e:
+    #     raise HTTPException(
+    #         status_code=503,
+    #         detail="Relighting service is currently unavailable"
+    #     )
+    # except Exception as e:
+    #     raise HTTPException(
+    #         status_code=500,
+    #         detail=f"Internal server error: {str(e)}"
+    #     )
+    processor = ImageProcessor()
+    params = {"light_pos": [request.get("x"), request.get("y"), request.get("z_depth")], "steps": request.get("steps"), "prompt": request.get("prompt")}
+    result = await processor.process_step(request.get("image_url"), "relighting", params)
+    return {"message": "Processing complete", "result_url": result}
+
+@app.post("/api/v1/reposition")
+async def reposition_image(request: Dict[str, Any]):
+    processor = ImageProcessor()
+    params = {"json_path": request.get("json_path")}
+    result = await processor.process_step(request.get("image_url"), "repositioning", params)
+    return {"message": "Processing complete", "result_url": result}

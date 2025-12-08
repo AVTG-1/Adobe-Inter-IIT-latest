@@ -351,6 +351,7 @@ export default function EditorScreen({ route, navigation }: Props) {
       }
 
       case 'step_complete': {
+        console.log("step_complete", data);
         const step = data.step || null;
 
         const nodeIdFromBackend = (step && (step.node_id || step.nodeId)) || null;
@@ -361,10 +362,10 @@ export default function EditorScreen({ route, navigation }: Props) {
           ? {
             id: step.id || `step-${Date.now()}`,
             node_id: nodeIdFromBackend || step.id || generatedNodeId,
-            actionId: step.actionId || step.action || 'ai-action',
-            name: step.name || step.action || 'AI step',
-            description: step.description || '',
-            icon: step.icon || getIconForTool(step.action || step.actionId || 'ai'),
+            actionId: step.actionId || step.tool || 'ai-action',
+            name: step.name || step.tool || 'AI step',
+            description: step.intent || '',
+            icon: getIconForTool(step.tool || 'ai'),
             params: step.params || {},
             timestamp: step.timestamp || Date.now(),
             thumbnailUri: data.image_url || step.image_url || currentImageUrl || '', // prefer backend image
@@ -380,6 +381,13 @@ export default function EditorScreen({ route, navigation }: Props) {
             timestamp: Date.now(),
             thumbnailUri: data.image_url || currentImageUrl || '',
           };
+
+        console.log('Created executed step:', {
+          id: executedStep.id,
+          actionId: executedStep.actionId,
+          icon: executedStep.icon,
+          source: 'step_complete'
+        });
 
         // Prevent duplicates: check by node_id or id
         setExecutedSteps((prev) => {
@@ -457,8 +465,24 @@ export default function EditorScreen({ route, navigation }: Props) {
 
       case 'path_update': {
         try {
-          let rawPath = Array.isArray(data.path) ? data.path : [];
-          rawPath = Object.values(data.tree)
+          // update timeline
+          let path = Array.isArray(data.path) ? data.path : [];
+          const newSteps = path.map((node: any, index: number) => ({
+            id: `step-${node.id || index}`,
+            node_id: node.id,
+            actionId: node.tool || 'ai-action',
+            name: node.name || 'AI Step',
+            description: node.intent || '',
+            icon: getIconForTool(node.tool || 'ai'),
+            params: node.params || {},
+            timestamp: node.timestamp || Date.now(),
+            thumbnailUri: node.image_url || ''
+          }));
+          console.log('Processed timeline steps:', newSteps);
+          setExecutedSteps(newSteps);
+
+          // update tree
+          let rawPath = Object.values(data.tree)
           const API_ORIGIN = (process.env.REACT_NATIVE_API_URL || process.env.REACT_APP_API_URL || 'http://172.30.1.252:8000').replace(/\/$/, '');
 
           const normalized = rawPath.map((p: any, idx: number) => {
@@ -1794,7 +1818,7 @@ export default function EditorScreen({ route, navigation }: Props) {
 
     // Update current node for timeline filtering
     const nodeId = `node-${step.id}`;
-    setCurrentNodeId(nodeId);
+    // setCurrentNodeId(nodeId);
 
     console.log('[Step Tapped]', { stepId: step.id, nodeId, action: step.actionId, params: step.params });
 
@@ -1893,8 +1917,14 @@ export default function EditorScreen({ route, navigation }: Props) {
    * Filters executedSteps to show only steps in the current path
    */
   const timelineSteps = React.useMemo(() => {
-    if (executedSteps.length === 0) return [];
+    if (executedSteps.length === 0){
+      console.log("No executed steps");
+      return [];
+    }
 
+    console.log("Executed steps: ", executedSteps);
+    console.log("Current node ID: ", currentNodeId);
+    console.log("Path to current node: ", getPathToCurrentNode);
     // Get node IDs in the current path
     const pathNodeIds = new Set(getPathToCurrentNode);
 
@@ -1911,6 +1941,7 @@ export default function EditorScreen({ route, navigation }: Props) {
       pathNodeIds: Array.from(pathNodeIds),
     });
 
+    console.log('Steps in path: ', stepsInPath);
     return stepsInPath;
   }, [executedSteps, getPathToCurrentNode]);
 
@@ -2092,7 +2123,6 @@ export default function EditorScreen({ route, navigation }: Props) {
 
   // Handle AI chat message
   const handleAIChatSend = (message: string) => {
-    console.log('AI Chat message:', message);
     Toast.show({
       type: 'info',
       text1: 'AI Assistant',
@@ -2693,7 +2723,8 @@ export default function EditorScreen({ route, navigation }: Props) {
                 </Animated.View>
 
                 {/* Executed Steps - Only showing path from root to current node */}
-                {/* {timelineSteps.map((step, index) => (
+
+                {timelineSteps.map((step, index) => (
                   <Animated.View
                     key={step.id}
                     style={[
@@ -2717,10 +2748,10 @@ export default function EditorScreen({ route, navigation }: Props) {
                       onPress={() => handleStepIconTap(step)}
                       activeOpacity={0.7}
                     >
-                      <Ionicons name={step.icon as any} size={18} color="#E0E0E0" />
+                      <Ionicons name={getIconForTool(step.actionId)} size={18} color="#E0E0E0" />
                     </TouchableOpacity>
                   </Animated.View>
-                ))} */}
+                ))}
 
                 {/* Clear Steps Button */}
                 {!isExecutingAI && (

@@ -27,7 +27,7 @@ class ApiClient {
 
     this.client = axios.create({
       baseURL: apiBaseURL,
-      timeout: 30000, // 30 seconds
+      timeout: 90000, // 90 seconds
       headers: {
         'Content-Type': 'application/json',
       },
@@ -129,23 +129,26 @@ class ApiClient {
    * @returns Relight response with processed image URL
    */
   async relightImage(request: RelightRequest): Promise<RelightResponse> {
-    if (this.useMockData) {
-      return this.mockRelightImage(request);
-    }
+    console.log("Calling http post to relight")
+    // if (this.useMockData) {
+    //   console.log("Using mock data for relight")
+    //   return this.mockRelightImage(request);
+    // }
 
     try {
       console.log('Calling POST to /relight with params:', {
         x: request.x,
         y: request.y,
         z_depth: request.z_depth,
-        warmth: request.warmth,
-        intensity: request.intensity,
+        steps: request.steps,
+        prompt: request.prompt,
       });
       
       const response = await this.client.post<RelightResponse>(
         '/relight',
         request
       );
+      console.log("Response from relight API:", response.data);
       return response.data;
     } catch (error) {
       console.error('Relight API failed:', error);
