@@ -119,6 +119,8 @@ export default function EditorScreen({ route, navigation }: Props) {
   const [drawingModalOpen, setDrawingModalOpen] = useState(false);
   const [currentDrawingTool, setCurrentDrawingTool] = useState<DrawingTool | null>(null);
   const [currentImageUrl, setCurrentImageUrl] = useState<string>(imageUrl || '');
+  // Newly defined -
+  const [currentImageDimensions, setCurrentImageDimensions] = useState<{width: number, height: number} | null>(null);
   const [processing, setProcessing] = useState(false);
   const [editPanelOpen, setEditPanelOpen] = useState(false);
 
@@ -582,7 +584,42 @@ export default function EditorScreen({ route, navigation }: Props) {
   };
 
 
+
+
+
+  
   // Image size for dynamic canvas sizing
+  // Calculate proper initial dimensions based on passed canvas size or screen size
+  // const getInitialDimensions = () => {
+  //   const maxWidth = SCREEN_WIDTH - 26;
+  //   const maxHeight = SCREEN_HEIGHT * 0.55;
+
+  //   if (canvasWidth && canvasHeight) {
+  //     // For blank canvas with specific dimensions, fit to screen while maintaining aspect ratio
+  //     const aspectRatio = canvasWidth / canvasHeight;
+  //     let newWidth = maxWidth;
+  //     let newHeight = newWidth / aspectRatio;
+
+  //     if (newHeight > maxHeight) {
+  //       newHeight = maxHeight;
+  //       newWidth = newHeight * aspectRatio;
+  //     }
+
+  //     if (newHeight < maxHeight) {
+  //       newHeight = maxHeight;
+  //       newWidth = newHeight * aspectRatio;
+  //     }
+
+  //     return { width: newWidth, height: newHeight };
+  //   }
+
+  //   return { width: maxWidth, height: 420 };
+  // };
+
+
+
+
+
   // Calculate proper initial dimensions based on passed canvas size or screen size
   const getInitialDimensions = () => {
     const maxWidth = SCREEN_WIDTH - 26;
@@ -594,10 +631,20 @@ export default function EditorScreen({ route, navigation }: Props) {
       let newWidth = maxWidth;
       let newHeight = newWidth / aspectRatio;
 
+      // If too tall, scale down by height constraint
       if (newHeight > maxHeight) {
         newHeight = maxHeight;
         newWidth = newHeight * aspectRatio;
       }
+
+      // Safety: if width still exceeds max after height scaling (edge case)
+      if (newWidth > maxWidth) {
+        newWidth = maxWidth;
+        newHeight = newWidth / aspectRatio;
+      }
+
+      // REMOVED: The buggy condition that forced images to fill maxHeight
+      // if (newHeight < maxHeight) { ... }
 
       return { width: newWidth, height: newHeight };
     }
@@ -612,6 +659,17 @@ export default function EditorScreen({ route, navigation }: Props) {
     width: canvasWidth || 1080,
     height: canvasHeight || 1080,
   });
+
+
+
+
+  // const [imageDimensions, setImageDimensions] = useState<{ width: number; height: number }>(getInitialDimensions());
+
+  // // Store the actual canvas dimensions (not display dimensions)
+  // const [actualCanvasDimensions, setActualCanvasDimensions] = useState<{ width: number; height: number }>({
+  //   width: canvasWidth || 1080,
+  //   height: canvasHeight || 1080,
+  // });
 
   // AI Editing System state
   const [aiPrompt, setAiPrompt] = useState('');
@@ -708,6 +766,54 @@ export default function EditorScreen({ route, navigation }: Props) {
     }
   }, []);
 
+  // // Get image dimensions for dynamic canvas sizing
+  // useEffect(() => {
+  //   const maxWidth = SCREEN_WIDTH - 26;
+  //   const maxHeight = SCREEN_HEIGHT * 0.55;
+
+  //   if (isBlankCanvas && canvasWidth && canvasHeight) {
+  //     // For blank canvas, use passed dimensions and fit to screen
+  //     const aspectRatio = canvasWidth / canvasHeight;
+  //     let newWidth = maxWidth;
+  //     let newHeight = newWidth / aspectRatio;
+
+  //     if (newHeight > maxHeight) {
+  //       newHeight = maxHeight;
+  //       newWidth = newHeight * aspectRatio;
+  //     }
+
+  //     setImageDimensions({ width: newWidth, height: newHeight });
+  //     setActualCanvasDimensions({ width: canvasWidth, height: canvasHeight });
+  //     console.log('📐 Blank canvas:', canvasWidth, 'x', canvasHeight, '→ display:', Math.round(newWidth), 'x', Math.round(newHeight));
+  //   } else if (currentImageUrl && !isBlankCanvas) {
+  //     Image.getSize(
+  //       currentImageUrl,
+  //       (width, height) => {
+  //         // Calculate dimensions that fit within screen while maintaining aspect ratio
+  //         const aspectRatio = width / height;
+  //         let newWidth = maxWidth;
+  //         let newHeight = newWidth / aspectRatio;
+
+  //         if (newHeight > maxHeight) {
+  //           newHeight = maxHeight;
+  //           newWidth = newHeight * aspectRatio;
+  //         }
+
+  //         setImageDimensions({ width: newWidth, height: newHeight });
+  //         setActualCanvasDimensions({ width, height });
+  //         console.log('🖼️ Image:', width, 'x', height, '→ display:', Math.round(newWidth), 'x', Math.round(newHeight));
+  //       },
+  //       (error) => {
+  //         console.log('Failed to get image size:', error);
+  //         setImageDimensions({ width: maxWidth, height: 420 });
+  //         setActualCanvasDimensions({ width: 1080, height: 1080 });
+  //       }
+  //     );
+  //   }
+  // }, [currentImageUrl, isBlankCanvas, canvasWidth, canvasHeight]);
+
+
+
   // Get image dimensions for dynamic canvas sizing
   useEffect(() => {
     const maxWidth = SCREEN_WIDTH - 26;
@@ -722,6 +828,12 @@ export default function EditorScreen({ route, navigation }: Props) {
       if (newHeight > maxHeight) {
         newHeight = maxHeight;
         newWidth = newHeight * aspectRatio;
+      }
+
+      // Additional safety check for width
+      if (newWidth > maxWidth) {
+        newWidth = maxWidth;
+        newHeight = newWidth / aspectRatio;
       }
 
       setImageDimensions({ width: newWidth, height: newHeight });
@@ -741,6 +853,12 @@ export default function EditorScreen({ route, navigation }: Props) {
             newWidth = newHeight * aspectRatio;
           }
 
+          // Additional safety check for width
+          if (newWidth > maxWidth) {
+            newWidth = maxWidth;
+            newHeight = newWidth / aspectRatio;
+          }
+
           setImageDimensions({ width: newWidth, height: newHeight });
           setActualCanvasDimensions({ width, height });
           console.log('🖼️ Image:', width, 'x', height, '→ display:', Math.round(newWidth), 'x', Math.round(newHeight));
@@ -753,6 +871,20 @@ export default function EditorScreen({ route, navigation }: Props) {
       );
     }
   }, [currentImageUrl, isBlankCanvas, canvasWidth, canvasHeight]);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
   // Animate AI features and timeline when ANY panel opens/closes - slow and smooth
   useEffect(() => {
@@ -2469,7 +2601,7 @@ export default function EditorScreen({ route, navigation }: Props) {
           </View>
 
           {/* Canvas Area - dynamically sized to image */}
-          <View style={[styles.canvasArea, { height: imageDimensions.height + 20 }]}>
+          <View style={[styles.canvasArea, { height: imageDimensions.height}]}>
             {!imageLoaded && !isBlankCanvas && (
               <View style={styles.loadingContainer}>
                 <ActivityIndicator size="large" color="#FFFFFF" />
@@ -3830,14 +3962,14 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
   canvasArea: {
-    minHeight: 300,
-    maxHeight: SCREEN_HEIGHT * 0.6,
-    margin: 13,
+    // minHeight: 300,
+    // maxHeight: SCREEN_HEIGHT * 0.6,
+    // margin: 13,
     marginTop: 13,
     marginBottom: 8,
-    borderRadius: 24,
+    borderRadius: 2,
     backgroundColor: '#242428',
-    overflow: 'hidden',
+    // overflow: 'hidden',
     justifyContent: 'center',
     alignItems: 'center',
   },
