@@ -85,7 +85,7 @@ export default function RelightScreen({ navigation, route }: Props) {
       });
 
       if (!result.canceled && result.assets[0]) {
-        setImageUri(result.assets[0].uri);
+        (result.assets[0].uri);
       } else if (result.canceled) {
         // User cancelled, go back
         navigation.goBack();
@@ -107,143 +107,40 @@ export default function RelightScreen({ navigation, route }: Props) {
     }
   }, [route.params, handleSelectImage]);
 
-  const uploadImageToServer = async (fileUriOrFile: string | File, fileName?: string) => {
-    try {
-      // If it's already a remote URL, return as-is
-      if (typeof fileUriOrFile === 'string') {
-        const s = fileUriOrFile;
-        if (s.startsWith('http://') || s.startsWith('https://')) return s;
-        // else we will upload the blob/file below
-      }
-
-      const formData = new FormData();
-
-      // If caller passed a File object (web input), use that directly but ensure filename has extension
-      if (fileUriOrFile instanceof File) {
-        let useFile = fileUriOrFile;
-        // ensure filename has extension — otherwise append .jpg
-        if (!/\.[a-zA-Z0-9]{1,5}$/.test(useFile.name)) {
-          // create a new File with .jpg name
-          // @ts-ignore
-          useFile = new File([useFile], `${useFile.name || 'upload'} .jpg`.replace(/\s+/g, ''), { type: useFile.type || 'image/jpeg' });
-        }
-        formData.append('file', useFile, useFile.name);
-      } else if (typeof fileUriOrFile === 'string') {
-        const uri = fileUriOrFile;
-        // pick a sensible name with extension
-        const derivedName = fileName || (() => {
-          // try to extract extension from uri
-          const maybe = uri.split('/').pop() || `upload-${Date.now()}`;
-          if (/\.[a-zA-Z0-9]{1,5}$/.test(maybe)) return maybe;
-          // default to .jpg if no extension
-          return `${maybe}.jpg`;
-        })();
-
-        if (uri.startsWith('blob:') || uri.startsWith('file:') || uri.includes('blob:http')) {
-          // Fetch the blob and convert to File with safe name
-          const resp = await fetch(uri);
-          const blob = await resp.blob();
-          // force a content type fallback
-          const contentType = blob.type || 'image/jpeg';
-          // Ensure name has extension
-          const safeName = /\.[a-zA-Z0-9]{1,5}$/.test(derivedName) ? derivedName : `${derivedName}.jpg`;
-          // @ts-ignore
-          const fileObj = new File([blob], safeName, { type: contentType });
-          formData.append('file', fileObj);
-        } else {
-          // Not a blob and not http(s). Likely a relative path; cannot upload file contents.
-          // Let caller handle this case (we'll error)
-          throw new Error('uploadImageToServer expects a blob/file URI or File object for upload.');
-        }
-      } else {
-        throw new Error('Unsupported file parameter for uploadImageToServer');
-      }
-
-      const apiBase = (process.env.REACT_NATIVE_API_URL || process.env.REACT_APP_API_URL || 'http://172.30.1.252:8000').replace(/\/$/, '');
-      const uploadUrl = `${apiBase}/upload`;
-
-      const res = await fetch(uploadUrl, {
-        method: 'POST',
-        body: formData,
-        headers: {
-          Accept: 'application/json',
-        },
-      });
-
-      if (!res.ok) {
-        const t = await res.text().catch(() => '');
-        throw new Error(`Upload failed: ${res.status} ${t}`);
-      }
-
-      const json = await res.json();
-      if (!json || !json.url) throw new Error('Upload succeeded but response missing url');
-
-      let returnedUrl = json.url as string;
-      if (returnedUrl.startsWith('/')) {
-        returnedUrl = `${apiBase}${returnedUrl}`;
-      }
-      return returnedUrl;
-    } catch (err) {
-      console.error('[uploadImageToServer]', err);
-      throw err;
-    }
-  };
-
-
-
-  // Call relight API when parameters change (debounced)
   const callRelightAPI = useCallback(async () => {
-    if (!imageUri) {
-      return; // Don't call API if image is not ready
-    }
-    
-    // Wait for coordinates to be initialized (they start at 0,0)
-    if (imageContainerLayout.width === 0 || imageContainerLayout.height === 0) {
-      return; // Don't call API if container layout is not ready
-    }
+  if (!imageUri) return;
 
-    // Clear previous timer
-    if (apiCallTimer.current) {
-      clearTimeout(apiCallTimer.current);
-    }
+  setIsProcessing(true);
+  console.log("🔵 RELIGHT API CALLED WITH:", {
+    x: selectorX,
+    y: selectorY,
+    z_depth: zDepth,
+    intensity: intensity,
+    warmth: colorTemperature,
+    image_url: imageUri,
+  });
 
-    const uploadedUri = await uploadImageToServer(imageUri);
-
-    // Debounce API call by 500ms
-    apiCallTimer.current = setTimeout(async () => {
-      setIsProcessing(true);
-       // ✅✅✅ THIS IS THE IMPORTANT LOG ✅✅✅
-    console.log("RELIGHT API COORDINATES →", {
+  try {
+    const response = await apiClient.relightImage({
+      image_url: imageUri,
       x: selectorX,
       y: selectorY,
       z_depth: zDepth,
-      intensity: intensity,
       warmth: colorTemperature,
-      image: imageUri,
+      intensity,
     });
-      try {
-        const response = await apiClient.relightImage({
-          image_url: uploadedUri,
-          x: selectorX,
-          y: selectorY,
-          z_depth: zDepth,
-          steps: 25, // Using colorTemperature as warmth value
-          prompt: "a scene",
-        });
 
-        if (response.result_url) {
-          setProcessedImageUri(response.result_url);
-        } else {
-          console.warn('Relight API did not return result_url');
-        }
-      } catch (error) {
-        console.error('Relight API error:', error);
-        Alert.alert('Error', 'Failed to process image. Please try again.');
-      } finally {
-        setIsProcessing(false);
-      }
-    }, 500);
-  }, [imageUri, selectorX, selectorY, zDepth, colorTemperature, intensity]);
+    if (response.result_url) {
+      setProcessedImageUri(response.result_url);
+    }
+  } catch (err) {
+    console.log("API Error:", err);
+    Alert.alert("Error", "Failed to process image.");
+  } finally {
+    setIsProcessing(false);
+  }
+}, [imageUri, selectorX, selectorY, zDepth, colorTemperature, intensity]);
+
 
   // Call API when parameters change
   useEffect(() => {
@@ -255,7 +152,7 @@ export default function RelightScreen({ navigation, route }: Props) {
       selectorX >= 0 && 
       selectorY >= 0
     ) {
-      callRelightAPI();
+      
     }
 
     // Cleanup timer on unmount
@@ -698,6 +595,21 @@ export default function RelightScreen({ navigation, route }: Props) {
             />
           </View>
         </View>
+        
+        <TouchableOpacity onPress={callRelightAPI}
+        style={{
+    backgroundColor: '#4A90E2',
+    paddingVertical: 12,
+    marginTop: 20,
+    borderRadius: 10,
+    alignItems: 'center'
+  }}
+>
+  <Text style={{ color: '#FFF', fontSize: 16, fontWeight: 'bold' }}>
+    Apply Relight
+  </Text>
+</TouchableOpacity>
+
 
         {/* Control Buttons Row */}
         <View style={styles.buttonsRow}>
