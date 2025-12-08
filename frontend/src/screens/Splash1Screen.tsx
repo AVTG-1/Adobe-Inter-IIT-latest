@@ -148,7 +148,7 @@ const Splash1Screen: React.FC<Props> = ({ navigation }) => {
             },
           ]}
         >
-          <Text style={styles.title}>Auralite</Text>
+          <Text style={styles.title}>Oblique</Text>
         </Animated.View>
 
         {/* Subtitle */}

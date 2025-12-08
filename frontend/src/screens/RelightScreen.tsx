@@ -126,6 +126,15 @@ export default function RelightScreen({ navigation, route }: Props) {
     // Debounce API call by 500ms
     apiCallTimer.current = setTimeout(async () => {
       setIsProcessing(true);
+       // ✅✅✅ THIS IS THE IMPORTANT LOG ✅✅✅
+    console.log("RELIGHT API COORDINATES →", {
+      x: selectorX,
+      y: selectorY,
+      z_depth: zDepth,
+      intensity: intensity,
+      warmth: colorTemperature,
+      image: imageUri,
+    });
       try {
         const response = await apiClient.relightImage({
           image_url: imageUri,
@@ -157,8 +166,8 @@ export default function RelightScreen({ navigation, route }: Props) {
       imageUri && 
       imageContainerLayout.width > 0 && 
       imageContainerLayout.height > 0 &&
-      selectorX > 0 && 
-      selectorY > 0
+      selectorX >= 0 && 
+      selectorY >= 0
     ) {
       callRelightAPI();
     }
@@ -381,18 +390,14 @@ export default function RelightScreen({ navigation, route }: Props) {
 
   // Mouse event handlers for web (right-click drag)
   const handleMouseDown = useCallback((e: any) => {
-    // Check if right mouse button (button === 2)
-    // React Native Web: e.nativeEvent.button, Standard: e.button
-    const button = e.nativeEvent?.button ?? e.button;
-    if (button === 2) {
-      e.preventDefault?.();
-      e.stopPropagation?.();
-      setIsRightButtonPressed(true);
-      const clientX = e.nativeEvent?.clientX ?? e.clientX ?? e.pageX;
-      const clientY = e.nativeEvent?.clientY ?? e.clientY ?? e.pageY;
-      updateSelectorPosition(clientX, clientY);
-    }
-  }, [updateSelectorPosition]);
+  e.preventDefault?.();
+  setIsRightButtonPressed(true); // ✅ LEFT CLICK NOW WORKS
+
+  const clientX = e.clientX ?? 0;
+  const clientY = e.clientY ?? 0;
+  updateSelectorPosition(clientX, clientY);
+}, [updateSelectorPosition]);
+
 
   const handleMouseMove = useCallback((e: any) => {
     if (isRightButtonPressed) {
@@ -455,7 +460,7 @@ export default function RelightScreen({ navigation, route }: Props) {
   useEffect(() => {
     if (Platform.OS === 'web' && typeof window !== 'undefined') {
       const handleGlobalMouseUp = (e: MouseEvent) => {
-        if (e.button === 2 && isRightButtonPressed) {
+        if (isRightButtonPressed) {
           setIsRightButtonPressed(false);
         }
       };
@@ -538,7 +543,7 @@ export default function RelightScreen({ navigation, route }: Props) {
               </View>
             )}
             {/* Circular Selector Overlay - Only visible when right button is pressed */}
-            {imageContainerLayout.width > 0 && isRightButtonPressed && (() => {
+            {imageContainerLayout.width > 0 &&  (() => {
               const circleSize = getCircleSize();
               const halfSize = circleSize / 2;
               return (
@@ -825,8 +830,8 @@ const styles = StyleSheet.create({
   },
   selectorCircle: {
     borderWidth: 2,
-    borderColor: 'rgba(255, 255, 255, 0.6)',
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderColor: '#fff',
+    backgroundColor: 'rgba(255,255,255,0.25)',
   },
   placeholderContainer: {
     flex: 1,

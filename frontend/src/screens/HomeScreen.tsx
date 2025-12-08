@@ -363,7 +363,7 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
         {/* Header */}
         <View style={styles.header}>
           {/* Title */}
-          <Text style={styles.headerTitle}>Auralite</Text>
+          <Text style={styles.headerTitle}>Oblique</Text>
 
           {/* Profile Button */}
           <TouchableOpacity
