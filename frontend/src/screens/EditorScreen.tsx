@@ -21,6 +21,7 @@ import {
   TouchableWithoutFeedback,
   ScrollView,
   Image,
+  Keyboard,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -618,6 +619,11 @@ export default function EditorScreen({ route, navigation }: Props) {
   const aiChatBottom = useRef(new Animated.Value(237)).current;
   const floatingAIBottom = useRef(new Animated.Value(110)).current;
   const timelineBottom = useRef(new Animated.Value(160)).current;
+
+  // Global AI inline expansion animations
+  const aiButtonScale = useRef(new Animated.Value(1)).current;
+  const aiInlineWidth = useRef(new Animated.Value(50)).current;
+  const aiInlineOpacity = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     connectWebSocket();
@@ -1307,6 +1313,73 @@ export default function EditorScreen({ route, navigation }: Props) {
         useNativeDriver: true,
       }),
     ]).start();
+  };
+
+  // Global AI Button Animation Functions
+  const animateAIBounce = () => {
+    Animated.sequence([
+      Animated.spring(aiButtonScale, {
+        toValue: 0.85,
+        friction: 3,
+        tension: 40,
+        useNativeDriver: true,
+      }),
+      Animated.spring(aiButtonScale, {
+        toValue: 1,
+        friction: 3,
+        tension: 40,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
+
+  const expandAIInline = () => {
+    setAiChatOpen(true);
+    Animated.parallel([
+      Animated.timing(aiInlineWidth, {
+        toValue: 320,
+        duration: 260,
+        easing: Easing.bezier(0.25, 0.1, 0.25, 1),
+        useNativeDriver: false,
+      }),
+      Animated.timing(aiInlineOpacity, {
+        toValue: 1,
+        duration: 200,
+        delay: 60,
+        easing: Easing.out(Easing.ease),
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
+
+  const collapseAIInline = () => {
+    Keyboard.dismiss();
+    Animated.parallel([
+      Animated.timing(aiInlineOpacity, {
+        toValue: 0,
+        duration: 150,
+        easing: Easing.in(Easing.ease),
+        useNativeDriver: true,
+      }),
+      Animated.timing(aiInlineWidth, {
+        toValue: 50,
+        duration: 260,
+        easing: Easing.bezier(0.25, 0.1, 0.25, 1),
+        useNativeDriver: false,
+      }),
+    ]).start(() => {
+      setAiChatOpen(false);
+      setAiPrompt('');
+    });
+  };
+
+  const handleAIButtonTap = () => {
+    animateAIBounce();
+    if (aiChatOpen) {
+      collapseAIInline();
+    } else {
+      expandAIInline();
+    }
   };
 
   // AI Editing System Functions
@@ -2582,67 +2655,99 @@ export default function EditorScreen({ route, navigation }: Props) {
             </TouchableOpacity>
           </View>
 
-          {/* Global AI Chat Panel - Animated position */}
-          {aiChatOpen && (
-            <Animated.View style={[styles.globalAIChatPanel, { bottom: aiChatBottom }]}>
-              <TouchableOpacity style={styles.aiAssistantButton}>
-                <Ionicons name="sparkles" size={24} color="#FFFFFF" />
-              </TouchableOpacity>
-              <TextInput
-                style={styles.aiChatInput}
-                placeholder="Ask Obi-wan"
-                placeholderTextColor="#888888"
-                value={aiPrompt}
-                onChangeText={setAiPrompt}
-                editable={!isExecutingAI}
-                onSubmitEditing={handleAIPromptSubmit}
-                returnKeyType="send"
-              />
-              {/* Send / Stop area */}
-              <View style={styles.aiActionRow}>
-                {/* Send button */}
-                <TouchableOpacity
-                  style={[styles.aiSendButton, (!aiPrompt.trim() || isExecutingAI) && styles.aiSendButtonDisabled]}
-                  onPress={handleAIPromptSubmit}
-                  disabled={!aiPrompt.trim() || isExecutingAI}
-                  activeOpacity={0.7}
-                >
-                  <Ionicons name="send" size={20} color="#FFFFFF" />
-                </TouchableOpacity>
-
-                {/* Stop button - only while executing */}
-                {isExecutingAI && (
-                  <TouchableOpacity
-                    style={styles.aiStopButton}
-                    onPress={() => handleStopProcessing()}
-                    activeOpacity={0.8}
-                  >
-                    <Ionicons name="stop" size={18} color="#FFFFFF" />
-                  </TouchableOpacity>
-                )}
-
-                {/* Close chat */}
-                <TouchableOpacity
-                  style={styles.aiChatCloseButton}
-                  onPress={() => setAiChatOpen(false)}
-                >
-                  <Ionicons name="close" size={20} color="#FFFFFF" />
-                </TouchableOpacity>
-              </View>
-
-            </Animated.View>
-          )}
-
-
-          {/* Floating AI Button - Animated position */}
-          <Animated.View style={[styles.floatingAIButton, { bottom: floatingAIBottom }]}>
-            <TouchableOpacity
-              style={styles.floatingAIButtonInner}
-              onPress={() => setAiChatOpen(!aiChatOpen)}
-              activeOpacity={0.8}
+          {/* Global AI Button with Gemini-style Inline Expansion */}
+          <Animated.View
+            style={[
+              styles.globalAIInlineContainer,
+              { bottom: floatingAIBottom },
+            ]}
+          >
+            <Animated.View
+              style={[
+                styles.aiInlineWrapper,
+                { width: aiInlineWidth },
+              ]}
             >
-              <Ionicons name="sparkles" size={24} color="#FFFFFF" />
-            </TouchableOpacity>
+              {/* AI Button (Always visible on left) */}
+              <Animated.View
+                style={[
+                  styles.aiButtonWrapper,
+                  { transform: [{ scale: aiButtonScale }] },
+                ]}
+              >
+                <TouchableOpacity
+                  style={styles.aiButton}
+                  onPress={handleAIButtonTap}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="sparkles" size={26} color="#FFFFFF" />
+                </TouchableOpacity>
+              </Animated.View>
+
+              {/* Expanded Content (TextInput + Buttons) */}
+              {aiChatOpen && (
+                <Animated.View
+                  style={[
+                    styles.aiExpandedContent,
+                    { opacity: aiInlineOpacity },
+                  ]}
+                >
+                  {/* Text Input */}
+                  <TextInput
+                    style={styles.aiInlineInput}
+                    placeholder="Ask Obi-wan..."
+                    placeholderTextColor="#888888"
+                    value={aiPrompt}
+                    onChangeText={setAiPrompt}
+                    multiline={false}
+                    autoFocus={true}
+                    returnKeyType="send"
+                    onSubmitEditing={handleAIPromptSubmit}
+                    editable={!isExecutingAI}
+                  />
+
+                  {/* Action Buttons */}
+                  <View style={styles.aiInlineActions}>
+                    {isExecutingAI ? (
+                      // Stop button when processing
+                      <TouchableOpacity
+                        style={styles.aiInlineActionButton}
+                        onPress={() => handleStopProcessing()}
+                        activeOpacity={0.7}
+                      >
+                        <Ionicons name="stop-circle" size={22} color="#FF453A" />
+                      </TouchableOpacity>
+                    ) : (
+                      // Send button when not processing
+                      <TouchableOpacity
+                        style={[
+                          styles.aiInlineActionButton,
+                          !aiPrompt.trim() && styles.aiInlineActionButtonDisabled,
+                        ]}
+                        onPress={handleAIPromptSubmit}
+                        activeOpacity={0.7}
+                        disabled={!aiPrompt.trim()}
+                      >
+                        <Ionicons
+                          name="send"
+                          size={20}
+                          color={aiPrompt.trim() ? '#00D9FF' : '#555555'}
+                        />
+                      </TouchableOpacity>
+                    )}
+
+                    {/* Close button */}
+                    <TouchableOpacity
+                      style={styles.aiInlineActionButton}
+                      onPress={collapseAIInline}
+                      activeOpacity={0.7}
+                    >
+                      <Ionicons name="close" size={22} color="#FFFFFF" />
+                    </TouchableOpacity>
+                  </View>
+                </Animated.View>
+              )}
+            </Animated.View>
           </Animated.View>
 
           {/* Confirm Parameter Changes Button - Shows when parameters are modified */}
@@ -3736,10 +3841,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#000000',
     paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 44,
   },
-  aiActionRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
   aiStopButton: {
     marginLeft: 8,
     backgroundColor: '#D9534F', // red-ish
@@ -3856,71 +3957,82 @@ const styles = StyleSheet.create({
   undoRedoButtonDisabled: {
     opacity: 0.5,
   },
-globalAIChatPanel: {
-  position: 'absolute',
-
-  // ✅ Dono side se equal responsive gap
-  left: 12,
-  right: 12,
-
-  // ✅ Fixed width hata diya — now fully responsive
-  height: 72,
-
-  // ✅ Thoda sa niche natural spacing
-  bottom: 16,
-
-  borderRadius: 30,
-  borderWidth: 1,
-  borderColor: '#9c9c9c',
-  backgroundColor: '#242428',
-
-  flexDirection: 'row',
-  alignItems: 'center',
-  paddingHorizontal: 13,
-
-  zIndex: 3,
-
-  // ✅ Shadow polish
-  elevation: 10,
-  shadowColor: '#000',
-  shadowOpacity: 0.3,
-  shadowOffset: { width: 0, height: 4 },
-  shadowRadius: 10,
-},
-
-  aiAssistantButton: {
-    width: 46,
-    height: 46,
-    borderRadius: 23,
-    backgroundColor: '#000000',
+  // Global AI Inline Expansion Styles (Gemini-style)
+  globalAIInlineContainer: {
+    position: 'absolute',
+    right: 20,
+    zIndex: 20,
+  },
+  aiInlineWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#242428',
+    borderRadius: 30,
+    height: 50,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  aiButtonWrapper: {
+    width: 50,
+    height: 50,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  aiChatInput: {
+  aiButton: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: '#00D9FF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#00D9FF',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.5,
+    shadowRadius: 10,
+    elevation: 6,
+  },
+  aiExpandedContent: {
     flex: 1,
-    marginLeft: 16,
-    marginRight: 12,
-    fontSize: 16,
-    color: '#FFFFFF',
-  },
-  aiSendButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#4A9EFF',
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    paddingHorizontal: 12,
+    paddingRight: 8,
+  },
+  aiInlineInput: {
+    flex: 1,
+    fontSize: 15,
+    color: '#FFFFFF',
+    paddingVertical: 8,
+    paddingHorizontal: 8,
+    height: 38,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    borderRadius: 10,
     marginRight: 8,
+    ...Platform.select({
+      web: {
+        outlineStyle: 'none',
+      },
+    }),
   },
-  aiSendButtonDisabled: {
-    backgroundColor: '#333333',
-    opacity: 0.5,
+  aiInlineActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
-  aiChatCloseButton: {
+  aiInlineActionButton: {
     width: 32,
     height: 32,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+  },
+  aiInlineActionButtonDisabled: {
+    opacity: 0.4,
   },
   // AI Step Timeline Styles - Horizontal with animated position
   stepTimelineContainer: {
@@ -3996,24 +4108,6 @@ globalAIChatPanel: {
     borderRadius: 25,
     backgroundColor: '#FFFFFF',
     zIndex: -1,
-  },
-  floatingAIButton: {
-    position: 'absolute',
-    right: 13,
-    zIndex: 5,
-  },
-  floatingAIButtonInner: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: '#242428',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.5,
-    shadowRadius: 4,
-    elevation: 4,
   },
   confirmButton: {
     position: 'absolute',
