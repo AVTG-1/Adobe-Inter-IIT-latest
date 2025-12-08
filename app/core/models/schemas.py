@@ -85,3 +85,31 @@ class HealthResponse(BaseModel):
     status: str = Field(..., description="Service status")
     version: str = Field(..., description="API version")
     timestamp: datetime = Field(default_factory=datetime.utcnow, description="Current timestamp")
+
+
+class PoseKeypoint(BaseModel):
+    """Keypoint in pose skeleton."""
+    id: int = Field(..., description="Keypoint ID (0-16 for COCO format)")
+    name: str = Field(..., description="Keypoint name (e.g., 'nose', 'left_shoulder')")
+    x: float = Field(..., ge=0.0, le=1.0, description="X coordinate (normalized 0-1)")
+    y: float = Field(..., ge=0.0, le=1.0, description="Y coordinate (normalized 0-1)")
+    confidence: Optional[float] = Field(0.9, ge=0.0, le=1.0, description="Detection confidence")
+
+
+class PoseRequest(BaseModel):
+    """Request schema for pose change workflow."""
+    image_url: HttpUrl = Field(..., description="URL of input image")
+    keypoints: List[PoseKeypoint] = Field(..., min_length=17, max_length=17, description="17 COCO keypoints")
+    confidence_threshold: Optional[float] = Field(0.3, ge=0.0, le=1.0, description="Confidence threshold")
+    prompt: Optional[str] = Field("", max_length=500, description="Optional text prompt for pose generation")
+
+
+class PoseResponse(BaseModel):
+    """Response schema for pose workflow."""
+    job_id: str = Field(..., description="Unique job identifier")
+    status: JobStatus = Field(..., description="Job status")
+    result_url: Optional[str] = Field(None, description="URL of image with new pose")
+    detected_keypoints: Optional[List[PoseKeypoint]] = Field(None, description="Detected keypoints from source")
+    agent_thoughts: List[str] = Field(default_factory=list, description="Agent reasoning steps")
+    processing_time_ms: Optional[int] = Field(None, description="Processing duration in milliseconds")
+    error: Optional[str] = Field(None, description="Error message if failed")

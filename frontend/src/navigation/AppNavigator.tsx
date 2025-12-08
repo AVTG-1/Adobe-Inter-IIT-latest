@@ -7,6 +7,7 @@ import EditorScreen from '../screens/EditorScreen';
 import LayersScreen from '../screens/LayersScreen';
 import EffectsScreen from '../screens/EffectsScreen';
 import RelightScreen from '../screens/RelightScreen';
+import PoseScreen from '../screens/PoseScreen';
 
 export type RootStackParamList = {
   Splash1: undefined;
@@ -22,6 +23,9 @@ export type RootStackParamList = {
   Layers: undefined;
   Effects: undefined;
   Relight: {
+    imageUrl?: string;
+  };
+  Pose: {
     imageUrl?: string;
   };
 };
@@ -44,6 +48,7 @@ const AppNavigator: React.FC = () => {
         <Stack.Screen name="Layers" component={LayersScreen} />
         <Stack.Screen name="Effects" component={EffectsScreen} />
         <Stack.Screen name="Relight" component={RelightScreen} />
+        <Stack.Screen name="Pose" component={PoseScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );
