@@ -107,57 +107,40 @@ export default function RelightScreen({ navigation, route }: Props) {
     }
   }, [route.params, handleSelectImage]);
 
-  // Call relight API when parameters change (debounced)
   const callRelightAPI = useCallback(async () => {
-    if (!imageUri) {
-      return; // Don't call API if image is not ready
-    }
-    
-    // Wait for coordinates to be initialized (they start at 0,0)
-    if (imageContainerLayout.width === 0 || imageContainerLayout.height === 0) {
-      return; // Don't call API if container layout is not ready
-    }
+  if (!imageUri) return;
 
-    // Clear previous timer
-    if (apiCallTimer.current) {
-      clearTimeout(apiCallTimer.current);
-    }
+  setIsProcessing(true);
+  console.log("🔵 RELIGHT API CALLED WITH:", {
+    x: selectorX,
+    y: selectorY,
+    z_depth: zDepth,
+    intensity: intensity,
+    warmth: colorTemperature,
+    image_url: imageUri,
+  });
 
-    // Debounce API call by 500ms
-    apiCallTimer.current = setTimeout(async () => {
-      setIsProcessing(true);
-       // ✅✅✅ THIS IS THE IMPORTANT LOG ✅✅✅
-    console.log("RELIGHT API COORDINATES →", {
+  try {
+    const response = await apiClient.relightImage({
+      image_url: imageUri,
       x: selectorX,
       y: selectorY,
       z_depth: zDepth,
-      intensity: intensity,
       warmth: colorTemperature,
-      image: imageUri,
+      intensity,
     });
-      try {
-        const response = await apiClient.relightImage({
-          image_url: imageUri,
-          x: selectorX,
-          y: selectorY,
-          z_depth: zDepth,
-          warmth: colorTemperature, // Using colorTemperature as warmth value
-          intensity: intensity,
-        });
 
-        if (response.result_url) {
-          setProcessedImageUri(response.result_url);
-        } else {
-          console.warn('Relight API did not return result_url');
-        }
-      } catch (error) {
-        console.error('Relight API error:', error);
-        Alert.alert('Error', 'Failed to process image. Please try again.');
-      } finally {
-        setIsProcessing(false);
-      }
-    }, 500);
-  }, [imageUri, selectorX, selectorY, zDepth, colorTemperature, intensity]);
+    if (response.result_url) {
+      setProcessedImageUri(response.result_url);
+    }
+  } catch (err) {
+    console.log("API Error:", err);
+    Alert.alert("Error", "Failed to process image.");
+  } finally {
+    setIsProcessing(false);
+  }
+}, [imageUri, selectorX, selectorY, zDepth, colorTemperature, intensity]);
+
 
   // Call API when parameters change
   useEffect(() => {
@@ -169,7 +152,7 @@ export default function RelightScreen({ navigation, route }: Props) {
       selectorX >= 0 && 
       selectorY >= 0
     ) {
-      callRelightAPI();
+      
     }
 
     // Cleanup timer on unmount
@@ -612,6 +595,21 @@ export default function RelightScreen({ navigation, route }: Props) {
             />
           </View>
         </View>
+        
+        <TouchableOpacity onPress={callRelightAPI}
+        style={{
+    backgroundColor: '#4A90E2',
+    paddingVertical: 12,
+    marginTop: 20,
+    borderRadius: 10,
+    alignItems: 'center'
+  }}
+>
+  <Text style={{ color: '#FFF', fontSize: 16, fontWeight: 'bold' }}>
+    Apply Relight
+  </Text>
+</TouchableOpacity>
+
 
         {/* Control Buttons Row */}
         <View style={styles.buttonsRow}>
